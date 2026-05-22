@@ -17,7 +17,7 @@ app.config['WHATSAPP_NUMBER'] = WHATSAPP_NUMBER
 
 CORS(app)
 db.init_app(app)
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='threading',
+socketio = SocketIO(app, cors_allowed_origins='*',
                    transport=['websocket', 'polling'],
                    engineio_logger=False, socketio_logger=False)
 
