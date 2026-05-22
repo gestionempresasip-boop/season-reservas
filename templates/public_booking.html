@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season · Reservar Mesa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal: #1a8a7d; --teal-dark: #147068; --teal-light: #e8f5f2;
+            --gold: #c5a55a; --gold-light: #f5f0e6; --cream: #faf8f3;
+            --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+            --gray-400: #9ca3af; --gray-500: #6b7280; --gray-700: #374151;
+            --gray-800: #1f2937; --red: #ef4444; --green: #22c55e; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--gray-800); min-height: 100vh; }
+
+        .pub-header {
+            background: white; border-bottom: 1px solid var(--gray-200); padding: 16px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .pub-logo { display: flex; align-items: center; gap: 10px; }
+        .pub-logo-icon { font-size: 28px; }
+        .pub-logo-title { font-size: 20px; font-weight: 700; color: var(--teal); letter-spacing: 3px; }
+        .pub-logo-sub { font-size: 11px; color: var(--gray-400); font-style: italic; }
+        .wa-btn {
+            display: flex; align-items: center; gap: 8px; background: #25D366; color: white;
+            padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 14px;
+            transition: background 0.2s;
+        }
+        .wa-btn:hover { background: #1da851; }
+
+        .pub-main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+        .booking-steps { display: flex; gap: 8px; margin-bottom: 24px; }
+        .step {
+            flex: 1; padding: 12px; background: white; border: 2px solid var(--gray-200);
+            border-radius: 10px; text-align: center; opacity: 0.4; transition: all 0.3s;
+        }
+        .step.active { border-color: var(--teal); opacity: 1; }
+        .step.done { border-color: var(--green); opacity: 0.7; background: #f0fdf4; }
+        .step-num { font-size: 22px; font-weight: 700; color: var(--teal); }
+        .step-label { font-size: 11px; color: var(--gray-500); font-weight: 600; letter-spacing: 1px; margin-top: 2px; }
+
+        .booking-panel {
+            background: white; border-radius: 14px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px;
+        }
+        .booking-panel h2 { font-size: 18px; margin-bottom: 16px; color: var(--gray-800); }
+
+        /* Step 1: Date & Shift */
+        .date-shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .ds-option {
+            padding: 16px; border: 2px solid var(--gray-200); border-radius: 10px;
+            cursor: pointer; text-align: center; transition: all 0.2s;
+        }
+        .ds-option:hover { border-color: var(--teal); }
+        .ds-option.selected { border-color: var(--teal); background: var(--teal-light); }
+        .ds-option-icon { font-size: 28px; margin-bottom: 6px; }
+        .ds-option-label { font-weight: 600; font-size: 15px; }
+        .ds-option-sub { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+        .pub-form-row { display: flex; gap: 14px; margin-bottom: 14px; }
+        .pub-form-group { flex: 1; }
+        .pub-form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-500); margin-bottom: 4px; }
+        .pub-input {
+            width: 100%; padding: 10px 14px; border: 2px solid var(--gray-200); border-radius: 10px;
+            font-size: 15px; font-family: inherit; transition: border-color 0.2s;
+        }
+        .pub-input:focus { outline: none; border-color: var(--teal); }
+
+        /* Step 2: Floor Plan */
+        .legend { display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--gray-500); }
+        .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+        .floorplan-pub {
+            border: 2px solid var(--gray-200); border-radius: 12px; padding: 16px;
+            background: var(--gray-100); overflow: auto;
+        }
+        #pubFloorplan { width: 100%; height: auto; max-height: 500px; }
+
+        .pub-table { cursor: pointer; transition: transform 0.15s; }
+        .pub-table:hover { transform: scale(1.1); }
+        .pub-table.disabled { cursor: not-allowed; opacity: 0.5; }
+        .pub-table.disabled:hover { transform: none; }
+
+        .pub-table-rect { rx: 1; transition: fill 0.2s, stroke 0.2s; }
+        .pub-table-rect.free { fill: #d1fae5; stroke: #16a34a; stroke-width: 0.4; }
+        .pub-table-rect.occupied { fill: #fee2e2; stroke: #ef4444; stroke-width: 0.4; }
+        .pub-table-rect.selected { fill: #dbeafe; stroke: #2563eb; stroke-width: 0.6; }
+        .pub-table-rect.too-small { fill: #fef3c7; stroke: #d97706; stroke-width: 0.3; }
+
+        .pub-table-num { font-size: 2.8px; font-weight: 700; text-anchor: middle; dominant-baseline: central; fill: #374151; }
+        .pub-table-cap { font-size: 1.5px; text-anchor: middle; fill: #6b7280; }
+        .pub-table-status { font-size: 1.3px; text-anchor: middle; font-weight: 600; }
+
+        .selected-mesa-info {
+            background: #dbeafe; border: 2px solid #3b82f6; border-radius: 10px;
+            padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-top: 16px;
+        }
+        .selected-mesa-info .mesa-name { font-size: 18px; font-weight: 700; color: #1e40af; }
+        .selected-mesa-info .mesa-detail { font-size: 13px; color: #3b82f6; }
+
+        /* Step 3: Confirm */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;
+        }
+        .summary-item {
+            background: var(--gray-100); border-radius: 8px; padding: 12px;
+        }
+        .summary-label { font-size: 11px; color: var(--gray-400); font-weight: 600; letter-spacing: 1px; }
+        .summary-value { font-size: 17px; font-weight: 700; color: var(--gray-800); margin-top: 4px; }
+
+        .btn-pub {
+            display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
+            border-radius: 10px; font-size: 15px; font-weight: 600; border: none;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .btn-pub-primary { background: var(--teal); color: white; }
+        .btn-pub-primary:hover { background: var(--teal-dark); }
+        .btn-pub-secondary { background: white; color: var(--gray-500); border: 2px solid var(--gray-200); }
+        .btn-pub-secondary:hover { border-color: var(--gray-400); }
+        .btn-pub:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .pub-actions { display: flex; justify-content: space-between; margin-top: 20px; }
+
+        /* Success */
+        .success-card {
+            text-align: center; padding: 40px 20px; background: #f0fdf4;
+            border: 2px solid #86efac; border-radius: 14px;
+        }
+        .success-icon { font-size: 60px; margin-bottom: 16px; }
+        .success-title { font-size: 24px; font-weight: 700; color: #16a34a; margin-bottom: 8px; }
+        .success-detail { font-size: 14px; color: var(--gray-500); line-height: 1.6; }
+        .success-id { font-size: 36px; font-weight: 700; color: var(--teal); margin: 12px 0; }
+
+        .pub-footer { text-align: center; padding: 20px; font-size: 12px; color: var(--gray-400); }
+
+        @media (max-width: 640px) {
+            .booking-steps { flex-wrap: wrap; }
+            .step { min-width: 80px; }
+            .date-shift-grid { grid-template-columns: 1fr; }
+            .pub-form-row { flex-direction: column; gap: 0; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .pub-actions { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="pub-header">
+        <div class="pub-logo">
+            <span class="pub-logo-icon">&#127807;</span>
+            <div>
+                <div class="pub-logo-title">SEASON</div>
+                <div class="pub-logo-sub">Reserva tu mesa</div>
+            </div>
+        </div>
+        <a href="https://wa.me/{{ whatsapp_number }}?text=RESERVAR" target="_blank" class="wa-btn">
+            &#128172; Reservar por WhatsApp
+        </a>
+    </header>
+
+    <main class="pub-main">
+        <!-- Progress Steps -->
+        <div class="booking-steps">
+            <div class="step active" id="step1indicator">
+                <div class="step-num">1</div>
+                <div class="step-label">FECHA Y TURNO</div>
+            </div>
+            <div class="step" id="step2indicator">
+                <div class="step-num">2</div>
+                <div class="step-label">ELIGE TU MESA</div>
+            </div>
+            <div class="step" id="step3indicator">
+                <div class="step-num">3</div>
+                <div class="step-label">CONFIRMAR</div>
+            </div>
+        </div>
+
+        <!-- STEP 1: Date, Shift, Guests, Time -->
+        <div class="booking-panel" id="panelStep1">
+            <h2>&#128197; Fecha y detalles</h2>
+            <div class="pub-form-row">
+                <div class="pub-form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="pubDate" class="pub-input">
+                </div>
+                <div class="pub-form-group">
+                    <label>Comensales</label>
+                    <input type="number" id="pubGuests" min="1" max="20" value="2" class="pub-input">
+                </div>
+            </div>
+            <label style="font-size:13px; font-weight:600; color:var(--gray-500); margin-bottom:8px; display:block;">Turno</label>
+            <div class="date-shift-grid" style="margin-bottom:16px;">
+                <div class="ds-option selected" id="optComida" onclick="selectShift('comida')">
+                    <div class="ds-option-icon">&#9728;&#65039;</div>
+                    <div class="ds-option-label">Comida</div>
+                    <div class="ds-option-sub">13:00 - 16:00</div>
+                </div>
+                <div class="ds-option" id="optCena" onclick="selectShift('cena')">
+                    <div class="ds-option-icon">&#127769;</div>
+                    <div class="ds-option-label">Cena</div>
+                    <div class="ds-option-sub">19:00 - 23:00</div>
+                </div>
+            </div>
+            <div class="pub-form-row">
+                <div class="pub-form-group">
+                    <label>Hora</label>
+                    <select id="pubTime" class="pub-input"></select>
+                </div>
+            </div>
+            <div class="pub-actions">
+                <div></div>
+                <button class="btn-pub btn-pub-primary" onclick="goToStep2()">Elegir mesa &#8594;</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Floor Plan Selection -->
+        <div class="booking-panel" id="panelStep2" style="display:none;">
+            <h2>&#127869; Elige tu mesa</h2>
+            <p style="font-size:13px; color:var(--gray-500); margin-bottom:12px;">
+                Selecciona una mesa disponible para <strong id="pubGuestsLabel">2</strong> personas.
+                Las mesas que no tienen capacidad suficiente aparecen en amarillo.
+            </p>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#d1fae5; border:2px solid #16a34a;"></div> Disponible</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fee2e2; border:2px solid #ef4444;"></div> Ocupada</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#dbeafe; border:2px solid #2563eb;"></div> Tu selecci&oacute;n</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fef3c7; border:2px solid #d97706;"></div> Insuficiente</div>
+            </div>
+            <div class="floorplan-pub">
+                <svg id="pubFloorplan" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                    <rect x="1" y="1" width="98" height="28" rx="1.5" fill="#f0f7f5" stroke="#1a8a7d" stroke-width="0.3" stroke-dasharray="1,0.5"/>
+                    <text x="82" y="4" style="font-size:2px; font-weight:700; fill:#6b7280;">ZONA EXTERIOR</text>
+                    <rect x="1" y="30" width="52" height="69" rx="1.5" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.3"/>
+                    <text x="5" y="33" style="font-size:2px; font-weight:700; fill:#6b7280;">SAL&Oacute;N PRINCIPAL</text>
+                    <rect x="54" y="30" width="35" height="54" rx="1.5" fill="#faf8f3" stroke="#d0d0d0" stroke-width="0.3"/>
+                    <text x="58" y="33" style="font-size:2px; font-weight:700; fill:#6b7280;">SAL&Oacute;N INTERIOR</text>
+                    <rect x="90" y="60" width="9" height="30" rx="1" fill="#f5f0e6" stroke="#c5b896" stroke-width="0.3"/>
+                    <text x="92.5" y="76" style="font-size:3px; fill:#c5a55a; font-weight:700; text-anchor:middle;">CAVA</text>
+                </svg>
+            </div>
+            <div id="selectedMesaInfo" style="display:none;" class="selected-mesa-info">
+                <div>
+                    <div class="mesa-name" id="selectedMesaName">Mesa 1</div>
+                    <div class="mesa-detail" id="selectedMesaDetail">Sal. Principal &middot; 4 personas</div>
+                </div>
+                <button class="btn-pub btn-pub-secondary" onclick="clearSelection()" style="padding:8px 16px;">Cambiar</button>
+            </div>
+            <div class="pub-actions">
+                <button class="btn-pub btn-pub-secondary" onclick="goToStep1()">&#8592; Atr&aacute;s</button>
+                <button class="btn-pub btn-pub-primary" id="btnToStep3" disabled onclick="goToStep3()">Continuar &#8594;</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Contact Info & Confirm -->
+        <div class="booking-panel" id="panelStep3" style="display:none;">
+            <h2>&#9989; Confirmar reserva</h2>
+            <div class="summary-grid" id="bookingSummary"></div>
+            <div class="pub-form-row">
+                <div class="pub-form-group">
+                    <label>Tu nombre *</label>
+                    <input type="text" id="pubName" class="pub-input" required placeholder="Nombre completo">
+                </div>
+                <div class="pub-form-group">
+                    <label>Tel&eacute;fono *</label>
+                    <input type="tel" id="pubPhone" class="pub-input" required placeholder="+34 612 345 678">
+                </div>
+            </div>
+            <div class="pub-form-group">
+                <label>Email (opcional)</label>
+                <input type="email" id="pubEmail" class="pub-input" placeholder="tu@email.com">
+            </div>
+            <div class="pub-form-group">
+                <label>Notas (alergias, celebraciones...)</label>
+                <textarea id="pubNotes" class="pub-input" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div class="pub-actions">
+                <button class="btn-pub btn-pub-secondary" onclick="goToStep2()">&#8592; Atr&aacute;s</button>
+                <button class="btn-pub btn-pub-primary" onclick="confirmBooking()" id="btnConfirm">Confirmar Reserva &#10003;</button>
+            </div>
+        </div>
+
+        <!-- SUCCESS -->
+        <div class="booking-panel" id="panelSuccess" style="display:none;">
+            <div class="success-card">
+                <div class="success-icon">&#127881;</div>
+                <div class="success-title">Reserva Confirmada!</div>
+                <div class="success-id" id="successId">#1</div>
+                <div class="success-detail" id="successDetail"></div>
+                <div style="margin-top:20px;">
+                    <button class="btn-pub btn-pub-primary" onclick="resetBooking()">Hacer otra reserva</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="pub-footer">
+        Season &middot; Sistema de Reservas
+    </footer>
+
+<script>
+const API = '';
+const TABLE_DEFS = [
+    {n:50,cap:2,zone:'ext',x:33,y:10,w:7,h:5},{n:52,cap:2,zone:'ext',x:43,y:10,w:7,h:5},
+    {n:54,cap:2,zone:'ext',x:53,y:10,w:7,h:5},{n:56,cap:2,zone:'ext',x:63,y:10,w:7,h:5},
+    {n:58,cap:2,zone:'ext',x:76,y:14,w:5,h:7},{n:62,cap:4,zone:'ext',x:38,y:19,w:8,h:6},
+    {n:60,cap:4,zone:'ext',x:53,y:19,w:8,h:6},{n:70,cap:2,zone:'ext',x:14,y:14,w:7,h:5},
+    {n:1,cap:4,zone:'sp',x:7,y:37,w:8,h:7},{n:2,cap:2,zone:'sp',x:20,y:37,w:7,h:6},
+    {n:3,cap:6,zone:'sp',x:32,y:37,w:10,h:7},{n:6,cap:4,zone:'sp',x:7,y:49,w:8,h:7},
+    {n:4,cap:4,zone:'sp',x:22,y:49,w:8,h:7},{n:7,cap:4,zone:'sp',x:5,y:60,w:8,h:7},
+    {n:8,cap:4,zone:'sp',x:17,y:60,w:8,h:7},{n:9,cap:2,zone:'sp',x:29,y:60,w:7,h:6},
+    {n:10,cap:2,zone:'sp',x:39,y:60,w:7,h:6},{n:14,cap:4,zone:'sp',x:5,y:71,w:8,h:7},
+    {n:12,cap:4,zone:'sp',x:19,y:71,w:8,h:7},{n:11,cap:2,zone:'sp',x:33,y:71,w:7,h:6},
+    {n:15,cap:4,zone:'sp',x:7,y:81,w:8,h:7},{n:16,cap:4,zone:'sp',x:20,y:81,w:8,h:7},
+    {n:17,cap:4,zone:'sp',x:33,y:81,w:8,h:7},{n:22,cap:4,zone:'sp',x:5,y:91,w:8,h:7},
+    {n:20,cap:4,zone:'sp',x:18,y:91,w:8,h:7},{n:19,cap:2,zone:'sp',x:31,y:91,w:7,h:6},
+    {n:18,cap:6,zone:'sp',x:42,y:91,w:10,h:7},{n:30,cap:4,zone:'si',x:58,y:37,w:8,h:7},
+    {n:82,cap:4,zone:'si',x:72,y:37,w:8,h:7},{n:34,cap:4,zone:'si',x:62,y:50,w:8,h:7},
+    {n:36,cap:4,zone:'si',x:65,y:65,w:8,h:7},{n:40,cap:8,zone:'si',x:66,y:82,w:16,h:7},
+];
+const ZONES = {ext:'Exterior', sp:'Sal. Principal', si:'Sal. Interior'};
+
+let pubShift = 'comida';
+let pubTableStatus = {};
+let selectedTableId = null;
+let selectedTableDef = null;
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+    const d = new Date();
+    document.getElementById('pubDate').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    document.getElementById('pubDate').min = document.getElementById('pubDate').value;
+    updateTimeOptions();
+});
+
+function selectShift(s) {
+    pubShift = s;
+    document.getElementById('optComida').classList.toggle('selected', s==='comida');
+    document.getElementById('optCena').classList.toggle('selected', s==='cena');
+    updateTimeOptions();
+}
+
+function updateTimeOptions() {
+    const sel = document.getElementById('pubTime');
+    sel.innerHTML = '';
+    const times = pubShift === 'comida'
+        ? ['13:00','13:15','13:30','13:45','14:00','14:15','14:30','14:45','15:00']
+        : ['19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:15','21:30','21:45','22:00'];
+    times.forEach(t => { const o = document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+}
+
+// Steps
+function goToStep1() { showStep(1); }
+
+async function goToStep2() {
+    const dt = document.getElementById('pubDate').value;
+    const guests = parseInt(document.getElementById('pubGuests').value);
+    if (!dt || !guests) { alert('Completa fecha y comensales'); return; }
+
+    document.getElementById('pubGuestsLabel').textContent = guests;
+    showStep(2);
+    await loadPublicFloorplan();
+}
+
+function goToStep3() {
+    if (!selectedTableId) { alert('Selecciona una mesa'); return; }
+    showStep(3);
+    renderSummary();
+}
+
+function showStep(n) {
+    document.getElementById('panelStep1').style.display = n===1 ? '' : 'none';
+    document.getElementById('panelStep2').style.display = n===2 ? '' : 'none';
+    document.getElementById('panelStep3').style.display = n===3 ? '' : 'none';
+    document.getElementById('panelSuccess').style.display = 'none';
+    for (let i=1; i<=3; i++) {
+        const el = document.getElementById('step'+i+'indicator');
+        el.classList.remove('active','done');
+        if (i < n) el.classList.add('done');
+        if (i === n) el.classList.add('active');
+    }
+}
+
+// Floor Plan
+async function loadPublicFloorplan() {
+    const dt = document.getElementById('pubDate').value;
+    const res = await fetch(`${API}/api/tables/status?date=${dt}&shift=${pubShift}`);
+    const data = await res.json();
+    pubTableStatus = {};
+    data.forEach(t => { pubTableStatus[t.number] = t; });
+    renderPublicFloorplan();
+}
+
+function renderPublicFloorplan() {
+    const svg = document.getElementById('pubFloorplan');
+    svg.querySelectorAll('.pub-table').forEach(g => g.remove());
+    const guests = parseInt(document.getElementById('pubGuests').value) || 2;
+
+    TABLE_DEFS.forEach(def => {
+        const td = pubTableStatus[def.n] || {};
+        const occupied = td.status && td.status !== 'free';
+        const tooSmall = !occupied && def.cap < guests;
+        const isSelected = selectedTableId === td.id;
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+        g.classList.add('pub-table');
+        if (occupied || tooSmall) g.classList.add('disabled');
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x', def.x); rect.setAttribute('y', def.y);
+        rect.setAttribute('width', def.w); rect.setAttribute('height', def.h);
+        rect.classList.add('pub-table-rect');
+        if (isSelected) rect.classList.add('selected');
+        else if (occupied) rect.classList.add('occupied');
+        else if (tooSmall) rect.classList.add('too-small');
+        else rect.classList.add('free');
+        g.appendChild(rect);
+
+        const cx = def.x + def.w/2;
+        const cy = def.y + def.h/2;
+
+        const num = document.createElementNS('http://www.w3.org/2000/svg','text');
+        num.setAttribute('x', cx); num.setAttribute('y', cy - 0.5);
+        num.classList.add('pub-table-num'); num.textContent = def.n;
+        g.appendChild(num);
+
+        const cap = document.createElementNS('http://www.w3.org/2000/svg','text');
+        cap.setAttribute('x', cx); cap.setAttribute('y', cy + 2);
+        cap.classList.add('pub-table-cap'); cap.textContent = def.cap + 'p';
+        g.appendChild(cap);
+
+        const statusText = document.createElementNS('http://www.w3.org/2000/svg','text');
+        statusText.setAttribute('x', cx); statusText.setAttribute('y', def.y + def.h + 2.5);
+        statusText.classList.add('pub-table-status');
+        if (isSelected) { statusText.textContent = 'TU MESA'; statusText.style.fill = '#2563eb'; }
+        else if (occupied) { statusText.textContent = 'OCUPADA'; statusText.style.fill = '#ef4444'; }
+        else if (tooSmall) { statusText.textContent = 'Pequeña'; statusText.style.fill = '#d97706'; }
+        g.appendChild(statusText);
+
+        // Chairs
+        getChairPos(def).forEach(([px,py]) => {
+            const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+            c.setAttribute('cx',px); c.setAttribute('cy',py); c.setAttribute('r', 0.7);
+            c.style.fill = isSelected ? '#3b82f6' : occupied ? '#fca5a5' : tooSmall ? '#fcd34d' : '#86efac';
+            c.style.opacity = '0.6';
+            g.appendChild(c);
+        });
+
+        if (!occupied && !tooSmall) {
+            g.addEventListener('click', () => selectTable(td.id, def));
+        }
+
+        svg.appendChild(g);
+    });
+}
+
+function getChairPos(def) {
+    const {x,y,w,h,cap}=def, p=1.4, pos=[];
+    if(cap===2){if(w>=h){pos.push([x+w*.35,y-p],[x+w*.65,y+h+p]);}else{pos.push([x-p,y+h*.5],[x+w+p,y+h*.5]);}}
+    else if(cap===4){pos.push([x+w*.35,y-p],[x+w*.65,y-p],[x+w*.35,y+h+p],[x+w*.65,y+h+p]);}
+    else if(cap===6){pos.push([x+w*.25,y-p],[x+w*.5,y-p],[x+w*.75,y-p],[x+w*.25,y+h+p],[x+w*.5,y+h+p],[x+w*.75,y+h+p]);}
+    else if(cap===8){pos.push([x+w*.2,y-p],[x+w*.4,y-p],[x+w*.6,y-p],[x+w*.8,y-p],[x+w*.2,y+h+p],[x+w*.4,y+h+p],[x+w*.6,y+h+p],[x+w*.8,y+h+p]);}
+    return pos;
+}
+
+function selectTable(tableId, def) {
+    selectedTableId = tableId;
+    selectedTableDef = def;
+    document.getElementById('selectedMesaInfo').style.display = 'flex';
+    document.getElementById('selectedMesaName').textContent = 'Mesa ' + def.n;
+    document.getElementById('selectedMesaDetail').textContent = ZONES[def.zone] + ' · ' + def.cap + ' personas';
+    document.getElementById('btnToStep3').disabled = false;
+    renderPublicFloorplan();
+}
+
+function clearSelection() {
+    selectedTableId = null; selectedTableDef = null;
+    document.getElementById('selectedMesaInfo').style.display = 'none';
+    document.getElementById('btnToStep3').disabled = true;
+    renderPublicFloorplan();
+}
+
+function renderSummary() {
+    const dt = document.getElementById('pubDate').value;
+    const dateObj = new Date(dt+'T12:00:00');
+    const formatted = dateObj.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const html = `
+        <div class="summary-item"><div class="summary-label">FECHA</div><div class="summary-value">${formatted}</div></div>
+        <div class="summary-item"><div class="summary-label">TURNO</div><div class="summary-value">${pubShift==='comida'?'☀️ Comida':'🌙 Cena'}</div></div>
+        <div class="summary-item"><div class="summary-label">HORA</div><div class="summary-value">${document.getElementById('pubTime').value}</div></div>
+        <div class="summary-item"><div class="summary-label">COMENSALES</div><div class="summary-value">${document.getElementById('pubGuests').value} personas</div></div>
+        <div class="summary-item" style="grid-column:1/-1;background:#dbeafe;">
+            <div class="summary-label" style="color:#3b82f6;">TU MESA</div>
+            <div class="summary-value" style="color:#1e40af;">Mesa ${selectedTableDef.n} &middot; ${ZONES[selectedTableDef.zone]} &middot; ${selectedTableDef.cap}p</div>
+        </div>
+    `;
+    document.getElementById('bookingSummary').innerHTML = html;
+}
+
+async function confirmBooking() {
+    const name = document.getElementById('pubName').value.trim();
+    const phone = document.getElementById('pubPhone').value.trim();
+    if (!name || !phone) { alert('Completa nombre y teléfono'); return; }
+
+    document.getElementById('btnConfirm').disabled = true;
+    document.getElementById('btnConfirm').textContent = 'Reservando...';
+
+    const data = {
+        client_name: name,
+        client_phone: phone,
+        email: document.getElementById('pubEmail').value.trim(),
+        date: document.getElementById('pubDate').value,
+        shift: pubShift,
+        time: document.getElementById('pubTime').value,
+        guests: parseInt(document.getElementById('pubGuests').value),
+        table_id: selectedTableId,
+        source: 'web',
+        notes: document.getElementById('pubNotes').value.trim(),
+    };
+
+    try {
+        const res = await fetch(`${API}/api/reservations`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        document.getElementById('successId').textContent = '#' + result.id;
+        const dateObj = new Date(data.date+'T12:00:00');
+        document.getElementById('successDetail').innerHTML =
+            `<strong>${name}</strong><br>` +
+            `${dateObj.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} a las ${data.time}<br>` +
+            `${data.guests} personas &middot; Mesa ${selectedTableDef.n} (${ZONES[selectedTableDef.zone]})`;
+
+        document.getElementById('panelStep3').style.display = 'none';
+        document.getElementById('panelSuccess').style.display = '';
+        for (let i=1;i<=3;i++) document.getElementById('step'+i+'indicator').classList.add('done');
+    } catch(e) {
+        alert('Error al crear la reserva. Inténtalo de nuevo.');
+    } finally {
+        document.getElementById('btnConfirm').disabled = false;
+        document.getElementById('btnConfirm').textContent = 'Confirmar Reserva ✓';
+    }
+}
+
+function resetBooking() {
+    selectedTableId = null; selectedTableDef = null;
+    document.getElementById('pubName').value = '';
+    document.getElementById('pubPhone').value = '';
+    document.getElementById('pubEmail').value = '';
+    document.getElementById('pubNotes').value = '';
+    document.getElementById('selectedMesaInfo').style.display = 'none';
+    document.getElementById('btnToStep3').disabled = true;
+    showStep(1);
+}
+</script>
+</body>
+</html>
