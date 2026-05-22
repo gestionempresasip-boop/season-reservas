@@ -44,12 +44,14 @@ function renderCalendar(days) {
     grid.innerHTML = days.map((d, i) => {
         const isToday = d.date === today;
         const dateObj = new Date(d.date + 'T12:00:00');
+        const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayNameCorrect = dayNames[(dayOfWeek + 6) % 7]; // Convert to 0 = Monday
         const comida = d.comida || { count: 0, guests: 0, items: [] };
         const cena = d.cena || { count: 0, guests: 0, items: [] };
 
         return `
             <div class="calendar-day ${isToday ? 'today' : ''} ${d.reservations > 0 ? 'has-reservations' : ''}">
-                <div class="calendar-day-header">${dayNames[i] || d.day_name}</div>
+                <div class="calendar-day-header">${dayNameCorrect}</div>
                 <div class="calendar-day-number">${dateObj.getDate()}</div>
 
                 ${d.reservations > 0 ? `
