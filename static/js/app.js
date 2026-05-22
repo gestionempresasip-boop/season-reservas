@@ -251,8 +251,15 @@ function showToast(msg, type = '') {
 
 // ── API Functions with Retry Logic ──────────────
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 2000;
+const API_TIMEOUT = 60000; // 60s para cold starts de Render
+
+function createTimeout(ms) {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), ms);
+    return controller.signal;
+}
 
 async function withRetry(fn, retries = MAX_RETRIES) {
     for (let i = 0; i < retries; i++) {
@@ -260,15 +267,16 @@ async function withRetry(fn, retries = MAX_RETRIES) {
             return await fn();
         } catch (error) {
             if (i === retries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (i + 1)));
-            console.log(`🔄 Reintento ${i + 1}/${retries}`);
+            const delay = RETRY_DELAY * (i + 1);
+            console.log(`🔄 Reintento ${i + 1}/${retries} en ${delay/1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
 }
 
 async function apiGet(url) {
     return withRetry(async () => {
-        const res = await fetch(API + url, { signal: AbortSignal.timeout(10000) });
+        const res = await fetch(API + url, { signal: createTimeout(API_TIMEOUT) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     });
@@ -280,7 +288,7 @@ async function apiPost(url, data) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
-            signal: AbortSignal.timeout(10000)
+            signal: createTimeout(API_TIMEOUT)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -293,7 +301,7 @@ async function apiPut(url, data) {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data || {}),
-            signal: AbortSignal.timeout(10000)
+            signal: createTimeout(API_TIMEOUT)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -304,7 +312,7 @@ async function apiDelete(url) {
     return withRetry(async () => {
         const res = await fetch(API + url, {
             method: 'DELETE',
-            signal: AbortSignal.timeout(10000)
+            signal: createTimeout(API_TIMEOUT)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
