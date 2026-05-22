@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    setInterval(refreshAll, 5000);
+    setInterval(refreshAll, 30000);
 });
 
 // ── SocketIO Tiempo Real ────────────────────────
@@ -30,7 +30,7 @@ function initSocketIO() {
         reconnectionDelayMax: 5000,
         reconnection: true,
         reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
-        transports: ['websocket', 'polling']
+        transports: ['polling']
     });
 
     socket.on('connect', () => {
@@ -68,7 +68,7 @@ function updateSyncStatus(isConnected) {
         btn.innerHTML = '⟳ SYNC';
         btn.style.borderColor = '#ea580c';
         btn.style.color = '#ea580c';
-        btn.title = 'Sincronizando automáticamente cada 5 segundos';
+        btn.title = 'Sincronizando automáticamente cada 30 segundos';
     }
 }
 

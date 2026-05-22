@@ -1,4 +1,4 @@
-const CACHE_NAME = 'season-v2';
+const CACHE_NAME = 'season-v3';
 const STATIC_ASSETS = [
   '/',
   '/static/css/style.css',
