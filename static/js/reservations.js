@@ -146,39 +146,60 @@ async function loadAvailableTables() {
     const d = document.getElementById('resDate').value || currentDate;
     const s = document.getElementById('resShift').value || currentShift;
     const g = parseInt(document.getElementById('resGuests').value) || 2;
-    const tables = await apiGet(`/api/tables/available?date=${d}&shift=${s}&guests=${g}`);
     const select = document.getElementById('resTable');
-    select.innerHTML = '<option value="">Asignar después</option>';
-    
-    // Opción 1: Mesa única
-    tables.forEach(t => {
-        if (t.capacity >= g) {
-            const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.textContent = `Mesa ${t.number} (${zoneName(t.zone)}) · ${t.capacity}p${t.table_type === 'alta' ? ' · Alta' : ''}`;
-            select.appendChild(opt);
-        }
-    });
-    
-    // Opción 2: Múltiples mesas si hay más de 6 personas
-    if (g > 6) {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = '── Combinar mesas ──';
-        
-        // Combinar todas las mesas disponibles que sumen la capacidad deseada
-        for (let i = 0; i < tables.length; i++) {
-            for (let j = i + 1; j < tables.length; j++) {
-                const t1 = tables[i], t2 = tables[j];
-                const combined = t1.capacity + t2.capacity;
-                if (combined >= g) {
-                    const opt = document.createElement('option');
-                    opt.value = `${t1.id},${t2.id}`;
-                    opt.textContent = `Mesas ${t1.number} + ${t2.number} (${combined}p)`;
-                    optgroup.appendChild(opt);
+
+    // Primero: llenar con datos locales de tableDataMap (instantáneo)
+    fillTableSelect(select, g);
+
+    // Luego: intentar cargar desde API para datos más frescos
+    try {
+        const tables = await apiGet(`/api/tables/available?date=${d}&shift=${s}&guests=${g}`);
+        select.innerHTML = '<option value="">Asignar después</option>';
+
+        tables.forEach(t => {
+            if (t.capacity >= g) {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `Mesa ${t.number} (${zoneName(t.zone)}) · ${t.capacity}p${t.table_type === 'alta' ? ' · Alta' : ''}`;
+                select.appendChild(opt);
+            }
+        });
+
+        if (g > 6) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = '── Combinar mesas ──';
+            for (let i = 0; i < tables.length; i++) {
+                for (let j = i + 1; j < tables.length; j++) {
+                    const t1 = tables[i], t2 = tables[j];
+                    const combined = t1.capacity + t2.capacity;
+                    if (combined >= g) {
+                        const opt = document.createElement('option');
+                        opt.value = `${t1.id},${t2.id}`;
+                        opt.textContent = `Mesas ${t1.number} + ${t2.number} (${combined}p)`;
+                        optgroup.appendChild(opt);
+                    }
                 }
             }
+            if (optgroup.children.length > 0) select.appendChild(optgroup);
         }
-        if (optgroup.children.length > 0) select.appendChild(optgroup);
+    } catch (e) {
+        console.warn('⚠️ Usando datos locales para mesas:', e.message);
+    }
+}
+
+function fillTableSelect(select, guests) {
+    select.innerHTML = '<option value="">Asignar después</option>';
+    // Usar tableDataMap del floorplan (ya cargado en memoria)
+    if (typeof tableDataMap !== 'undefined' && Object.keys(tableDataMap).length > 0) {
+        Object.values(tableDataMap)
+            .filter(t => t.status === 'free' && t.capacity >= guests)
+            .sort((a, b) => a.number - b.number)
+            .forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `Mesa ${t.number} (${zoneName(t.zone)}) · ${t.capacity}p${t.table_type === 'alta' ? ' · Alta' : ''}`;
+                select.appendChild(opt);
+            });
     }
 }
 
