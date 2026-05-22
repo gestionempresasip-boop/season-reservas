@@ -245,7 +245,6 @@ async function submitReservation(e) {
 
     closeModal('modalReservation');
     refreshAll();
-    loadReservationsList();
 }
 
 // ── Quick Actions ───────────────────────────────
@@ -254,21 +253,18 @@ async function quickSeat(resId) {
     await apiPut(`/api/reservations/${resId}/seat`);
     showToast('Mesa sentada', 'success');
     refreshAll();
-    loadReservationsList();
 }
 
 async function quickComplete(resId) {
     await apiPut(`/api/reservations/${resId}/complete`);
     showToast('Mesa completada', 'success');
     refreshAll();
-    loadReservationsList();
 }
 
 async function quickNoShow(resId) {
     await apiPut(`/api/reservations/${resId}/noshow`);
     showToast('Marcado como No Show', 'error');
     refreshAll();
-    loadReservationsList();
 }
 
 async function quickDelete(resId, name) {
@@ -277,15 +273,7 @@ async function quickDelete(resId, name) {
     try {
         await apiDelete(`/api/reservations/${resId}/delete`);
         showToast('Reserva eliminada', 'error');
-
-        // Refrescar todo
         refreshAll();
-        loadReservationsList();
-
-        // Refrescar calendario explícitamente
-        if (typeof loadCalendar === 'function') {
-            loadCalendar();
-        }
     } catch (error) {
         showToast('Error al eliminar reserva', 'error');
         console.error(error);

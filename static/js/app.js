@@ -50,8 +50,7 @@ function initSocketIO() {
     });
 
     socket.on('reservation_changed', () => {
-        refreshAll();
-        refreshActiveView();
+        debouncedRefresh();
     });
 }
 
@@ -79,10 +78,13 @@ function refreshActiveView() {
     if (active.id === 'viewEspera') loadWaitlist();
     if (active.id === 'viewClientes') loadClientsList();
     if (active.id === 'viewAgenda') loadCalendar();
-    // Siempre refrescar calendario aunque no sea visible
-    if (typeof loadCalendar === 'function') {
-        loadCalendar();
-    }
+}
+
+// Debounced refresh: múltiples llamadas en 500ms se agrupan en una sola
+let _refreshTimer = null;
+function debouncedRefresh() {
+    if (_refreshTimer) clearTimeout(_refreshTimer);
+    _refreshTimer = setTimeout(() => { refreshAll(); }, 500);
 }
 
 // ── Date ────────────────────────────────────────
@@ -160,6 +162,9 @@ async function refreshAll() {
         if (floor.status === 'rejected') {
             console.warn('⚠️ Error cargando plano:', floor.reason);
         }
+
+        // Refrescar la vista activa sin hacer llamadas duplicadas
+        refreshActiveView();
     } catch (e) {
         console.error('❌ Error en refresh:', e);
         showConnectionError();

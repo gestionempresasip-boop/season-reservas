@@ -58,19 +58,22 @@ async function submitWaitlist(e) {
 }
 
 async function seatFromWaitlist(wId) {
-    const tables = await apiGet(`/api/tables/available?date=${currentDate}&shift=${currentShift}&guests=2`);
-    const tableId = tables.length > 0 ? tables[0].id : null;
+    // Usar datos locales del floorplan en vez de hacer otra petición
+    let tableId = null;
+    if (typeof tableDataMap !== 'undefined') {
+        const free = Object.values(tableDataMap).find(t => t.status === 'free');
+        if (free) tableId = free.id;
+    }
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-    await apiPut(`/api/waitlist/${wId}/seat`, { table_id: tableId, time: time });
     showToast('Cliente sentado desde lista de espera', 'success');
-    loadWaitlist();
-    refreshAll();
+    await apiPut(`/api/waitlist/${wId}/seat`, { table_id: tableId, time: time });
+    debouncedRefresh();
 }
 
 async function cancelWaitlist(wId) {
-    await apiPut(`/api/waitlist/${wId}/cancel`);
     showToast('Eliminado de la lista de espera');
-    loadWaitlist();
+    await apiPut(`/api/waitlist/${wId}/cancel`);
+    debouncedRefresh();
 }

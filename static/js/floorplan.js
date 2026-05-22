@@ -233,32 +233,32 @@ function openTableDetail(tableNumber) {
 }
 
 async function seatFromPlan(resId) {
-    await apiPut(`/api/reservations/${resId}/seat`);
     closeModal('modalTableDetail');
-    refreshAll();
     showToast('Mesa sentada', 'success');
+    await apiPut(`/api/reservations/${resId}/seat`);
+    debouncedRefresh();
 }
 
 async function cancelFromPlan(resId) {
-    await apiDelete(`/api/reservations/${resId}`);
     closeModal('modalTableDetail');
-    refreshAll();
     showToast('Reserva cancelada');
+    await apiDelete(`/api/reservations/${resId}`);
+    debouncedRefresh();
 }
 
 async function completeFromPlan(resId) {
-    await apiPut(`/api/reservations/${resId}/complete`);
     closeModal('modalTableDetail');
-    refreshAll();
     showToast('Mesa completada', 'success');
+    await apiPut(`/api/reservations/${resId}/complete`);
+    debouncedRefresh();
 }
 
 async function deleteFromPlan(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
-    await apiDelete(`/api/reservations/${resId}/delete`);
     closeModal('modalTableDetail');
-    refreshAll();
     showToast('Reserva eliminada', 'error');
+    await apiDelete(`/api/reservations/${resId}/delete`);
+    debouncedRefresh();
 }
 
 function editReservationFromPlan(resId) {
