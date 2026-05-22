@@ -474,35 +474,29 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Limpiar caché antiguo y registrar nuevo Service Worker
-        if ('caches' in window) {
-            caches.keys().then(cacheNames => {
-                cacheNames.forEach(cacheName => {
-                    caches.delete(cacheName).then(() => {
-                        console.log('✓ Caché limpiado');
-                    });
+        // Desregistrar Service Workers y limpiar toda la caché
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(reg => {
+                    reg.unregister();
+                    console.log('✓ Service Worker desregistrado');
                 });
             });
         }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(reg => reg.unregister());
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+                if (names.length) console.log('✓ Caché limpiado:', names.length, 'entradas');
             });
-
-            // Registrar nuevo Service Worker
-            navigator.serviceWorker.register('/static/js/service-worker.js?v=' + Date.now())
-                .then(reg => console.log('✓ Service Worker actualizado'))
-                .catch(err => console.warn('Service Worker no disponible:', err));
         }
     </script>
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/floorplan.js"></script>
-    <script src="/static/js/reservations.js"></script>
-    <script src="/static/js/clients.js"></script>
-    <script src="/static/js/waitlist.js"></script>
-    <script src="/static/js/calendar.js"></script>
-    <script src="/static/js/reports.js"></script>
+    <script src="/static/js/app.js?v=4"></script>
+    <script src="/static/js/floorplan.js?v=4"></script>
+    <script src="/static/js/reservations.js?v=4"></script>
+    <script src="/static/js/clients.js?v=4"></script>
+    <script src="/static/js/waitlist.js?v=4"></script>
+    <script src="/static/js/calendar.js?v=4"></script>
+    <script src="/static/js/reports.js?v=4"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">
