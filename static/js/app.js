@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    setInterval(refreshAll, 30000);
+    setInterval(refreshAll, 60000); // backup refresh cada 60s
 });
 
 // ── SocketIO Tiempo Real ────────────────────────
@@ -154,17 +154,34 @@ function initNavigation() {
 
 async function refreshAll() {
     try {
-        const [stats, floor] = await Promise.allSettled([loadStats(), loadFloorPlan()]);
+        const data = await apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`);
 
-        if (stats.status === 'rejected') {
-            console.warn('⚠️ Error cargando estadísticas:', stats.reason);
-        }
-        if (floor.status === 'rejected') {
-            console.warn('⚠️ Error cargando plano:', floor.reason);
+        // Stats
+        document.getElementById('statReservas').textContent = data.stats.reservations;
+        document.getElementById('statComensales').textContent = data.stats.guests;
+        document.getElementById('statOcupacion').textContent = data.stats.occupancy + '%';
+        document.getElementById('statSentadas').textContent = data.stats.seated;
+        document.getElementById('statPendientes').textContent = data.stats.pending;
+
+        // Floor plan
+        tableDataMap = {};
+        data.tables.forEach(t => { tableDataMap[t.number] = t; });
+        if (typeof renderFloorPlan === 'function') renderFloorPlan();
+
+        // Reservations list (avoid extra API call)
+        if (typeof allReservations !== 'undefined') {
+            allReservations = data.reservations;
         }
 
-        // Refrescar la vista activa sin hacer llamadas duplicadas
-        refreshActiveView();
+        // Refresh active view with already-loaded data
+        const active = document.querySelector('.view.active');
+        if (active) {
+            if (active.id === 'viewReservas' && typeof renderReservationsList === 'function') {
+                renderReservationsList(data.reservations);
+            } else if (active.id === 'viewEspera') loadWaitlist();
+            else if (active.id === 'viewClientes') loadClientsList();
+            else if (active.id === 'viewAgenda') loadCalendar();
+        }
     } catch (e) {
         console.error('❌ Error en refresh:', e);
         showConnectionError();
@@ -188,15 +205,7 @@ function showConnectionError() {
     }
 }
 
-async function loadStats() {
-    const res = await fetch(`${API}/api/stats?date=${currentDate}&shift=${currentShift}`);
-    const stats = await res.json();
-    document.getElementById('statReservas').textContent = stats.reservations;
-    document.getElementById('statComensales').textContent = stats.guests;
-    document.getElementById('statOcupacion').textContent = stats.occupancy + '%';
-    document.getElementById('statSentadas').textContent = stats.seated;
-    document.getElementById('statPendientes').textContent = stats.pending;
-}
+// loadStats: now handled by /api/dashboard in refreshAll()
 
 // ── Sync Button ─────────────────────────────────
 
@@ -256,9 +265,9 @@ function showToast(msg, type = '') {
 
 // ── API Functions with Retry Logic ──────────────
 
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 2000;
-const API_TIMEOUT = 60000; // 60s para cold starts de Render
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000;
+const API_TIMEOUT = 15000; // 15s timeout
 
 function createTimeout(ms) {
     const controller = new AbortController();

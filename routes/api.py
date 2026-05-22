@@ -123,6 +123,22 @@ def shift_stats():
     return jsonify(stats)
 
 
+@api.route('/dashboard', methods=['GET'])
+def dashboard():
+    """Single endpoint: stats + table status + reservations in one call."""
+    d = request.args.get('date', date.today().isoformat())
+    shift = request.args.get('shift', 'comida')
+    target = date.fromisoformat(d)
+    stats = res_svc.get_shift_stats(target, shift)
+    tables = res_svc.get_table_status(target, shift)
+    reservations = [r.to_dict() for r in res_svc.get_all_reservations_for_date(target, shift)]
+    return jsonify({
+        'stats': stats,
+        'tables': tables,
+        'reservations': reservations,
+    })
+
+
 # ── Clients ───────────────────────────────────────────────
 
 @api.route('/clients', methods=['GET'])
