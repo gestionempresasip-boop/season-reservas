@@ -472,7 +472,14 @@
     <!-- Toast notification -->
     <div class="toast hidden" id="toast"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // Load Socket.IO only on desktop (mobile uses polling only)
+        if (!/iPhone|iPad|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js';
+            document.head.appendChild(script);
+        }
+    </script>
     <script>
         // Desregistrar Service Workers y limpiar toda la caché
         if ('serviceWorker' in navigator) {
@@ -490,13 +497,13 @@
             });
         }
     </script>
-    <script src="/static/js/app.js?v=12"></script>
-    <script src="/static/js/floorplan.js?v=12"></script>
-    <script src="/static/js/reservations.js?v=12"></script>
-    <script src="/static/js/clients.js?v=12"></script>
-    <script src="/static/js/waitlist.js?v=12"></script>
-    <script src="/static/js/calendar.js?v=12"></script>
-    <script src="/static/js/reports.js?v=12"></script>
+    <script src="/static/js/app.js?v=13"></script>
+    <script src="/static/js/floorplan.js?v=13"></script>
+    <script src="/static/js/reservations.js?v=13"></script>
+    <script src="/static/js/clients.js?v=13"></script>
+    <script src="/static/js/waitlist.js?v=13"></script>
+    <script src="/static/js/calendar.js?v=13"></script>
+    <script src="/static/js/reports.js?v=13"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">

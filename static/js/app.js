@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    setInterval(refreshAll, 90000); // backup refresh cada 90s (menos carga en móvil)
+    // Auto-refresh: desktop 90s, mobile 120s
+    const refreshInterval = isMobile ? 120000 : 90000;
+    setInterval(refreshAll, refreshInterval);
 });
 
 // ── SocketIO Tiempo Real ────────────────────────
@@ -27,7 +29,7 @@ let connectionAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 function initSocketIO() {
-    if (typeof io === 'undefined') return;
+    if (typeof io === 'undefined' || isMobile) return; // Skip SocketIO on mobile (too heavy)
 
     socket = io({
         reconnectionDelay: 1000,
