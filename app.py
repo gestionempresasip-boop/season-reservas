@@ -18,7 +18,8 @@ app.config['WHATSAPP_NUMBER'] = WHATSAPP_NUMBER
 CORS(app)
 db.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins='*',
-                   transport=['websocket', 'polling'],
+                   async_mode='threading',
+                   transport=['polling', 'websocket'],
                    engineio_logger=False, socketio_logger=False)
 
 from routes.api import api
