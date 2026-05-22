@@ -129,15 +129,33 @@ def shift_stats():
     return jsonify(stats)
 
 
+@api.route('/quick-status', methods=['GET'])
+def quick_status():
+    """Ultra-light: only stats, cached 3s. For mobile quick updates."""
+    from app import cache_get, cache_set
+    d = request.args.get('date', date.today().isoformat())
+    shift = request.args.get('shift', 'comida')
+    cache_key = f'stats:{d}:{shift}'
+
+    cached = cache_get(cache_key, max_age=3)
+    if cached:
+        return jsonify(cached)
+
+    target = date.fromisoformat(d)
+    stats = res_svc.get_shift_stats(target, shift)
+    cache_set(cache_key, stats)
+    return jsonify(stats)
+
+
 @api.route('/dashboard', methods=['GET'])
 def dashboard():
-    """Single endpoint: stats + table status + reservations in one call."""
+    """Single endpoint: stats + table status + reservations in one call (cached 2s)."""
     from app import cache_get, cache_set
     d = request.args.get('date', date.today().isoformat())
     shift = request.args.get('shift', 'comida')
     cache_key = f'dashboard:{d}:{shift}'
 
-    cached = cache_get(cache_key)
+    cached = cache_get(cache_key, max_age=2)
     if cached:
         return jsonify(cached)
 
@@ -145,9 +163,16 @@ def dashboard():
     stats = res_svc.get_shift_stats(target, shift)
     tables = res_svc.get_table_status(target, shift)
     reservations = [r.to_dict() for r in res_svc.get_all_reservations_for_date(target, shift)]
+
+    # Slim down table data for mobile (only essential fields)
+    slim_tables = [
+        {'id': t['id'], 'number': t['number'], 'status': t['status'], 'reservation': t.get('reservation')}
+        for t in tables
+    ]
+
     result = {
         'stats': stats,
-        'tables': tables,
+        'tables': slim_tables,
         'reservations': reservations,
     }
     cache_set(cache_key, result)

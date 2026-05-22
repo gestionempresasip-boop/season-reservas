@@ -6,6 +6,10 @@ const API = '';
 let currentDate = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
 let currentShift = 'comida';
 
+// Detect mobile for optimizations
+const isMobile = /iPhone|iPad|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+if (isMobile) document.documentElement.classList.add('is-mobile');
+
 document.addEventListener('DOMContentLoaded', () => {
     initDatePicker();
     initNavigation();
@@ -13,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    setInterval(refreshAll, 60000); // backup refresh cada 60s
+    setInterval(refreshAll, 90000); // backup refresh cada 90s (menos carga en móvil)
 });
 
 // ── SocketIO Tiempo Real ────────────────────────
@@ -154,30 +158,54 @@ function initNavigation() {
 
 async function refreshAll() {
     try {
-        const data = await apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`);
+        if (isMobile) {
+            // Mobile: split into 2 lightweight calls (parallel) instead of 1 heavy
+            const [statsRes, dashRes] = await Promise.allSettled([
+                apiGet(`/api/quick-status?date=${currentDate}&shift=${currentShift}`),
+                apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`)
+            ]);
 
-        // Stats
-        document.getElementById('statReservas').textContent = data.stats.reservations;
-        document.getElementById('statComensales').textContent = data.stats.guests;
-        document.getElementById('statOcupacion').textContent = data.stats.occupancy + '%';
-        document.getElementById('statSentadas').textContent = data.stats.seated;
-        document.getElementById('statPendientes').textContent = data.stats.pending;
+            if (statsRes.status === 'fulfilled') {
+                const stats = statsRes.value;
+                document.getElementById('statReservas').textContent = stats.reservations;
+                document.getElementById('statComensales').textContent = stats.guests;
+                document.getElementById('statOcupacion').textContent = stats.occupancy + '%';
+                document.getElementById('statSentadas').textContent = stats.seated;
+                document.getElementById('statPendientes').textContent = stats.pending;
+            }
 
-        // Floor plan
-        tableDataMap = {};
-        data.tables.forEach(t => { tableDataMap[t.number] = t; });
-        if (typeof renderFloorPlan === 'function') renderFloorPlan();
+            if (dashRes.status === 'fulfilled') {
+                const data = dashRes.value;
+                tableDataMap = {};
+                if (data.tables) data.tables.forEach(t => { tableDataMap[t.number] = t; });
+                if (typeof renderFloorPlan === 'function') renderFloorPlan();
+                if (typeof allReservations !== 'undefined' && data.reservations) {
+                    allReservations = data.reservations;
+                }
+            }
+        } else {
+            // Desktop: single dashboard call
+            const data = await apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`);
+            document.getElementById('statReservas').textContent = data.stats.reservations;
+            document.getElementById('statComensales').textContent = data.stats.guests;
+            document.getElementById('statOcupacion').textContent = data.stats.occupancy + '%';
+            document.getElementById('statSentadas').textContent = data.stats.seated;
+            document.getElementById('statPendientes').textContent = data.stats.pending;
 
-        // Reservations list (avoid extra API call)
-        if (typeof allReservations !== 'undefined') {
-            allReservations = data.reservations;
+            tableDataMap = {};
+            data.tables.forEach(t => { tableDataMap[t.number] = t; });
+            if (typeof renderFloorPlan === 'function') renderFloorPlan();
+
+            if (typeof allReservations !== 'undefined') {
+                allReservations = data.reservations;
+            }
         }
 
         // Refresh active view with already-loaded data
         const active = document.querySelector('.view.active');
         if (active) {
             if (active.id === 'viewReservas' && typeof renderReservationsList === 'function') {
-                renderReservationsList(data.reservations);
+                if (typeof allReservations !== 'undefined') renderReservationsList(allReservations);
             } else if (active.id === 'viewEspera') loadWaitlist();
             else if (active.id === 'viewClientes') loadClientsList();
             else if (active.id === 'viewAgenda') loadCalendar();
@@ -265,9 +293,9 @@ function showToast(msg, type = '') {
 
 // ── API Functions with Retry Logic ──────────────
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000;
-const API_TIMEOUT = 15000; // 15s timeout
+const MAX_RETRIES = 1; // Menos reintentos
+const RETRY_DELAY = 500;
+const API_TIMEOUT = 10000; // 10s timeout (fallar rápido es mejor que esperar)
 
 function createTimeout(ms) {
     const controller = new AbortController();
