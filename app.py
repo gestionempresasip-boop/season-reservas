@@ -61,7 +61,17 @@ def broadcast_update(event_type='reservation_changed'):
 try:
     with app.app_context():
         db.create_all()
-        logger.info('Database initialized OK')
+        logger.info('Database tables created OK')
+        # Initialize restaurant tables if empty (needed on Render where /tmp is fresh)
+        from models import Table
+        if Table.query.count() == 0:
+            from init_db import TABLES
+            for t in TABLES:
+                db.session.add(Table(**t))
+            db.session.commit()
+            logger.info(f'Initialized {len(TABLES)} restaurant tables')
+        else:
+            logger.info(f'Tables already exist ({Table.query.count()})')
 except Exception as e:
     logger.error(f'Database init error: {e}')
 
