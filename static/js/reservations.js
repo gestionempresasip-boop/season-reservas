@@ -83,14 +83,46 @@ function openNewReservationModal() {
     document.getElementById('modalReservationTitle').textContent = 'Nueva Reserva';
     document.getElementById('resEditId').value = '';
     document.getElementById('formReservation').reset();
-    document.getElementById('resDate').value = currentDate;
+
+    // Fecha mínima: hoy
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('resDate');
+    dateInput.setAttribute('min', today);
+    dateInput.value = currentDate < today ? today : currentDate;
+
     document.getElementById('resShift').value = currentShift;
 
+    // Hora inteligente: si es hoy, poner la próxima hora válida
     const now = new Date();
-    if (currentShift === 'comida') {
-        document.getElementById('resTime').value = '14:00';
+    const nowH = now.getHours();
+    const nowM = now.getMinutes();
+
+    if (dateInput.value === today) {
+        if (currentShift === 'comida') {
+            // Comida: 13:00-16:00
+            if (nowH < 13) {
+                document.getElementById('resTime').value = '14:00';
+            } else if (nowH < 16) {
+                const nextM = nowM < 30 ? '30' : '00';
+                const nextH = nowM < 30 ? nowH : nowH + 1;
+                document.getElementById('resTime').value = String(nextH).padStart(2, '0') + ':' + nextM;
+            } else {
+                document.getElementById('resTime').value = '14:00';
+            }
+        } else {
+            // Cena: 19:00-23:00
+            if (nowH < 19) {
+                document.getElementById('resTime').value = '20:00';
+            } else if (nowH < 23) {
+                const nextM = nowM < 30 ? '30' : '00';
+                const nextH = nowM < 30 ? nowH : nowH + 1;
+                document.getElementById('resTime').value = String(nextH).padStart(2, '0') + ':' + nextM;
+            } else {
+                document.getElementById('resTime').value = '20:00';
+            }
+        }
     } else {
-        document.getElementById('resTime').value = '20:00';
+        document.getElementById('resTime').value = currentShift === 'comida' ? '14:00' : '20:00';
     }
 
     loadAvailableTables();
@@ -207,44 +239,79 @@ document.getElementById('resGuests')?.addEventListener('change', loadAvailableTa
 document.getElementById('resShift')?.addEventListener('change', loadAvailableTables);
 document.getElementById('resDate')?.addEventListener('change', loadAvailableTables);
 
+function validateReservationDateTime(resDate, resTime, isEdit) {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    // No permitir fechas pasadas
+    if (resDate < today) {
+        showToast('No se pueden hacer reservas en fechas pasadas', 'error');
+        return false;
+    }
+
+    // Si es hoy, validar que la hora no haya pasado
+    if (resDate === today && resTime) {
+        const [h, m] = resTime.split(':').map(Number);
+        const resMinutes = h * 60 + m;
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Permitir hasta 15 minutos antes (margen para reservas inmediatas)
+        if (!isEdit && resMinutes < nowMinutes - 15) {
+            showToast('La hora de la reserva ya ha pasado', 'error');
+            return false;
+        }
+    }
+
+    return true;
+}
+
 async function submitReservation(e) {
     e.preventDefault();
     const editId = document.getElementById('resEditId').value;
     const tableVal = document.getElementById('resTable').value;
-    
+    const resDate = document.getElementById('resDate').value;
+    const resTime = document.getElementById('resTime').value;
+
+    // Validar fecha y hora
+    if (!validateReservationDateTime(resDate, resTime, !!editId)) {
+        return;
+    }
+
     // Detectar si son múltiples mesas
     const tableIds = tableVal ? tableVal.split(',').map(x => x.trim()) : [null];
-    
+
     const baseData = {
         client_name: document.getElementById('resName').value,
         client_phone: document.getElementById('resPhone').value,
-        date: document.getElementById('resDate').value,
+        date: resDate,
         shift: document.getElementById('resShift').value,
-        time: document.getElementById('resTime').value,
+        time: resTime,
         guests: parseInt(document.getElementById('resGuests').value),
         source: document.getElementById('resSource').value,
         notes: document.getElementById('resNotes').value,
     };
 
-    if (editId) {
-        const data = { ...baseData, table_id: tableVal || null };
-        await apiPut(`/api/reservations/${editId}`, data);
-        showToast('Reserva actualizada', 'success');
-    } else {
-        // Crear una reserva para cada mesa si son múltiples
-        for (const tid of tableIds) {
-            const data = { ...baseData, table_id: tid || null };
-            await apiPost('/api/reservations', data);
-        }
-        if (tableIds.length > 1) {
-            showToast(`Reserva para ${tableIds.length} mesas creada`, 'success');
+    try {
+        if (editId) {
+            const data = { ...baseData, table_id: tableVal || null };
+            await apiPut(`/api/reservations/${editId}`, data);
+            showToast('Reserva actualizada', 'success');
         } else {
-            showToast('Reserva creada', 'success');
+            for (const tid of tableIds) {
+                const data = { ...baseData, table_id: tid || null };
+                await apiPost('/api/reservations', data);
+            }
+            if (tableIds.length > 1) {
+                showToast(`Reserva para ${tableIds.length} mesas creada`, 'success');
+            } else {
+                showToast('Reserva creada', 'success');
+            }
         }
+        closeModal('modalReservation');
+        refreshAll();
+    } catch (error) {
+        showToast(error.message || 'Error al guardar reserva', 'error');
     }
-
-    closeModal('modalReservation');
-    refreshAll();
 }
 
 // ── Quick Actions ───────────────────────────────

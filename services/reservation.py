@@ -18,6 +18,23 @@ def get_all_reservations_for_date(target_date, shift):
 
 
 def create_reservation(data):
+    # Validar fecha no sea pasada
+    res_date = date.fromisoformat(data['date'])
+    today = date.today()
+    if res_date < today:
+        raise ValueError('No se pueden crear reservas en fechas pasadas')
+
+    # Validar hora no sea pasada si es hoy
+    if res_date == today and data.get('time'):
+        now = datetime.now()
+        parts = data['time'].split(':')
+        res_hour, res_min = int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+        res_minutes = res_hour * 60 + res_min
+        now_minutes = now.hour * 60 + now.minute
+        # Margen de 15 minutos
+        if res_minutes < now_minutes - 15:
+            raise ValueError('La hora de la reserva ya ha pasado')
+
     client = None
     phone = data.get('client_phone', '').strip()
     if phone:
@@ -34,7 +51,7 @@ def create_reservation(data):
     reservation = Reservation(
         client_id=client.id if client else None,
         table_id=data.get('table_id'),
-        date=date.fromisoformat(data['date']),
+        date=res_date,
         shift=data['shift'],
         time=data['time'],
         guests=int(data['guests']),

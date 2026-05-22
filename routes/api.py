@@ -31,7 +31,10 @@ def list_reservations():
 @api.route('/reservations', methods=['POST'])
 def create_reservation():
     data = request.json
-    r = res_svc.create_reservation(data)
+    try:
+        r = res_svc.create_reservation(data)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     notify()
     return jsonify(r.to_dict()), 201
 
