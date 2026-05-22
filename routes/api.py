@@ -9,7 +9,8 @@ api = Blueprint('api', __name__, url_prefix='/api')
 
 
 def notify():
-    from app import broadcast_update
+    from app import broadcast_update, cache_invalidate
+    cache_invalidate()  # Clear cache when data changes
     broadcast_update()
 
 

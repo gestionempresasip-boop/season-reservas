@@ -308,6 +308,10 @@ async function submitReservation(e) {
             }
         }
         closeModal('modalReservation');
+        // Immediate floor plan refresh
+        if (typeof loadFloorPlan === 'function') {
+            await loadFloorPlan();
+        }
         refreshAll();
     } catch (error) {
         showToast(error.message || 'Error al guardar reserva', 'error');
@@ -319,18 +323,21 @@ async function submitReservation(e) {
 async function quickSeat(resId) {
     await apiPut(`/api/reservations/${resId}/seat`);
     showToast('Mesa sentada', 'success');
+    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
     refreshAll();
 }
 
 async function quickComplete(resId) {
     await apiPut(`/api/reservations/${resId}/complete`);
     showToast('Mesa completada', 'success');
+    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
     refreshAll();
 }
 
 async function quickNoShow(resId) {
     await apiPut(`/api/reservations/${resId}/noshow`);
     showToast('Marcado como No Show', 'error');
+    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
     refreshAll();
 }
 
@@ -340,6 +347,7 @@ async function quickDelete(resId, name) {
     try {
         await apiDelete(`/api/reservations/${resId}/delete`);
         showToast('Reserva eliminada', 'error');
+        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
         refreshAll();
     } catch (error) {
         showToast('Error al eliminar reserva', 'error');
