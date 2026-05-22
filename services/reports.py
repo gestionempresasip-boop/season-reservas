@@ -111,12 +111,30 @@ def weekly_trend(from_date):
         reservations = Reservation.query.filter(
             Reservation.date == d,
             Reservation.status.in_(['confirmed', 'seated', 'completed']),
-        ).all()
+        ).order_by(Reservation.time).all()
+
+        comida = [r for r in reservations if r.shift == 'comida']
+        cena = [r for r in reservations if r.shift == 'cena']
+
+        def res_list(items):
+            return [{
+                'id': r.id,
+                'client_name': r.client_name,
+                'time': r.time,
+                'guests': r.guests,
+                'table_number': r.table.number if r.table else None,
+                'status': r.status,
+                'source': r.source,
+                'notes': r.notes or '',
+            } for r in items]
+
         days.append({
             'date': d.isoformat(),
             'day_name': d.strftime('%A'),
             'reservations': len(reservations),
             'guests': sum(r.guests for r in reservations),
+            'comida': {'count': len(comida), 'guests': sum(r.guests for r in comida), 'items': res_list(comida)},
+            'cena': {'count': len(cena), 'guests': sum(r.guests for r in cena), 'items': res_list(cena)},
         })
     return days
 

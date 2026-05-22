@@ -842,6 +842,8 @@ body {
     padding: 14px;
     min-height: 140px;
     transition: var(--transition);
+    overflow-y: auto;
+    max-height: 400px;
 }
 .calendar-day.today {
     border-color: var(--teal);
@@ -883,6 +885,64 @@ body {
 }
 .calendar-shift.comida { background: var(--orange-light); color: #92400e; }
 .calendar-shift.cena { background: var(--blue-light); color: #1e40af; }
+
+.calendar-summary {
+    font-size: 11px;
+    color: var(--gray-500);
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.calendar-shift-section {
+    margin-bottom: 8px;
+}
+.shift-header {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+.shift-header.comida-header { background: #fff7ed; color: #9a3412; }
+.shift-header.cena-header { background: #eff6ff; color: #1e40af; }
+
+.calendar-reservation {
+    padding: 5px 8px;
+    border-left: 3px solid var(--teal);
+    margin-bottom: 3px;
+    border-radius: 0 4px 4px 0;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.calendar-reservation:hover {
+    background: #e0f2f1;
+}
+.cal-res-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+}
+.cal-res-time {
+    font-weight: 700;
+    color: var(--gray-800);
+}
+.cal-res-name {
+    font-weight: 500;
+    color: var(--gray-600);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-res-detail {
+    font-size: 10px;
+    color: var(--gray-400);
+    margin-left: 14px;
+}
 
 /* ── REPORTS ──────────────────────────────────── */
 
