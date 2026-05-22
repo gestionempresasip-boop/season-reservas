@@ -9,11 +9,11 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: RENDER
+        value: "true"
       - key: SECRET_KEY
         sync: false
       - key: WHATSAPP_NUMBER
         value: "689135630"
-      - key: DATABASE_URL
-        value: "sqlite:///season_reservas.db"
       - key: PYTHON_VERSION
         value: "3.11.9"

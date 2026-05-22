@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask, render_template, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -7,9 +8,17 @@ from models import db
 
 load_dotenv()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///season_reservas.db')
+
+# Database: use /tmp on Render (writable), fallback to local
+db_url = os.getenv('DATABASE_URL', 'sqlite:///season_reservas.db')
+if os.getenv('RENDER') or os.getenv('FLASK_ENV') == 'production':
+    db_url = 'sqlite:////tmp/season_reservas.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
@@ -18,8 +27,7 @@ app.config['WHATSAPP_NUMBER'] = WHATSAPP_NUMBER
 CORS(app)
 db.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins='*',
-                   async_mode='threading',
-                   transport=['polling', 'websocket'],
+                   transport=['polling'],
                    engineio_logger=False, socketio_logger=False)
 
 from routes.api import api
@@ -44,11 +52,18 @@ def handle_connect():
 
 
 def broadcast_update(event_type='reservation_changed'):
-    socketio.emit(event_type, {'ts': __import__('time').time()})
+    try:
+        socketio.emit(event_type, {'ts': __import__('time').time()})
+    except Exception as e:
+        logger.warning(f'broadcast_update failed: {e}')
 
 
-with app.app_context():
-    db.create_all()
+try:
+    with app.app_context():
+        db.create_all()
+        logger.info('Database initialized OK')
+except Exception as e:
+    logger.error(f'Database init error: {e}')
 
 
 if __name__ == '__main__':

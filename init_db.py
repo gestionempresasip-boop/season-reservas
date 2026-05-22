@@ -1,4 +1,8 @@
 """Initialize database with Season restaurant table layout."""
+import os
+# Set production DB path before importing app
+if os.getenv('RENDER') or os.getenv('FLASK_ENV') == 'production':
+    os.environ.setdefault('DATABASE_URL', 'sqlite:////tmp/season_reservas.db')
 from app import app
 from models import db, Table
 
