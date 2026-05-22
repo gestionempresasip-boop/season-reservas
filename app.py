@@ -1,8 +1,10 @@
 import os
+import time
 import logging
 from flask import Flask, render_template, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
+from flask_compress import Compress
 from dotenv import load_dotenv
 from models import db
 
@@ -25,10 +27,33 @@ WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
 app.config['WHATSAPP_NUMBER'] = WHATSAPP_NUMBER
 
 CORS(app)
+Compress(app)
+app.config['COMPRESS_MIMETYPES'] = ['application/json', 'text/html', 'text/css', 'application/javascript']
+app.config['COMPRESS_MIN_SIZE'] = 200
+
 db.init_app(app)
 socketio = SocketIO(app, cors_allowed_origins='*',
                    transport=['polling'],
                    engineio_logger=False, socketio_logger=False)
+
+# ── In-memory cache ──────────────────────────────
+_cache = {}
+_cache_version = 0
+
+def cache_get(key, max_age=2):
+    """Get cached value if fresh (default 2s)."""
+    entry = _cache.get(key)
+    if entry and (time.time() - entry['ts']) < max_age:
+        return entry['data']
+    return None
+
+def cache_set(key, data):
+    _cache[key] = {'data': data, 'ts': time.time()}
+
+def cache_invalidate():
+    global _cache_version
+    _cache_version += 1
+    _cache.clear()
 
 from routes.api import api
 from routes.whatsapp import whatsapp_bp
@@ -53,7 +78,8 @@ def handle_connect():
 
 def broadcast_update(event_type='reservation_changed'):
     try:
-        socketio.emit(event_type, {'ts': __import__('time').time()})
+        cache_invalidate()
+        socketio.emit(event_type, {'ts': time.time()})
     except Exception as e:
         logger.warning(f'broadcast_update failed: {e}')
 

@@ -95,10 +95,16 @@ def list_tables():
 
 @api.route('/tables/status', methods=['GET'])
 def table_status():
+    from app import cache_get, cache_set
     d = request.args.get('date', date.today().isoformat())
     shift = request.args.get('shift', 'comida')
+    cache_key = f'tables_status:{d}:{shift}'
+    cached = cache_get(cache_key)
+    if cached:
+        return jsonify(cached)
     target = date.fromisoformat(d)
     result = res_svc.get_table_status(target, shift)
+    cache_set(cache_key, result)
     return jsonify(result)
 
 
@@ -126,17 +132,26 @@ def shift_stats():
 @api.route('/dashboard', methods=['GET'])
 def dashboard():
     """Single endpoint: stats + table status + reservations in one call."""
+    from app import cache_get, cache_set
     d = request.args.get('date', date.today().isoformat())
     shift = request.args.get('shift', 'comida')
+    cache_key = f'dashboard:{d}:{shift}'
+
+    cached = cache_get(cache_key)
+    if cached:
+        return jsonify(cached)
+
     target = date.fromisoformat(d)
     stats = res_svc.get_shift_stats(target, shift)
     tables = res_svc.get_table_status(target, shift)
     reservations = [r.to_dict() for r in res_svc.get_all_reservations_for_date(target, shift)]
-    return jsonify({
+    result = {
         'stats': stats,
         'tables': tables,
         'reservations': reservations,
-    })
+    }
+    cache_set(cache_key, result)
+    return jsonify(result)
 
 
 # ── Clients ───────────────────────────────────────────────
