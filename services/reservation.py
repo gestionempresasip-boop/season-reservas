@@ -1,8 +1,21 @@
+"""
+Reservation service - business logic for reservations.
+"""
 from datetime import date, datetime
 from models import db, Reservation, Table, Client
+from sqlalchemy import func
 
 
 def get_reservations(target_date, shift):
+    """Get confirmed and seated reservations for a date and shift.
+
+    Args:
+        target_date: Date object
+        shift: 'comida' or 'cena'
+
+    Returns:
+        List of Reservation objects
+    """
     return Reservation.query.filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
@@ -11,6 +24,15 @@ def get_reservations(target_date, shift):
 
 
 def get_all_reservations_for_date(target_date, shift):
+    """Get ALL reservations for a date and shift (all statuses).
+
+    Args:
+        target_date: Date object
+        shift: 'comida' or 'cena'
+
+    Returns:
+        List of Reservation objects (confirmed, seated, cancelled, no_show, completed)
+    """
     return Reservation.query.filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
@@ -18,7 +40,18 @@ def get_all_reservations_for_date(target_date, shift):
 
 
 def create_reservation(data):
-    # Validar fecha no sea pasada
+    """Create a new reservation.
+
+    Args:
+        data: Dictionary with reservation details (date, shift, time, guests, client_name, etc.)
+
+    Returns:
+        Reservation object
+
+    Raises:
+        ValueError: If date is in the past or time has already passed
+    """
+    # Validate date is not in the past
     res_date = date.fromisoformat(data['date'])
     today = date.today()
     if res_date < today:
@@ -171,21 +204,51 @@ def find_available_tables(target_date, shift, guests):
 
 
 def get_shift_stats(target_date, shift):
-    reservations = Reservation.query.filter(
+    """Get statistics for a shift (counts and occupancy).
+
+    Uses database aggregations for efficiency.
+
+    Args:
+        target_date: Date object
+        shift: 'comida' or 'cena'
+
+    Returns:
+        Dictionary with reservations count, guests, occupancy %, etc.
+    """
+    from config.settings import MAX_CAPACITY
+
+    # Query counts using database aggregation (more efficient)
+    total_reservations = Reservation.query.filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
         Reservation.status.in_(['confirmed', 'seated', 'completed'])
-    ).all()
+    ).count()
 
-    total_guests = sum(r.guests for r in reservations)
-    seated = sum(1 for r in reservations if r.status == 'seated')
-    confirmed = sum(1 for r in reservations if r.status == 'confirmed')
+    total_guests = db.session.query(func.sum(Reservation.guests)).filter(
+        Reservation.date == target_date,
+        Reservation.shift == shift,
+        Reservation.status.in_(['confirmed', 'seated', 'completed'])
+    ).scalar() or 0
+
+    seated_count = Reservation.query.filter(
+        Reservation.date == target_date,
+        Reservation.shift == shift,
+        Reservation.status == 'seated'
+    ).count()
+
+    confirmed_count = Reservation.query.filter(
+        Reservation.date == target_date,
+        Reservation.shift == shift,
+        Reservation.status == 'confirmed'
+    ).count()
+
+    occupancy = round(total_guests / MAX_CAPACITY * 100, 1) if total_guests else 0
 
     return {
-        'reservations': len(reservations),
+        'reservations': total_reservations,
         'guests': total_guests,
-        'max_capacity': 114,
-        'occupancy': round(total_guests / 114 * 100, 1) if total_guests else 0,
-        'seated': seated,
-        'pending': confirmed,
+        'max_capacity': MAX_CAPACITY,
+        'occupancy': occupancy,
+        'seated': seated_count,
+        'pending': confirmed_count,
     }

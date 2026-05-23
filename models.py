@@ -1,24 +1,41 @@
+"""
+Database models for Season restaurant reservation system.
+"""
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 
 db = SQLAlchemy()
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# TABLE MODEL
+# ═══════════════════════════════════════════════════════════════════════════
+
 class Table(db.Model):
+    """Restaurant table model."""
     __tablename__ = 'tables'
 
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.Integer, unique=True, nullable=False)
+
+    # Table Identification
+    number = db.Column(db.Integer, unique=True, nullable=False, index=True)
     zone = db.Column(db.String(50), nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
     table_type = db.Column(db.String(20), default='normal')
+
+    # Position (for floor plan)
     pos_x = db.Column(db.Float, default=0)
     pos_y = db.Column(db.Float, default=0)
-    active = db.Column(db.Boolean, default=True)
 
+    # Status
+    active = db.Column(db.Boolean, default=True, index=True)
+
+    # Relationships
     reservations = db.relationship('Reservation', backref='table', lazy='dynamic')
 
     def to_dict(self):
+        """Convert to dictionary for API responses."""
         return {
             'id': self.id,
             'number': self.number,
@@ -30,39 +47,52 @@ class Table(db.Model):
             'active': self.active,
         }
 
+    def __repr__(self):
+        return f'<Table {self.number}>'
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLIENT MODEL
+# ═══════════════════════════════════════════════════════════════════════════
 
 class Client(db.Model):
+    """Restaurant client/customer model."""
     __tablename__ = 'clients'
 
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
+
+    # Contact Information
     name = db.Column(db.String(200), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(200))
+    phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(200), default='')
+
+    # Additional Info
     notes = db.Column(db.Text, default='')
     preferences = db.Column(db.Text, default='')
     allergies = db.Column(db.Text, default='')
+
+    # Status Flags
     vip = db.Column(db.Boolean, default=False)
     blacklisted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Timestamps (Auditoría)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    # Relationships
     reservations = db.relationship('Reservation', backref='client', lazy='dynamic')
 
-    @property
-    def visits_count(self):
-        return self.reservations.filter(Reservation.status == 'completed').count()
-
-    @property
-    def no_show_count(self):
-        return self.reservations.filter(Reservation.status == 'no_show').count()
-
-    @property
-    def last_visit(self):
-        last = self.reservations.filter(
-            Reservation.status == 'completed'
-        ).order_by(Reservation.date.desc()).first()
-        return last.date.isoformat() if last else None
-
     def to_dict(self, include_stats=False):
+        """Convert to dictionary for API responses.
+
+        Args:
+            include_stats: If True, include reservation statistics (requires separate queries)
+        """
         data = {
             'id': self.id,
             'name': self.name,
@@ -74,33 +104,75 @@ class Client(db.Model):
             'vip': self.vip,
             'blacklisted': self.blacklisted,
             'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
         }
+        # Note: stats are NOT included by default - compute them in services/
+        # to avoid N+1 queries
         if include_stats:
-            data['visits_count'] = self.visits_count
-            data['no_show_count'] = self.no_show_count
-            data['last_visit'] = self.last_visit
+            # These should be computed by service layer, not here
+            # See services/client.py for get_client_stats()
+            pass
         return data
 
+    def __repr__(self):
+        return f'<Client {self.name}>'
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RESERVATION MODEL
+# ═══════════════════════════════════════════════════════════════════════════
 
 class Reservation(db.Model):
+    """Restaurant reservation model."""
     __tablename__ = 'reservations'
 
+    __table_args__ = (
+        # Constraint: guests must be between 1 and 14
+        db.CheckConstraint('guests >= 1 AND guests <= 14'),
+        # Composite index for common queries
+        db.Index('idx_reservation_date_shift', 'date', 'shift'),
+        db.Index('idx_reservation_date_shift_status', 'date', 'shift', 'status'),
+    )
+
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
-    table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=True)
-    date = db.Column(db.Date, nullable=False)
-    shift = db.Column(db.String(10), nullable=False)  # comida / cena
-    time = db.Column(db.String(5), nullable=False)
+
+    # Foreign Keys
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True, index=True)
+    table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=True, index=True)
+
+    # Reservation Details
+    date = db.Column(db.Date, nullable=False, index=True)
+    shift = db.Column(db.String(10), nullable=False)  # 'comida' or 'cena'
+    time = db.Column(db.String(5), nullable=False)  # HH:MM format
     guests = db.Column(db.Integer, nullable=False)
+
+    # Client Information (duplicated for history)
     client_name = db.Column(db.String(200), nullable=False)
     client_phone = db.Column(db.String(20), default='')
-    status = db.Column(db.String(20), default='confirmed')
-    source = db.Column(db.String(20), default='phone')  # phone, whatsapp, walk_in, web
-    notes = db.Column(db.Text, default='')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def to_dict(self):
-        return {
+    # Status & Tracking
+    status = db.Column(db.String(20), default='confirmed', index=True)
+    source = db.Column(db.String(20), default='phone')  # phone, whatsapp, walk_in, web
+
+    # Additional Info
+    notes = db.Column(db.Text, default='')
+
+    # Timestamps (Auditoría)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    def to_dict(self, include_client=False):
+        """Convert to dictionary for API responses.
+
+        Args:
+            include_client: If True, include full client data (use sparingly)
+        """
+        data = {
             'id': self.id,
             'client_id': self.client_id,
             'table_id': self.table_id,
@@ -116,24 +188,55 @@ class Reservation(db.Model):
             'source': self.source,
             'notes': self.notes,
             'created_at': self.created_at.isoformat(),
-            'client': self.client.to_dict() if self.client else None,
+            'updated_at': self.updated_at.isoformat(),
         }
 
+        # Include full client data only if explicitly requested
+        if include_client and self.client:
+            data['client'] = self.client.to_dict()
+
+        return data
+
+    def __repr__(self):
+        return f'<Reservation {self.id} - {self.client_name}>'
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WAITLIST MODEL
+# ═══════════════════════════════════════════════════════════════════════════
 
 class Waitlist(db.Model):
+    """Waitlist entry model."""
     __tablename__ = 'waitlist'
 
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
+
+    # Client Information
     client_name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), default='')
+
+    # Request Details
     guests = db.Column(db.Integer, nullable=False)
-    date = db.Column(db.Date, nullable=False)
+    date = db.Column(db.Date, nullable=False, index=True)
     shift = db.Column(db.String(10), nullable=False)
+
+    # Notes
     notes = db.Column(db.Text, default='')
-    status = db.Column(db.String(20), default='waiting')  # waiting, seated, cancelled
+
+    # Status
+    status = db.Column(db.String(20), default='waiting', index=True)
+
+    # Timestamps (Auditoría)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     def to_dict(self):
+        """Convert to dictionary for API responses."""
         return {
             'id': self.id,
             'client_name': self.client_name,
@@ -144,23 +247,49 @@ class Waitlist(db.Model):
             'notes': self.notes,
             'status': self.status,
             'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
         }
 
+    def __repr__(self):
+        return f'<Waitlist {self.client_name}>'
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WHATSAPP SESSION MODEL
+# ═══════════════════════════════════════════════════════════════════════════
 
 class WhatsappSession(db.Model):
+    """WhatsApp conversation session model."""
     __tablename__ = 'whatsapp_sessions'
 
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
-    phone = db.Column(db.String(20), nullable=False)
+
+    # Session Identification
+    phone = db.Column(db.String(20), nullable=False, unique=True, index=True)
+
+    # Conversation State
     step = db.Column(db.String(30), default='start')
-    data = db.Column(db.Text, default='{}')
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data = db.Column(db.Text, default='{}')  # JSON data for context
+
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     def to_dict(self):
+        """Convert to dictionary for API responses."""
         return {
             'id': self.id,
             'phone': self.phone,
             'step': self.step,
             'data': self.data,
+            'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
+
+    def __repr__(self):
+        return f'<WhatsappSession {self.phone}>'
