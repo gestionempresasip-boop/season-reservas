@@ -16,10 +16,15 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 
-# Database: use /tmp on Render (writable), fallback to local
-db_url = os.getenv('DATABASE_URL', 'sqlite:///season_reservas.db')
-if os.getenv('RENDER') or os.getenv('FLASK_ENV') == 'production':
-    db_url = 'sqlite:////tmp/season_reservas.db'
+# Database: Supabase PostgreSQL (persistent)
+# Format: postgresql://user:password@host:port/database
+db_url = os.getenv(
+    'DATABASE_URL',
+    'postgresql://postgres:Season2024!Reservas@Secure#DB@db.tnkfcpojoieazwvlwsyi.supabase.co:5432/postgres'
+)
+# SQLAlchemy requires psycopg2:// prefix for PostgreSQL
+if db_url.startswith('postgresql://'):
+    db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
