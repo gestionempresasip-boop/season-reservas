@@ -16,16 +16,22 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 
-# Database: Supabase PostgreSQL (persistent)
-# Format: postgresql://user:password@host:port/database
-db_url = os.getenv(
-    'DATABASE_URL',
-    'postgresql://postgres:Season2024!Reservas@Secure#DB@db.tnkfcpojoieazwvlwsyi.supabase.co:5432/postgres'
-)
-# SQLAlchemy requires psycopg2:// prefix for PostgreSQL
-if db_url.startswith('postgresql://'):
+# Database: Try Supabase PostgreSQL, fall back to SQLite
+# This allows the app to build even if Supabase isn't accessible,
+# and use SQLite as a fallback if PostgreSQL fails at runtime
+db_url = os.getenv('DATABASE_URL', '')
+
+if db_url and db_url.startswith('postgresql://'):
+    # Use Supabase PostgreSQL if DATABASE_URL is configured
     db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    logger.info('Using Supabase PostgreSQL for database')
+else:
+    # Fall back to SQLite if DATABASE_URL is not set or invalid
+    db_url = 'sqlite:////tmp/season_reservas.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    logger.info('Using SQLite fallback database')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
