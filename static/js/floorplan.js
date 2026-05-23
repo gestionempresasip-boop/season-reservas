@@ -55,6 +55,46 @@ function renderFloorPlan() {
     const svg = document.getElementById('floorplanSVG');
     svg.querySelectorAll('.table-group').forEach(g => g.remove());
 
+    // Mostrar reservas sin mesa asignada si existen
+    if (tableDataMap._unassigned && tableDataMap._unassigned.unassignedReservations.length > 0) {
+        const unassignedBox = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        unassignedBox.classList.add('unassigned-reservations-box');
+
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('x', '2');
+        bg.setAttribute('y', '2');
+        bg.setAttribute('width', '20');
+        bg.setAttribute('height', '8');
+        bg.setAttribute('fill', '#ffe4e6');
+        bg.setAttribute('stroke', '#f43f5e');
+        bg.setAttribute('stroke-width', '0.3');
+        bg.setAttribute('rx', '0.5');
+        unassignedBox.appendChild(bg);
+
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('x', '3');
+        title.setAttribute('y', '4');
+        title.setAttribute('font-size', '1.2');
+        title.setAttribute('font-weight', 'bold');
+        title.setAttribute('fill', '#be185d');
+        title.textContent = 'Por asignar:';
+        unassignedBox.appendChild(title);
+
+        let yPos = 5.5;
+        tableDataMap._unassigned.unassignedReservations.forEach(r => {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', '3.5');
+            text.setAttribute('y', yPos);
+            text.setAttribute('font-size', '0.8');
+            text.setAttribute('fill', '#a11043');
+            text.textContent = `• ${r.client_name} (${r.guests}p) ${r.time}`;
+            unassignedBox.appendChild(text);
+            yPos += 0.7;
+        });
+
+        svg.appendChild(unassignedBox);
+    }
+
     TABLE_DEFS.forEach(def => {
         const td = tableDataMap[def.n] || {};
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');

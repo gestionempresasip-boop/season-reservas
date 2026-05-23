@@ -196,6 +196,18 @@ async function refreshAll() {
 
             tableDataMap = {};
             data.tables.forEach(t => { tableDataMap[t.number] = t; });
+
+            // Procesar reservas sin mesa asignada para mostrarlas en el plano
+            if (data.reservations) {
+                const unassignedReservations = data.reservations.filter(r => !r.table_id && (r.status === 'confirmed' || r.status === 'seated'));
+                if (unassignedReservations.length > 0) {
+                    // Crear un pseudo-entry en tableDataMap para mostrar reservas pendientes
+                    tableDataMap._unassigned = {
+                        unassignedReservations: unassignedReservations
+                    };
+                }
+            }
+
             if (typeof renderFloorPlan === 'function') renderFloorPlan();
 
             if (typeof allReservations !== 'undefined') {
