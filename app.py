@@ -7,30 +7,38 @@ from flask_socketio import SocketIO, emit
 from flask_compress import Compress
 from dotenv import load_dotenv
 from models import db
+from config import get_config
+from config.tables import DEFAULT_TABLES
 
 load_dotenv()
 
+# Get configuration
+app = Flask(__name__)
+config = get_config()
+app.config.from_object(config)
+
+# Database - PostgreSQL required (no fallback)
+db_url = os.getenv('DATABASE_URL')
+if not db_url:
+    raise ValueError(
+        'DATABASE_URL environment variable is required. '
+        'Please set it to your Supabase PostgreSQL URL.'
+    )
+
+# Ensure PostgreSQL format
+if db_url.startswith('postgresql://'):
+    db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+elif not db_url.startswith('postgresql+psycopg2://'):
+    raise ValueError(
+        'DATABASE_URL must be a PostgreSQL URL. '
+        'SQLite fallback is no longer supported.'
+    )
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-
-# Database: Try Supabase PostgreSQL, fall back to SQLite
-# This allows the app to build even if Supabase isn't accessible,
-# and use SQLite as a fallback if PostgreSQL fails at runtime
-db_url = os.getenv('DATABASE_URL', '')
-
-if db_url and db_url.startswith('postgresql://'):
-    # Use Supabase PostgreSQL if DATABASE_URL is configured
-    db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    logger.info('Using Supabase PostgreSQL for database')
-else:
-    # Fall back to SQLite if DATABASE_URL is not set or invalid
-    db_url = 'sqlite:////tmp/season_reservas.db'
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    logger.info('Using SQLite fallback database')
+logger.info('✅ Using PostgreSQL for database')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -98,40 +106,7 @@ def broadcast_update(event_type='reservation_changed'):
         logger.warning(f'broadcast_update failed: {e}')
 
 
-DEFAULT_TABLES = [
-    {'number': 50, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 33, 'pos_y': 8},
-    {'number': 52, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 43, 'pos_y': 8},
-    {'number': 54, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 53, 'pos_y': 8},
-    {'number': 56, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 63, 'pos_y': 8},
-    {'number': 58, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 73, 'pos_y': 12},
-    {'number': 60, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 53, 'pos_y': 20},
-    {'number': 62, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 38, 'pos_y': 20},
-    {'number': 70, 'zone': 'exterior', 'capacity': 2, 'table_type': 'alta', 'pos_x': 18, 'pos_y': 14},
-    {'number': 1, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 10, 'pos_y': 36},
-    {'number': 2, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 36},
-    {'number': 3, 'zone': 'salon_principal', 'capacity': 6, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 36},
-    {'number': 6, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 10, 'pos_y': 47},
-    {'number': 4, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 25, 'pos_y': 47},
-    {'number': 7, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 8, 'pos_y': 58},
-    {'number': 8, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 20, 'pos_y': 58},
-    {'number': 9, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 32, 'pos_y': 58},
-    {'number': 10, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 42, 'pos_y': 58},
-    {'number': 14, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 8, 'pos_y': 69},
-    {'number': 12, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 69},
-    {'number': 11, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 69},
-    {'number': 15, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 10, 'pos_y': 80},
-    {'number': 16, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 23, 'pos_y': 80},
-    {'number': 17, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 36, 'pos_y': 80},
-    {'number': 22, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 8, 'pos_y': 91},
-    {'number': 20, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 91},
-    {'number': 19, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 91},
-    {'number': 18, 'zone': 'salon_principal', 'capacity': 6, 'table_type': 'normal', 'pos_x': 46, 'pos_y': 91},
-    {'number': 30, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 62, 'pos_y': 36},
-    {'number': 82, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 75, 'pos_y': 36},
-    {'number': 34, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 65, 'pos_y': 50},
-    {'number': 36, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 68, 'pos_y': 66},
-    {'number': 40, 'zone': 'salon_interior', 'capacity': 8, 'table_type': 'alta', 'pos_x': 75, 'pos_y': 85},
-]
+# Table definitions are imported from config.tables (single source of truth)
 
 _db_initialized = False
 
