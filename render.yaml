@@ -1,19 +1,48 @@
+# Season Restaurant Reservation System - Render.com Deployment Configuration
+# https://render.com/docs/infrastructure-as-code
+
 services:
   - type: web
     name: season-reservas
     runtime: python
-    plan: free
+    plan: standard  # Upgraded from free to support multiple workers
     pythonVersion: "3.11.9"
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --workers 1 --threads 2 --timeout 120 app:app
+
+    # Build dependencies
+    buildCommand: pip install -r requirements.txt && python init_db.py
+
+    # Production server with multiple workers
+    # Using gunicorn with gthread for better I/O performance
+    startCommand: gunicorn --workers 2 --worker-class=gthread --threads=4 --timeout=120 app:app
+
+    # Environment variables
     envVars:
+      # Flask Configuration
       - key: FLASK_ENV
         value: production
-      - key: RENDER
-        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+
+      # Database (PostgreSQL from Supabase) - REQUIRED
+      - key: DATABASE_URL
+        sync: false  # Securely sync from Render secret
+
+      # Application Secret
       - key: SECRET_KEY
-        sync: false
+        sync: false  # Securely sync from Render secret
+
+      # WhatsApp Configuration
       - key: WHATSAPP_NUMBER
         value: "689135630"
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+
+      # System Configuration
+      - key: RENDER
+        value: "true"
       - key: PYTHON_VERSION
         value: "3.11.9"
