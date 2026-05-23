@@ -124,19 +124,33 @@ DEFAULT_TABLES = [
     {'number': 40, 'zone': 'salon_interior', 'capacity': 8, 'table_type': 'alta', 'pos_x': 75, 'pos_y': 85},
 ]
 
-try:
-    with app.app_context():
-        from models import Table
-        db.create_all()
-        if Table.query.count() == 0:
-            for t in DEFAULT_TABLES:
-                db.session.add(Table(**t))
-            db.session.commit()
-            logger.info(f'Initialized {len(DEFAULT_TABLES)} restaurant tables')
-        else:
-            logger.info(f'Tables already exist ({Table.query.count()})')
-except Exception as e:
-    logger.error(f'Database init error: {e}')
+_db_initialized = False
+
+def init_db():
+    """Initialize database if not already initialized."""
+    global _db_initialized
+    if _db_initialized:
+        return
+    
+    try:
+        with app.app_context():
+            from models import Table
+            db.create_all()
+            if Table.query.count() == 0:
+                for t in DEFAULT_TABLES:
+                    db.session.add(Table(**t))
+                db.session.commit()
+                logger.info(f'Initialized {len(DEFAULT_TABLES)} restaurant tables')
+            else:
+                logger.info(f'Tables already exist ({Table.query.count()})')
+            _db_initialized = True
+    except Exception as e:
+        logger.error(f'Database init error: {e}')
+
+# Initialize database on first request
+@app.before_request
+def before_request_handler():
+    init_db()
 
 
 if __name__ == '__main__':
