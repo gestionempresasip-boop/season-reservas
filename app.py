@@ -36,7 +36,10 @@ Compress(app)
 app.config['COMPRESS_MIMETYPES'] = ['application/json', 'text/html', 'text/css', 'application/javascript']
 app.config['COMPRESS_MIN_SIZE'] = 200
 
-db.init_app(app)
+try:
+    db.init_app(app)
+except Exception as e:
+    logger.warning(f'Failed to initialize database: {e}. Database will be initialized on first request.')
 socketio = SocketIO(app, cors_allowed_origins='*',
                    transport=['polling'],
                    engineio_logger=False, socketio_logger=False)
