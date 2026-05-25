@@ -5,35 +5,21 @@ services:
   - type: web
     name: season-reservas
     runtime: python
-    plan: standard  # Upgraded from free to support multiple workers
+    plan: standard
     pythonVersion: "3.11.9"
 
-    # Build dependencies - NO init_db.py (would connect to DB during build!)
-    # Database initialization happens on first request via before_request hook
     buildCommand: pip install -r requirements.txt
-
-    # Production server with multiple workers
-    # Using gunicorn with gthread for better I/O performance
-    # wsgi:app = lazy-loading WSGI entry point that defers app initialization to first request
     startCommand: gunicorn --workers 2 --worker-class=gthread --threads=4 --timeout=120 wsgi:app
 
-    # Environment variables
     envVars:
-      # Flask Configuration
       - key: FLASK_ENV
         value: production
       - key: LOG_LEVEL
         value: INFO
-
-      # Database (PostgreSQL from Supabase) - REQUIRED
       - key: DATABASE_URL
-        sync: false  # Securely sync from Render secret
-
-      # Application Secret
+        sync: false
       - key: SECRET_KEY
-        sync: false  # Securely sync from Render secret
-
-      # WhatsApp Configuration
+        sync: false
       - key: WHATSAPP_NUMBER
         value: "689135630"
       - key: TWILIO_ACCOUNT_SID
@@ -42,8 +28,6 @@ services:
         sync: false
       - key: TWILIO_WHATSAPP_NUMBER
         sync: false
-
-      # System Configuration
       - key: RENDER
         value: "true"
       - key: PYTHON_VERSION
