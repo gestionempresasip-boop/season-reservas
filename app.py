@@ -42,13 +42,15 @@ def create_app():
             'Please set it to your Supabase PostgreSQL URL.'
         )
 
-    # Ensure PostgreSQL format
-    if db_url.startswith('postgresql://'):
+    # Ensure PostgreSQL format (handle both postgres:// and postgresql:// prefixes)
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+    elif db_url.startswith('postgresql://'):
         db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
     elif not db_url.startswith('postgresql+psycopg2://'):
         raise ValueError(
-            'DATABASE_URL must be a PostgreSQL URL. '
-            'SQLite fallback is no longer supported.'
+            'DATABASE_URL must be a PostgreSQL URL (postgres:// or postgresql://). '
+            'Got: ' + db_url[:30] + '...'
         )
 
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
@@ -111,10 +113,20 @@ def create_app():
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
-        """Health check endpoint for monitoring."""
+        """Health check endpoint for monitoring - includes DB status."""
+        import os as _os
+        db_configured = bool(_os.getenv('DATABASE_URL'))
+        try:
+            from sqlalchemy import text as _text
+            db.session.execute(_text('SELECT 1'))
+            db_status = 'connected'
+        except Exception as _e:
+            db_status = f'error: {str(_e)[:80]}'
         return jsonify({
             'status': 'healthy',
-            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'database': db_status,
+            'db_configured': db_configured
         })
 
     return app, logger, socketio
@@ -173,6 +185,8 @@ def _initialize_app():
     # ─── Database initialization on first request ────────────────────────
     _db_initialized = [False]  # Use list to allow mutation in nested function
 
+    _db_init_error = [None]  # Track DB init error for helpful responses
+
     def init_db():
         """Initialize database if not already initialized."""
         if _db_initialized[0]:
@@ -190,13 +204,22 @@ def _initialize_app():
                 else:
                     _logger_instance.info(f'⚠️  Tables already exist ({Table.query.count()})')
                 _db_initialized[0] = True
+                _db_init_error[0] = None
         except Exception as e:
-            _logger_instance.error(f'❌ Database init error: {str(e)}')
+            err_msg = str(e)
+            _logger_instance.error(f'❌ Database init error: {err_msg}')
+            _db_init_error[0] = err_msg
 
     @_app_instance.before_request
     def before_request_handler():
-        """Before request handler."""
+        """Before request handler - initialize DB and handle errors."""
+        from flask import request as flask_request, jsonify
+        # Skip health check - it should always work
+        if flask_request.path == '/api/health':
+            return
         init_db()
+        if not _db_initialized[0] and _db_init_error[0]:
+            _logger_instance.error(f'DB not ready: {_db_init_error[0]}')
 
     _initialized = True
     return _app_instance, _logger_instance, _socketio_instance
