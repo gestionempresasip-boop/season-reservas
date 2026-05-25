@@ -5,12 +5,6 @@ This is necessary to prevent database connections during build phase.
 import sys
 import os
 
-# Ensure DATABASE_URL is available before importing anything else
-if 'DATABASE_URL' not in os.environ:
-    # Provide error message without connecting to DB
-    print("ERROR: DATABASE_URL environment variable is required", file=sys.stderr)
-    sys.exit(1)
-
 # Global app instance - initialized on first request only
 _app_instance = None
 
@@ -19,6 +13,12 @@ def app(environ, start_response):
     global _app_instance
 
     if _app_instance is None:
+        # Verify DATABASE_URL is available at runtime (not at import time)
+        if 'DATABASE_URL' not in os.environ:
+            # Return error response instead of exiting
+            start_response('500 Internal Server Error', [('Content-Type', 'text/plain')])
+            return [b'ERROR: DATABASE_URL environment variable is required']
+
         # Only import and initialize Flask app on first request
         from app import get_app
         _app_instance = get_app()
