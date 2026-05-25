@@ -179,6 +179,8 @@ async function loadAvailableTables() {
     const s = document.getElementById('resShift').value || currentShift;
     const g = parseInt(document.getElementById('resGuests').value) || 2;
     const select = document.getElementById('resTable');
+    const isEditing = document.getElementById('resEditId').value !== '';
+    const currentTableId = select.value; // 🔧 Preservar mesa actual
 
     // Primero: llenar con datos locales de tableDataMap (instantáneo)
     fillTableSelect(select, g);
@@ -186,7 +188,20 @@ async function loadAvailableTables() {
     // Luego: intentar cargar desde API para datos más frescos
     try {
         const tables = await apiGet(`/api/tables/available?date=${d}&shift=${s}&guests=${g}`);
+
+        // 🔧 ARREGLO: Preservar mesa asignada si estamos editando
+        let preservedOption = null;
+        if (isEditing && currentTableId) {
+            // Guardar el option de la mesa actual antes de limpiar
+            preservedOption = select.querySelector(`option[value="${currentTableId}"]`);
+        }
+
         select.innerHTML = '<option value="">Asignar después</option>';
+
+        // 🔧 Si estamos editando, restaurar primero la mesa actual
+        if (preservedOption && isEditing) {
+            select.appendChild(preservedOption);
+        }
 
         tables.forEach(t => {
             if (t.capacity >= g) {
