@@ -8,12 +8,14 @@ services:
     plan: standard  # Upgraded from free to support multiple workers
     pythonVersion: "3.11.9"
 
-    # Build dependencies
-    buildCommand: pip install -r requirements.txt && python init_db.py
+    # Build dependencies - NO init_db.py (would connect to DB during build!)
+    # Database initialization happens on first request via before_request hook
+    buildCommand: pip install -r requirements.txt
 
     # Production server with multiple workers
     # Using gunicorn with gthread for better I/O performance
-    startCommand: gunicorn --workers 2 --worker-class=gthread --threads=4 --timeout=120 app:app
+    # wsgi:app = lazy-loading WSGI entry point that defers app initialization to first request
+    startCommand: gunicorn --workers 2 --worker-class=gthread --threads=4 --timeout=120 wsgi:app
 
     # Environment variables
     envVars:
