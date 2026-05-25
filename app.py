@@ -120,8 +120,87 @@ def create_app():
     return app, logger, socketio
 
 
-# Create application instance
-app, logger, socketio = create_app()
+# ═══════════════════════════════════════════════════════════════════════════
+# LAZY APPLICATION INITIALIZATION (Deferred to prevent build-time DB access)
+# ═══════════════════════════════════════════════════════════════════════════
+
+_app = None
+_logger = None
+_socketio = None
+_initialized = False
+
+def _initialize_app():
+    """Initialize the application on first use (lazy init)."""
+    global _app, _logger, _socketio, _initialized
+
+    if _initialized:
+        return _app, _logger, _socketio
+
+    # Create the Flask app
+    _app, _logger, _socketio = create_app()
+
+    # ─── Register blueprints (after app is created) ──────────────────────
+    from routes.api import api
+    from routes.whatsapp import whatsapp_bp
+    _app.register_blueprint(api)
+    _app.register_blueprint(whatsapp_bp)
+
+    # ─── Register main routes ────────────────────────────────────────────
+    WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
+
+    @_app.route('/')
+    def index():
+        """Main dashboard page."""
+        return render_template('index.html', whatsapp_number=WHATSAPP_NUMBER)
+
+    @_app.route('/reservar')
+    def public_booking():
+        """Public booking page."""
+        return render_template('public_booking.html', whatsapp_number=WHATSAPP_NUMBER)
+
+    # ─── Register SocketIO handlers ──────────────────────────────────────
+    @_socketio.on('connect')
+    def handle_connect():
+        """Handle WebSocket connection."""
+        emit('connected', {'status': 'ok'})
+        _logger.info(f'Client connected: {request.sid}')
+
+    @_socketio.on('disconnect')
+    def handle_disconnect():
+        """Handle WebSocket disconnection."""
+        _logger.info(f'Client disconnected: {request.sid}')
+
+    # ─── Database initialization on first request ────────────────────────
+    _db_initialized = [False]  # Use list to allow mutation in nested function
+
+    def init_db():
+        """Initialize database if not already initialized."""
+        if _db_initialized[0]:
+            return
+
+        try:
+            with _app.app_context():
+                from models import Table
+                db.create_all()
+                if Table.query.count() == 0:
+                    for t in DEFAULT_TABLES:
+                        db.session.add(Table(**t))
+                    db.session.commit()
+                    _logger.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
+                else:
+                    _logger.info(f'⚠️  Tables already exist ({Table.query.count()})')
+                _db_initialized[0] = True
+        except Exception as e:
+            _logger.error(f'❌ Database init error: {str(e)}')
+
+    @_app.before_request
+    def before_request_handler():
+        """Before request handler."""
+        init_db()
+
+    _initialized = True
+    return _app, _logger, _socketio
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # IN-MEMORY CACHE (Simple TTL-based cache)
@@ -147,93 +226,32 @@ def cache_invalidate():
     _cache_version += 1
     _cache.clear()
 
-# ═══════════════════════════════════════════════════════════════════════════
-# BLUEPRINTS REGISTRATION
-# ═══════════════════════════════════════════════════════════════════════════
-
-from routes.api import api
-from routes.whatsapp import whatsapp_bp
-app.register_blueprint(api)
-app.register_blueprint(whatsapp_bp)
-
-# ═══════════════════════════════════════════════════════════════════════════
-# MAIN ROUTES
-# ═══════════════════════════════════════════════════════════════════════════
-
-WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
-
-@app.route('/')
-def index():
-    """Main dashboard page."""
-    return render_template('index.html', whatsapp_number=WHATSAPP_NUMBER)
-
-@app.route('/reservar')
-def public_booking():
-    """Public booking page."""
-    return render_template('public_booking.html', whatsapp_number=WHATSAPP_NUMBER)
-
-# ═══════════════════════════════════════════════════════════════════════════
-# SOCKETIO HANDLERS
-# ═══════════════════════════════════════════════════════════════════════════
-
-@socketio.on('connect')
-def handle_connect():
-    """Handle WebSocket connection."""
-    emit('connected', {'status': 'ok'})
-    logger.info(f'Client connected: {request.sid}')
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle WebSocket disconnection."""
-    logger.info(f'Client disconnected: {request.sid}')
 
 def broadcast_update(event_type='reservation_changed'):
     """Broadcast update to all connected clients."""
     try:
         cache_invalidate()
+        app, logger, socketio = _initialize_app()
         socketio.emit(event_type, {'ts': time.time()})
         logger.debug(f'Broadcasted {event_type}')
     except Exception as e:
-        logger.warning(f'Broadcast failed: {str(e)}')
+        if _logger:
+            _logger.warning(f'Broadcast failed: {str(e)}')
+
 
 # ═══════════════════════════════════════════════════════════════════════════
-# DATABASE INITIALIZATION
+# GUNICORN / WSGI ENTRY POINT (initializes app on first import)
 # ═══════════════════════════════════════════════════════════════════════════
 
-_db_initialized = False
+app, logger, socketio = _initialize_app()
 
-def init_db():
-    """Initialize database if not already initialized."""
-    global _db_initialized
-    if _db_initialized:
-        return
-
-    try:
-        with app.app_context():
-            from models import Table
-            db.create_all()
-            if Table.query.count() == 0:
-                for t in DEFAULT_TABLES:
-                    db.session.add(Table(**t))
-                db.session.commit()
-                logger.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
-            else:
-                logger.info(f'⚠️  Tables already exist ({Table.query.count()})')
-            _db_initialized = True
-    except Exception as e:
-        logger.error(f'❌ Database init error: {str(e)}')
-
-# Initialize database on first request
-@app.before_request
-def before_request_handler():
-    """Before request handler."""
-    init_db()
 
 # ═══════════════════════════════════════════════════════════════════════════
-# APPLICATION ENTRY POINT
+# APPLICATION ENTRY POINT (for local development)
 # ═══════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
+    app, logger, socketio = _initialize_app()
     port = int(os.getenv('PORT', 3000))
     debug = os.getenv('FLASK_ENV') == 'development'
     socketio.run(
