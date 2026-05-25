@@ -121,54 +121,54 @@ def create_app():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LAZY APPLICATION INITIALIZATION (Deferred to prevent build-time DB access)
+# GLOBAL STATE (only initialized on demand)
 # ═══════════════════════════════════════════════════════════════════════════
 
-_app = None
-_logger = None
-_socketio = None
+_app_instance = None
+_logger_instance = None
+_socketio_instance = None
 _initialized = False
 
+
 def _initialize_app():
-    """Initialize the application on first use (lazy init)."""
-    global _app, _logger, _socketio, _initialized
+    """Initialize the application (called once, on first use)."""
+    global _app_instance, _logger_instance, _socketio_instance, _initialized
 
     if _initialized:
-        return _app, _logger, _socketio
+        return _app_instance, _logger_instance, _socketio_instance
 
-    # Create the Flask app
-    _app, _logger, _socketio = create_app()
+    _app_instance, _logger_instance, _socketio_instance = create_app()
 
     # ─── Register blueprints (after app is created) ──────────────────────
     from routes.api import api
     from routes.whatsapp import whatsapp_bp
-    _app.register_blueprint(api)
-    _app.register_blueprint(whatsapp_bp)
+    _app_instance.register_blueprint(api)
+    _app_instance.register_blueprint(whatsapp_bp)
 
     # ─── Register main routes ────────────────────────────────────────────
     WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
 
-    @_app.route('/')
+    @_app_instance.route('/')
     def index():
         """Main dashboard page."""
         return render_template('index.html', whatsapp_number=WHATSAPP_NUMBER)
 
-    @_app.route('/reservar')
+    @_app_instance.route('/reservar')
     def public_booking():
         """Public booking page."""
         return render_template('public_booking.html', whatsapp_number=WHATSAPP_NUMBER)
 
     # ─── Register SocketIO handlers ──────────────────────────────────────
-    @_socketio.on('connect')
+    @_socketio_instance.on('connect')
     def handle_connect():
         """Handle WebSocket connection."""
         emit('connected', {'status': 'ok'})
-        _logger.info(f'Client connected: {request.sid}')
+        _logger_instance.info(f'Client connected: {request.sid}')
 
-    @_socketio.on('disconnect')
+    @_socketio_instance.on('disconnect')
     def handle_disconnect():
         """Handle WebSocket disconnection."""
-        _logger.info(f'Client disconnected: {request.sid}')
+        _logger_instance.info(f'Client disconnected: {request.sid}')
 
     # ─── Database initialization on first request ────────────────────────
     _db_initialized = [False]  # Use list to allow mutation in nested function
@@ -179,27 +179,27 @@ def _initialize_app():
             return
 
         try:
-            with _app.app_context():
+            with _app_instance.app_context():
                 from models import Table
                 db.create_all()
                 if Table.query.count() == 0:
                     for t in DEFAULT_TABLES:
                         db.session.add(Table(**t))
                     db.session.commit()
-                    _logger.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
+                    _logger_instance.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
                 else:
-                    _logger.info(f'⚠️  Tables already exist ({Table.query.count()})')
+                    _logger_instance.info(f'⚠️  Tables already exist ({Table.query.count()})')
                 _db_initialized[0] = True
         except Exception as e:
-            _logger.error(f'❌ Database init error: {str(e)}')
+            _logger_instance.error(f'❌ Database init error: {str(e)}')
 
-    @_app.before_request
+    @_app_instance.before_request
     def before_request_handler():
         """Before request handler."""
         init_db()
 
     _initialized = True
-    return _app, _logger, _socketio
+    return _app_instance, _logger_instance, _socketio_instance
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -231,19 +231,62 @@ def broadcast_update(event_type='reservation_changed'):
     """Broadcast update to all connected clients."""
     try:
         cache_invalidate()
-        app, logger, socketio = _initialize_app()
-        socketio.emit(event_type, {'ts': time.time()})
-        logger.debug(f'Broadcasted {event_type}')
+        _app, _logger, _socketio = _initialize_app()
+        _socketio.emit(event_type, {'ts': time.time()})
+        _logger.debug(f'Broadcasted {event_type}')
     except Exception as e:
-        if _logger:
-            _logger.warning(f'Broadcast failed: {str(e)}')
+        if _logger_instance:
+            _logger_instance.warning(f'Broadcast failed: {str(e)}')
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# GUNICORN / WSGI ENTRY POINT (initializes app on first import)
+# LAZY APP WRAPPER (for gunicorn WSGI)
 # ═══════════════════════════════════════════════════════════════════════════
 
-app, logger, socketio = _initialize_app()
+class LazyFlaskApp:
+    """WSGI wrapper that defers Flask app initialization to first request."""
+
+    def __call__(self, environ, start_response):
+        """WSGI callable - initialize app on first call."""
+        global _app_instance
+        if _app_instance is None:
+            _initialize_app()
+        # Delegate to the real Flask app
+        return _app_instance(environ, start_response)
+
+    def __getattr__(self, name):
+        """Proxy attribute access to the real app."""
+        if _app_instance is None:
+            _initialize_app()
+        return getattr(_app_instance, name)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GUNICORN ENTRY POINT (lazy initialization)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# This is what gunicorn looks for: 'app:app'
+# We use a wrapper that defers initialization
+app = LazyFlaskApp()
+
+# Also provide global references for parts of code that might need them
+def get_app():
+    """Get the initialized app instance."""
+    if _app_instance is None:
+        _initialize_app()
+    return _app_instance
+
+def get_logger():
+    """Get the logger instance."""
+    if _app_instance is None:
+        _initialize_app()
+    return _logger_instance
+
+def get_socketio():
+    """Get the socketio instance."""
+    if _app_instance is None:
+        _initialize_app()
+    return _socketio_instance
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -251,11 +294,12 @@ app, logger, socketio = _initialize_app()
 # ═══════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    app, logger, socketio = _initialize_app()
+    _initialize_app()
+    app_instance, logger, socketio = _app_instance, _logger_instance, _socketio_instance
     port = int(os.getenv('PORT', 3000))
     debug = os.getenv('FLASK_ENV') == 'development'
     socketio.run(
-        app,
+        app_instance,
         debug=debug,
         host='0.0.0.0',
         port=port,
