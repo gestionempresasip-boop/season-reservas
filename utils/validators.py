@@ -18,7 +18,7 @@ class ReservationCreate(BaseModel):
     time: str
     guests: int = Field(ge=MIN_GUESTS, le=MAX_GUESTS_PER_RESERVATION)
     client_name: str
-    client_phone: str
+    client_phone: Optional[str] = ''
     email: Optional[str] = ''
     notes: Optional[str] = ''
     table_id: Optional[int] = None
@@ -50,10 +50,13 @@ class ReservationCreate(BaseModel):
 
     @validator('client_phone')
     def validate_phone(cls, v):
-        """Validate phone number format."""
+        """Validate phone number format (optional - walk-ins may have no phone)."""
+        if not v or not v.strip():
+            return ''
         import re
+        v = v.strip()
         if not re.match(r'^\+?[0-9]{7,15}$', v):
-            raise ValueError('Teléfono inválido')
+            raise ValueError('Teléfono inválido (debe tener 7-15 dígitos)')
         return v
 
     @validator('email')
