@@ -119,8 +119,10 @@ def validate_and_handle(schema_class):
                 current_app.logger.warning(f'Business error: {str(e)}')
                 return error_response(str(e), 400)
             except Exception as e:
-                current_app.logger.error(f'Error in {f.__name__}: {str(e)}')
-                return error_response('Error interno del servidor', 500)
+                import traceback
+                tb = traceback.format_exc()
+                current_app.logger.error(f'Error in {f.__name__}: {str(e)}\n{tb}')
+                return error_response(f'Error interno: {str(e)}', 500)
 
         return decorated_function
     return decorator
