@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=20">
+    <link rel="stylesheet" href="/static/css/pro.css?v=20">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -24,6 +25,10 @@
         </div>
         <div id="connectionStatus" style="display:none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: #fecaca; color: #7f1d1d; padding: 8px 12px; border-radius: 6px; font-size: 11px; white-space: nowrap; margin-top: 4px;"></div>
         <div class="header-right">
+            <div class="global-search-wrapper">
+                <input type="text" id="globalSearchInput" placeholder="🔍 Buscar reserva..." class="global-search-input" autocomplete="off">
+                <div id="globalSearchResults" class="global-search-results hidden"></div>
+            </div>
             <input type="date" id="datePicker" class="date-picker">
         </div>
     </header>
@@ -61,6 +66,17 @@
     <main class="main-content">
         <!-- FLOOR PLAN VIEW -->
         <section class="view active" id="viewPlano">
+            <div class="floorplan-toolbar">
+                <button class="btn-secondary btn-sm" id="btnGroupMode" onclick="toggleGroupMode()" title="Selecciona varias mesas para hacer una reserva combinada">🔗 Agrupar mesas</button>
+                <button class="btn-secondary btn-sm" onclick="openNewReservationModal()">+ Nueva reserva</button>
+                <div class="legend-mini">
+                    <span class="lm-item"><span class="lm-color free"></span>Libre</span>
+                    <span class="lm-item"><span class="lm-color confirmed"></span>Reservada</span>
+                    <span class="lm-item"><span class="lm-color seated"></span>Sentada</span>
+                    <span class="lm-item">🔗 Grupo</span>
+                </div>
+            </div>
+            <div class="group-action-bar hidden" id="groupActionBar"></div>
             <div class="floorplan-container">
                 <svg id="floorplanSVG" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
                     <!-- Zona Exterior -->
@@ -100,7 +116,10 @@
         <section class="view" id="viewReservas">
             <div class="view-header">
                 <h2>Reservas del turno</h2>
-                <button class="btn-primary" onclick="openNewReservationModal()">+ Nueva Reserva</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-secondary" onclick="exportReservationsCSV()" title="Exportar a CSV/Excel">📥 Exportar</button>
+                    <button class="btn-primary" onclick="openNewReservationModal()">+ Nueva Reserva</button>
+                </div>
             </div>
             <div class="filters-bar">
                 <input type="text" id="searchReservas" placeholder="Buscar por nombre o tel&eacute;fono..." class="search-input">
@@ -113,6 +132,7 @@
                     <option value="no_show">No Show</option>
                 </select>
             </div>
+            <div class="hint-tip">💡 Tip: Arrastra una reserva sobre una mesa en el plano para asignarla.</div>
             <div class="reservations-list" id="reservationsList"></div>
         </section>
 
@@ -347,14 +367,21 @@
                         <input type="number" id="resGuests" min="1" max="20" required class="form-input" value="2">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Mesa</label>
-                    <div style="display:flex; gap:8px;">
-                        <select id="resTable" class="form-input" style="flex:1;">
-                            <option value="">Asignar despu&eacute;s</option>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Duraci&oacute;n (min)</label>
+                        <select id="resDuration" class="form-input">
+                            <option value="60">60 min</option>
+                            <option value="90">1h 30min</option>
+                            <option value="120" selected>2h (recomendado)</option>
+                            <option value="150">2h 30min</option>
+                            <option value="180">3h</option>
                         </select>
-                        <button type="button" class="btn-secondary" style="padding:8px 12px; cursor:pointer;" onclick="openTableSelector()" title="Selector visual de mesas">🗺️</button>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Mesa(s) <span style="font-weight:normal; opacity:0.7; font-size:11px;">— click para seleccionar varias y combinar</span></label>
+                    <div id="tablePickerContainer" class="table-picker-container"></div>
                 </div>
                 <div class="form-group">
                     <label>Origen</label>
@@ -497,13 +524,13 @@
             });
         }
     </script>
-    <script src="/static/js/app.js?v=15"></script>
-    <script src="/static/js/floorplan.js?v=15"></script>
-    <script src="/static/js/reservations.js?v=15"></script>
-    <script src="/static/js/clients.js?v=15"></script>
-    <script src="/static/js/waitlist.js?v=15"></script>
-    <script src="/static/js/calendar.js?v=15"></script>
-    <script src="/static/js/reports.js?v=15"></script>
+    <script src="/static/js/app.js?v=20"></script>
+    <script src="/static/js/floorplan.js?v=20"></script>
+    <script src="/static/js/reservations.js?v=20"></script>
+    <script src="/static/js/clients.js?v=20"></script>
+    <script src="/static/js/waitlist.js?v=20"></script>
+    <script src="/static/js/calendar.js?v=20"></script>
+    <script src="/static/js/reports.js?v=20"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">

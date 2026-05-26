@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════
    SEASON - Interactive Floor Plan (SVG)
+   - Modo agrupar mesas (click multi-select + reservar grupo)
+   - Drag-drop: arrastrar reserva → mesa
+   - Mesas agrupadas se muestran del mismo color con línea uniéndolas
    ═══════════════════════════════════════════════ */
 
 const TABLE_DEFS = [
@@ -43,30 +46,177 @@ const TABLE_DEFS = [
 ];
 
 let tableDataMap = {};
+let groupMode = false;
+let groupSelectedTables = []; // table numbers
+
+// Color palette for group reservations (assigned by index)
+const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
 
 async function loadFloorPlan() {
     const data = await apiGet(`/api/tables/status?date=${currentDate}&shift=${currentShift}`);
     tableDataMap = {};
-    data.forEach(t => { tableDataMap[t.number] = t; });
+    let unassigned = null;
+    data.forEach(t => {
+        if (t._unassigned) {
+            unassigned = t;
+        } else {
+            tableDataMap[t.number] = t;
+        }
+    });
+    if (unassigned) tableDataMap._unassigned = unassigned;
     renderFloorPlan();
+}
+
+function toggleGroupMode() {
+    groupMode = !groupMode;
+    groupSelectedTables = [];
+    const btn = document.getElementById('btnGroupMode');
+    if (btn) {
+        btn.classList.toggle('active', groupMode);
+        btn.textContent = groupMode ? '✓ Modo Agrupar' : '🔗 Agrupar mesas';
+    }
+    document.getElementById('floorplanSVG')?.classList.toggle('group-mode', groupMode);
+    renderFloorPlan();
+    updateGroupBar();
+}
+
+function updateGroupBar() {
+    let bar = document.getElementById('groupActionBar');
+    if (!bar) return;
+    if (groupSelectedTables.length === 0) {
+        bar.classList.add('hidden');
+        return;
+    }
+    bar.classList.remove('hidden');
+    const totalCap = groupSelectedTables.reduce((s, n) => {
+        const t = TABLE_DEFS.find(x => x.n === n);
+        return s + (t ? t.cap : 0);
+    }, 0);
+    bar.innerHTML = `
+        <div class="group-bar-info">
+            <strong>${groupSelectedTables.length} mesas</strong>
+            seleccionadas
+            <span class="group-cap">${totalCap} plazas</span>
+            <span class="group-tables">${groupSelectedTables.join(' + ')}</span>
+        </div>
+        <div class="group-bar-actions">
+            <button class="btn-secondary btn-sm" onclick="clearGroupSelection()">Limpiar</button>
+            <button class="btn-primary btn-sm" onclick="reserveGroup()">+ Reservar grupo</button>
+        </div>
+    `;
+}
+
+function clearGroupSelection() {
+    groupSelectedTables = [];
+    renderFloorPlan();
+    updateGroupBar();
+}
+
+function reserveGroup() {
+    if (groupSelectedTables.length === 0) return;
+    // Convert table numbers to table IDs
+    const tableIds = groupSelectedTables
+        .map(n => tableDataMap[n]?.id)
+        .filter(Boolean);
+    if (tableIds.length === 0) {
+        showToast('No se pudieron resolver IDs de mesas', 'error');
+        return;
+    }
+    openNewReservationModal(tableIds);
+    // Exit group mode
+    groupMode = false;
+    groupSelectedTables = [];
+    const btn = document.getElementById('btnGroupMode');
+    if (btn) {
+        btn.classList.remove('active');
+        btn.textContent = '🔗 Agrupar mesas';
+    }
+    document.getElementById('floorplanSVG')?.classList.remove('group-mode');
+    updateGroupBar();
+}
+
+function handleTableClick(tableNumber) {
+    if (groupMode) {
+        const idx = groupSelectedTables.indexOf(tableNumber);
+        if (idx >= 0) {
+            groupSelectedTables.splice(idx, 1);
+        } else {
+            groupSelectedTables.push(tableNumber);
+        }
+        renderFloorPlan();
+        updateGroupBar();
+    } else {
+        openTableDetail(tableNumber);
+    }
+}
+
+/* Build map: tableId → reservation_id (to identify groups of tables sharing a reservation) */
+function buildReservationGroupsMap() {
+    const map = new Map(); // tableNumber -> {resId, color, tables: [numbers]}
+    const resIdToTables = new Map(); // resId -> [tableNumbers]
+
+    Object.values(tableDataMap).forEach(td => {
+        if (td.reservation && td.reservation.is_grouped) {
+            const resId = td.reservation.id;
+            if (!resIdToTables.has(resId)) resIdToTables.set(resId, []);
+            resIdToTables.get(resId).push(td.number);
+        }
+    });
+
+    let colorIdx = 0;
+    resIdToTables.forEach((tables, resId) => {
+        const color = GROUP_COLORS[colorIdx % GROUP_COLORS.length];
+        colorIdx++;
+        tables.forEach(tnum => map.set(tnum, { resId, color, tables }));
+    });
+    return map;
 }
 
 function renderFloorPlan() {
     const svg = document.getElementById('floorplanSVG');
-    svg.querySelectorAll('.table-group').forEach(g => g.remove());
+    svg.querySelectorAll('.table-group, .group-link-line, .unassigned-reservations-box').forEach(g => g.remove());
 
-    // Mostrar reservas sin mesa asignada si existen
+    const groupsMap = buildReservationGroupsMap();
+
+    // Draw lines connecting tables in same reservation group
+    const drawnPairs = new Set();
+    groupsMap.forEach((info, tnum) => {
+        info.tables.forEach(otherNum => {
+            if (otherNum === tnum) return;
+            const pairKey = [tnum, otherNum].sort().join('-');
+            if (drawnPairs.has(pairKey)) return;
+            drawnPairs.add(pairKey);
+            const t1 = TABLE_DEFS.find(t => t.n === tnum);
+            const t2 = TABLE_DEFS.find(t => t.n === otherNum);
+            if (!t1 || !t2) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', t1.x + t1.w/2);
+            line.setAttribute('y1', t1.y + t1.h/2);
+            line.setAttribute('x2', t2.x + t2.w/2);
+            line.setAttribute('y2', t2.y + t2.h/2);
+            line.setAttribute('stroke', info.color);
+            line.setAttribute('stroke-width', '0.6');
+            line.setAttribute('stroke-dasharray', '0.5,0.5');
+            line.setAttribute('opacity', '0.7');
+            line.classList.add('group-link-line');
+            svg.appendChild(line);
+        });
+    });
+
+    // Unassigned reservations panel
     if (tableDataMap._unassigned && tableDataMap._unassigned.unassignedReservations.length > 0) {
         const unassignedBox = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         unassignedBox.classList.add('unassigned-reservations-box');
 
+        const items = tableDataMap._unassigned.unassignedReservations;
+        const boxHeight = Math.max(8, 5 + items.length * 1.5);
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('x', '2');
         bg.setAttribute('y', '2');
-        bg.setAttribute('width', '20');
-        bg.setAttribute('height', '8');
-        bg.setAttribute('fill', '#ffe4e6');
-        bg.setAttribute('stroke', '#f43f5e');
+        bg.setAttribute('width', '22');
+        bg.setAttribute('height', boxHeight);
+        bg.setAttribute('fill', '#fff7ed');
+        bg.setAttribute('stroke', '#f59e0b');
         bg.setAttribute('stroke-width', '0.3');
         bg.setAttribute('rx', '0.5');
         unassignedBox.appendChild(bg);
@@ -76,22 +226,23 @@ function renderFloorPlan() {
         title.setAttribute('y', '4');
         title.setAttribute('font-size', '1.2');
         title.setAttribute('font-weight', 'bold');
-        title.setAttribute('fill', '#be185d');
-        title.textContent = 'Por asignar:';
+        title.setAttribute('fill', '#92400e');
+        title.textContent = `📋 Por asignar (${items.length})`;
         unassignedBox.appendChild(title);
 
-        let yPos = 5.5;
-        tableDataMap._unassigned.unassignedReservations.forEach(r => {
+        let yPos = 5.8;
+        items.slice(0, 6).forEach(r => {
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', '3.5');
             text.setAttribute('y', yPos);
-            text.setAttribute('font-size', '0.8');
-            text.setAttribute('fill', '#a11043');
-            text.textContent = `• ${r.client_name} (${r.guests}p) ${r.time}`;
+            text.setAttribute('font-size', '0.9');
+            text.setAttribute('fill', '#7c2d12');
+            text.style.cursor = 'pointer';
+            text.textContent = `• ${r.client_name.substring(0, 18)} (${r.guests}p) ${r.time}`;
+            text.addEventListener('click', () => openEditReservation(r.id));
             unassignedBox.appendChild(text);
-            yPos += 0.7;
+            yPos += 1.5;
         });
-
         svg.appendChild(unassignedBox);
     }
 
@@ -102,12 +253,20 @@ function renderFloorPlan() {
         if (td.status && td.status !== 'free') {
             g.classList.add('status-' + td.status);
         }
+        const groupInfo = groupsMap.get(def.n);
+        if (groupInfo) {
+            g.classList.add('is-group-table');
+            g.dataset.groupColor = groupInfo.color;
+        }
+        if (groupMode && groupSelectedTables.includes(def.n)) {
+            g.classList.add('group-selected');
+        }
         g.dataset.tableNumber = def.n;
+        g.dataset.tableId = td.id || '';
 
         const cx = def.x + def.w / 2;
         const cy = def.y + def.h / 2;
 
-        // Table body
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', def.x);
         rect.setAttribute('y', def.y);
@@ -115,12 +274,14 @@ function renderFloorPlan() {
         rect.setAttribute('height', def.h);
         rect.setAttribute('rx', '1');
         rect.classList.add('table-rect');
+        if (groupInfo) {
+            rect.setAttribute('stroke', groupInfo.color);
+            rect.setAttribute('stroke-width', '0.5');
+        }
         g.appendChild(rect);
 
-        // Chairs
         drawChairs(g, def);
 
-        // Table number
         const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         num.setAttribute('x', cx);
         num.setAttribute('y', cy - 0.5);
@@ -128,7 +289,6 @@ function renderFloorPlan() {
         num.textContent = def.n;
         g.appendChild(num);
 
-        // Capacity label
         const capLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         capLabel.setAttribute('x', cx);
         capLabel.setAttribute('y', cy + 2.3);
@@ -136,7 +296,6 @@ function renderFloorPlan() {
         capLabel.textContent = def.cap + 'p';
         g.appendChild(capLabel);
 
-        // Alta label
         if (def.type === 'alta') {
             const altaLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             altaLabel.setAttribute('x', cx);
@@ -146,7 +305,6 @@ function renderFloorPlan() {
             g.appendChild(altaLabel);
         }
 
-        // Reservation info overlay
         if (td.reservation) {
             const r = td.reservation;
             const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -154,7 +312,7 @@ function renderFloorPlan() {
             nameText.setAttribute('y', def.y + def.h + 2);
             nameText.classList.add('table-client-name');
             nameText.textContent = r.client_name.length > 12
-                ? r.client_name.substring(0, 11) + '...'
+                ? r.client_name.substring(0, 11) + '…'
                 : r.client_name;
             g.appendChild(nameText);
 
@@ -166,7 +324,26 @@ function renderFloorPlan() {
             g.appendChild(timeText);
         }
 
-        g.addEventListener('click', () => openTableDetail(def.n));
+        g.addEventListener('click', () => handleTableClick(def.n));
+
+        // Drag-drop receptor: accept a reservation card dropped on this table
+        g.addEventListener('dragover', (e) => {
+            const tid = e.dataTransfer?.getData('text/reservation-id');
+            // dataTransfer types not always readable on dragover, so be permissive
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            g.classList.add('drop-target');
+        });
+        g.addEventListener('dragleave', () => g.classList.remove('drop-target'));
+        g.addEventListener('drop', (e) => {
+            e.preventDefault();
+            g.classList.remove('drop-target');
+            const reservationId = e.dataTransfer.getData('text/reservation-id');
+            if (reservationId && td.id) {
+                assignReservationToTable(reservationId, td.id);
+            }
+        });
+
         svg.appendChild(g);
     });
 }
@@ -242,10 +419,12 @@ function openTableDetail(tableNumber) {
         const r = td.reservation;
         html += `
             <div class="detail-section">
-                <h4>Reserva Activa</h4>
+                <h4>Reserva Activa ${r.is_grouped ? '<span class="badge badge-group">GRUPO ' + r.table_numbers.join('+') + '</span>' : ''}</h4>
                 <div class="detail-row"><span class="label">Cliente</span><span class="value">${r.client_name}</span></div>
+                <div class="detail-row"><span class="label">Teléfono</span><span class="value">${r.client_phone || '—'}</span></div>
                 <div class="detail-row"><span class="label">Hora</span><span class="value">${r.time}</span></div>
                 <div class="detail-row"><span class="label">Comensales</span><span class="value">${r.guests}</span></div>
+                <div class="detail-row"><span class="label">Duración</span><span class="value">${r.duration_minutes || 120} min</span></div>
                 <div class="detail-row"><span class="label">Origen</span>${sourceBadge(r.source)}</div>
                 ${r.notes ? `<div class="detail-row"><span class="label">Notas</span><span class="value">${r.notes}</span></div>` : ''}
             </div>
@@ -257,6 +436,7 @@ function openTableDetail(tableNumber) {
             html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">Cancelar</button>`;
         } else if (r.status === 'seated') {
             html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">Completar</button>`;
+            html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
         }
         html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>`;
         html += `</div>`;
@@ -274,30 +454,30 @@ function openTableDetail(tableNumber) {
 
 async function seatFromPlan(resId) {
     closeModal('modalTableDetail');
-    showToast('Mesa sentada', 'success');
     await apiPut(`/api/reservations/${resId}/seat`);
+    showToast('Mesa sentada', 'success');
     debouncedRefresh();
 }
 
 async function cancelFromPlan(resId) {
     closeModal('modalTableDetail');
-    showToast('Reserva cancelada');
     await apiDelete(`/api/reservations/${resId}`);
+    showToast('Reserva cancelada');
     debouncedRefresh();
 }
 
 async function completeFromPlan(resId) {
     closeModal('modalTableDetail');
-    showToast('Mesa completada', 'success');
     await apiPut(`/api/reservations/${resId}/complete`);
+    showToast('Mesa completada', 'success');
     debouncedRefresh();
 }
 
 async function deleteFromPlan(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
     closeModal('modalTableDetail');
-    showToast('Reserva eliminada', 'error');
     await apiDelete(`/api/reservations/${resId}/delete`);
+    showToast('Reserva eliminada', 'error');
     debouncedRefresh();
 }
 
@@ -308,33 +488,5 @@ function editReservationFromPlan(resId) {
 
 function newReservationForTable(tableNumber, tableId) {
     closeModal('modalTableDetail');
-    openNewReservationModal();
-    document.getElementById('resDate').value = currentDate;
-    document.getElementById('resShift').value = currentShift;
-    setTimeout(async () => {
-        const select = document.getElementById('resTable');
-        
-        // Recargar opciones disponibles
-        const d = currentDate;
-        const s = currentShift;
-        const g = parseInt(document.getElementById('resGuests').value) || 2;
-        const tables = await apiGet(`/api/tables/available?date=${d}&shift=${s}&guests=${g}`);
-        
-        // Limpiar opciones
-        select.innerHTML = '<option value="">Asignar después</option>';
-        
-        // Llenar con mesas disponibles
-        tables.forEach(t => {
-            if (t.capacity >= g) {
-                const opt = document.createElement('option');
-                opt.value = t.id;
-                opt.textContent = `Mesa ${t.number} (${zoneName(t.zone)}) · ${t.capacity}p`;
-                if (t.id == tableId) opt.selected = true;
-                select.appendChild(opt);
-            }
-        });
-        
-        // Cambiar foco al campo de nombre
-        document.getElementById('resName').focus();
-    }, 200);
+    openNewReservationModal([tableId]);
 }

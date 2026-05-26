@@ -373,7 +373,10 @@ async function apiPut(url, data) {
             body: JSON.stringify(data || {}),
             signal: createTimeout(API_TIMEOUT)
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `HTTP ${res.status}`);
+        }
         return res.json();
     });
 }
@@ -384,7 +387,10 @@ async function apiDelete(url) {
             method: 'DELETE',
             signal: createTimeout(API_TIMEOUT)
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `HTTP ${res.status}`);
+        }
         return res.json();
     });
 }

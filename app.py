@@ -195,7 +195,21 @@ def _initialize_app():
         try:
             with _app_instance.app_context():
                 from models import Table
+                from sqlalchemy import text as _text
                 db.create_all()
+
+                # ─── Migrations (safe ALTER TABLE for PostgreSQL) ───
+                migrations = [
+                    'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
+                ]
+                for sql in migrations:
+                    try:
+                        db.session.execute(_text(sql))
+                        db.session.commit()
+                    except Exception as _mig_e:
+                        db.session.rollback()
+                        _logger_instance.warning(f'⚠️ Migration warning: {_mig_e}')
+
                 if Table.query.count() == 0:
                     for t in DEFAULT_TABLES:
                         db.session.add(Table(**t))

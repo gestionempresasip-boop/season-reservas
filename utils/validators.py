@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, validator, Field
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 from config.settings import SHIFTS, MAX_GUESTS_PER_RESERVATION, MIN_GUESTS
 from config.constants import PATTERN_PHONE, PATTERN_EMAIL, PATTERN_TIME
 
@@ -22,6 +22,8 @@ class ReservationCreate(BaseModel):
     email: Optional[str] = ''
     notes: Optional[str] = ''
     table_id: Optional[int] = None
+    table_ids: Optional[List[int]] = None
+    duration_minutes: Optional[int] = 120
     source: Optional[str] = 'phone'
 
     @validator('shift')
@@ -93,6 +95,8 @@ class ReservationUpdate(BaseModel):
     notes: Optional[str] = None
     status: Optional[str] = None
     table_id: Optional[int] = None
+    table_ids: Optional[List[int]] = None
+    duration_minutes: Optional[int] = None
 
     @validator('shift')
     def validate_shift(cls, v):

@@ -1,7 +1,9 @@
 """
 REST API for Season restaurant reservation system.
 """
-from flask import Blueprint, request, jsonify, current_app
+import csv
+import io
+from flask import Blueprint, request, jsonify, current_app, Response
 from datetime import date, timedelta
 from services import reservation as res_svc
 from services import client as cli_svc
@@ -158,9 +160,36 @@ def available_tables():
     d = request.args.get('date', date.today().isoformat())
     shift = request.args.get('shift', 'comida')
     guests = int(request.args.get('guests', 2))
+    time_str = request.args.get('time')
+    duration = int(request.args.get('duration', 120))
+    exclude_id = request.args.get('exclude_reservation_id', type=int)
     target = date.fromisoformat(d)
-    tables = res_svc.find_available_tables(target, shift, guests)
+    tables = res_svc.find_available_tables(target, shift, guests, time_str, duration, exclude_id)
     return jsonify([t.to_dict() for t in tables])
+
+
+@api.route('/tables/check-conflict', methods=['POST'])
+@handle_errors
+def check_table_conflict():
+    """Check if a set of tables is available at a given time. Used by frontend before submit.
+
+    Body: {date, shift, time, duration_minutes, table_ids, exclude_reservation_id}
+    Returns: {conflicts: [...], available: bool}
+    """
+    data = request.json or {}
+    target = date.fromisoformat(data.get('date'))
+    conflicts = res_svc.check_table_conflicts(
+        target,
+        data.get('shift'),
+        data.get('time'),
+        int(data.get('duration_minutes', 120) or 120),
+        data.get('table_ids', []),
+        data.get('exclude_reservation_id'),
+    )
+    return jsonify({
+        'available': len(conflicts) == 0,
+        'conflicts': conflicts,
+    })
 
 
 # ── Stats ─────────────────────────────────────────────────
@@ -419,3 +448,94 @@ def report_hours():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
     return jsonify(rpt_svc.hourly_distribution(date.fromisoformat(from_d), date.fromisoformat(to_d)))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GLOBAL SEARCH (across all dates)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@api.route('/search/reservations', methods=['GET'])
+@handle_errors
+def search_reservations():
+    """Search reservations across all dates by name/phone/notes."""
+    q = request.args.get('q', '').strip()
+    limit = int(request.args.get('limit', 50))
+    if len(q) < 2:
+        return jsonify([])
+    results = res_svc.global_search_reservations(q, limit)
+    return jsonify([r.to_dict() for r in results])
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXPORT CSV
+# ═══════════════════════════════════════════════════════════════════════════
+
+@api.route('/export/reservations.csv', methods=['GET'])
+def export_reservations_csv():
+    """Export reservations between two dates as CSV (Excel-compatible)."""
+    from_d = request.args.get('from', date.today().isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    from_date = date.fromisoformat(from_d)
+    to_date = date.fromisoformat(to_d)
+
+    items = Reservation.query.filter(
+        Reservation.date >= from_date,
+        Reservation.date <= to_date,
+    ).order_by(Reservation.date, Reservation.time).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([
+        'ID', 'Fecha', 'Turno', 'Hora', 'Cliente', 'Telefono',
+        'Comensales', 'Mesas', 'Estado', 'Origen', 'Duracion(min)', 'Notas', 'Creada'
+    ])
+    for r in items:
+        nums = r.all_table_numbers()
+        tables_str = ' + '.join(str(n) for n in nums) if nums else ''
+        writer.writerow([
+            r.id, r.date.isoformat(), r.shift, r.time,
+            r.client_name, r.client_phone, r.guests, tables_str,
+            r.status, r.source, r.duration_minutes or 120,
+            (r.notes or '').replace('\n', ' '),
+            r.created_at.isoformat() if r.created_at else ''
+        ])
+
+    csv_data = '﻿' + output.getvalue()  # BOM for Excel UTF-8
+    output.close()
+
+    return Response(
+        csv_data,
+        mimetype='text/csv; charset=utf-8',
+        headers={
+            'Content-Disposition': f'attachment; filename=reservas_{from_d}_a_{to_d}.csv'
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DRAG-DROP: ASSIGN RESERVATION TO TABLE(S)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@api.route('/reservations/<int:rid>/assign-tables', methods=['PUT'])
+@handle_errors
+def assign_tables(rid):
+    """Quickly assign one or more tables to a reservation (drag-drop).
+
+    Body: {table_ids: [1,2]} or {table_id: 1}
+    """
+    data = request.json or {}
+    r = res_svc.update_reservation(rid, {
+        'table_ids': data.get('table_ids') if 'table_ids' in data else None,
+        'table_id': data.get('table_id') if 'table_id' in data else None,
+    })
+    notify()
+    return jsonify(r.to_dict())
+
+
+@api.route('/reservations/<int:rid>/unassign', methods=['PUT'])
+@handle_errors
+def unassign_tables(rid):
+    """Remove all table assignments from a reservation."""
+    r = res_svc.update_reservation(rid, {'table_ids': []})
+    notify()
+    return jsonify(r.to_dict())

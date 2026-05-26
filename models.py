@@ -8,6 +8,18 @@ db = SQLAlchemy()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# RESERVATION ↔ TABLE ASSOCIATION (Many-to-Many for combined reservations)
+# ═══════════════════════════════════════════════════════════════════════════
+
+reservation_tables = db.Table(
+    'reservation_tables',
+    db.Column('reservation_id', db.Integer, db.ForeignKey('reservations.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('table_id', db.Integer, db.ForeignKey('tables.id', ondelete='CASCADE'), primary_key=True),
+    db.Index('idx_resv_tables_table_id', 'table_id'),
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # TABLE MODEL
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -158,6 +170,9 @@ class Reservation(db.Model):
     # Additional Info
     notes = db.Column(db.Text, default='')
 
+    # Duration (minutes) - default 120 (2 hours)
+    duration_minutes = db.Column(db.Integer, default=120)
+
     # Timestamps (Auditoría)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
@@ -166,18 +181,63 @@ class Reservation(db.Model):
         onupdate=datetime.utcnow
     )
 
+    # Many-to-many: additional tables for combined reservations (group bookings)
+    extra_tables = db.relationship(
+        'Table',
+        secondary=reservation_tables,
+        lazy='joined',
+        backref=db.backref('group_reservations', lazy='dynamic')
+    )
+
+    def all_table_ids(self):
+        """Return ALL table IDs for this reservation (primary + extras)."""
+        ids = []
+        if self.table_id:
+            ids.append(self.table_id)
+        for t in (self.extra_tables or []):
+            if t.id not in ids:
+                ids.append(t.id)
+        return ids
+
+    def all_table_numbers(self):
+        """Return ALL table numbers for this reservation."""
+        nums = []
+        if self.table:
+            nums.append(self.table.number)
+        for t in (self.extra_tables or []):
+            if t.number not in nums:
+                nums.append(t.number)
+        return nums
+
+    def total_table_capacity(self):
+        """Sum of capacities of all tables in this reservation."""
+        cap = self.table.capacity if self.table else 0
+        for t in (self.extra_tables or []):
+            if not self.table or t.id != self.table_id:
+                cap += t.capacity
+        return cap
+
     def to_dict(self, include_client=False):
         """Convert to dictionary for API responses.
 
         Args:
             include_client: If True, include full client data (use sparingly)
         """
+        # Compute combined table info
+        table_ids = self.all_table_ids()
+        table_numbers = self.all_table_numbers()
+        is_grouped = len(table_ids) > 1
+
         data = {
             'id': self.id,
             'client_id': self.client_id,
             'table_id': self.table_id,
             'table_number': self.table.number if self.table else None,
             'table_zone': self.table.zone if self.table else None,
+            'table_ids': table_ids,
+            'table_numbers': table_numbers,
+            'is_grouped': is_grouped,
+            'total_capacity': self.total_table_capacity() if table_ids else 0,
             'date': self.date.isoformat(),
             'shift': self.shift,
             'time': self.time,
@@ -187,6 +247,7 @@ class Reservation(db.Model):
             'status': self.status,
             'source': self.source,
             'notes': self.notes,
+            'duration_minutes': self.duration_minutes or 120,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }

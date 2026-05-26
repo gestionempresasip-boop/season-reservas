@@ -1,0 +1,326 @@
+/* ═══════════════════════════════════════════════
+   SEASON - Pro Features CSS
+   - Table picker visual
+   - Group mode
+   - Drag-drop
+   - Global search
+   ═══════════════════════════════════════════════ */
+
+/* ───── GLOBAL SEARCH BAR ───── */
+.global-search-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}
+.global-search-input {
+    padding: 7px 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    font-size: 13px;
+    width: 220px;
+    background: #fff;
+    color: #1f2937;
+}
+.global-search-input:focus {
+    outline: none;
+    border-color: var(--teal, #1a8a7d);
+    box-shadow: 0 0 0 3px rgba(26, 138, 125, 0.1);
+}
+.global-search-results {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+.global-search-results.hidden { display: none; }
+.global-search-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.global-search-item:hover { background: #f7f9fa; }
+.gs-date { font-size: 11px; color: #6b7280; font-weight: 600; }
+.gs-name { font-size: 13px; color: #1f2937; font-weight: 500; margin: 2px 0; }
+.gs-meta { font-size: 11px; color: #6b7280; }
+.search-empty { padding: 16px; color: #9ca3af; text-align: center; font-size: 13px; }
+
+/* ───── FLOORPLAN TOOLBAR ───── */
+.floorplan-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+.floorplan-toolbar .btn-secondary.active {
+    background: var(--teal, #1a8a7d);
+    color: #fff;
+    border-color: var(--teal, #1a8a7d);
+}
+.legend-mini {
+    display: flex;
+    gap: 14px;
+    margin-left: auto;
+    font-size: 11px;
+    color: #6b7280;
+    align-items: center;
+}
+.lm-item { display: inline-flex; align-items: center; gap: 4px; }
+.lm-color {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid #d0d7de;
+}
+.lm-color.free { background: #fff; }
+.lm-color.confirmed { background: #bfdbfe; border-color: #3b82f6; }
+.lm-color.seated { background: #fcd34d; border-color: #f59e0b; }
+
+/* ───── GROUP ACTION BAR (floating below toolbar when tables selected) ───── */
+.group-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: #ecfdf5;
+    border-bottom: 2px solid #10b981;
+    color: #065f46;
+    font-size: 13px;
+    animation: slideDown 0.2s ease-out;
+}
+.group-action-bar.hidden { display: none; }
+.group-bar-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.group-cap {
+    background: #fff;
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid #10b981;
+    font-weight: 600;
+}
+.group-tables { font-family: monospace; font-size: 12px; color: #065f46; }
+.group-bar-actions { display: flex; gap: 8px; }
+
+@keyframes slideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ───── FLOOR PLAN: GROUP MODE ───── */
+#floorplanSVG.group-mode .table-group {
+    cursor: pointer;
+}
+#floorplanSVG.group-mode .table-group .table-rect {
+    cursor: pointer;
+}
+.table-group.group-selected .table-rect {
+    fill: #34d399 !important;
+    stroke: #065f46 !important;
+    stroke-width: 0.6 !important;
+}
+.table-group.group-selected .table-number,
+.table-group.group-selected .table-capacity {
+    fill: #fff !important;
+    font-weight: 700;
+}
+
+/* Tables in same reservation group (visual link) */
+.table-group.is-group-table .table-rect {
+    stroke-dasharray: 0.6, 0.4;
+}
+.group-link-line {
+    pointer-events: none;
+}
+
+/* ───── DRAG-DROP TARGETS ───── */
+.table-group.drop-target .table-rect {
+    fill: #fef3c7 !important;
+    stroke: #f59e0b !important;
+    stroke-width: 0.8 !important;
+    animation: pulse 0.6s infinite alternate;
+}
+@keyframes pulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
+.reservation-card {
+    cursor: grab;
+    transition: opacity 0.15s, transform 0.15s;
+}
+.reservation-card:active { cursor: grabbing; }
+.reservation-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.96);
+}
+
+/* ───── TABLE PICKER (in reservation modal) ───── */
+.table-picker-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fafbfc;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.table-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.table-picker-info .hint {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+.selected-summary {
+    font-weight: 600;
+    color: var(--teal, #1a8a7d);
+    font-size: 13px;
+}
+.capacity-warning {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #f59e0b;
+}
+.capacity-ok {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #10b981;
+}
+
+.table-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+}
+.table-pick-btn {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: relative;
+}
+.table-pick-btn:hover {
+    border-color: var(--teal, #1a8a7d);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.table-pick-btn.selected {
+    background: var(--teal, #1a8a7d);
+    border-color: #065f46;
+    color: #fff;
+}
+.table-pick-btn.selected .t-num,
+.table-pick-btn.selected .t-cap,
+.table-pick-btn.selected .t-zone {
+    color: #fff;
+}
+.table-pick-btn.too-small {
+    opacity: 0.5;
+}
+.table-pick-btn.too-small::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: #ef4444;
+    transform: rotate(-15deg);
+}
+.t-num {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+}
+.t-cap {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+.t-zone {
+    font-size: 9px;
+    color: #9ca3af;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+}
+.table-pick-btn.zone-exterior .t-num,
+.table-pick-btn.zone-ext .t-num { color: #0891b2; }
+.table-pick-btn.zone-salon_principal .t-num,
+.table-pick-btn.zone-sp .t-num { color: #1f2937; }
+.table-pick-btn.zone-salon_interior .t-num,
+.table-pick-btn.zone-si .t-num { color: #7c3aed; }
+.table-pick-btn.selected.zone-exterior .t-num,
+.table-pick-btn.selected.zone-salon_principal .t-num,
+.table-pick-btn.selected.zone-salon_interior .t-num,
+.table-pick-btn.selected.zone-ext .t-num,
+.table-pick-btn.selected.zone-sp .t-num,
+.table-pick-btn.selected.zone-si .t-num { color: #fff; }
+
+/* ───── BADGES ───── */
+.badge-group {
+    background: #ede9fe;
+    color: #6d28d9;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 6px;
+    letter-spacing: 0.3px;
+}
+
+/* Reservation cards that are part of group reservation */
+.reservation-card.is-grouped {
+    border-left: 3px solid #a78bfa;
+}
+.reservation-card.is-grouped .res-table {
+    color: #6d28d9;
+    font-weight: 600;
+}
+
+/* ───── HINT TIPS ───── */
+.hint-tip {
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+/* ───── MOBILE RESPONSIVE ───── */
+@media (max-width: 768px) {
+    .global-search-input { width: 140px; }
+    .global-search-results { width: 280px; right: -40px; }
+    .legend-mini { width: 100%; margin-left: 0; flex-wrap: wrap; gap: 8px; }
+    .table-picker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+    .t-num { font-size: 14px; }
+    .floorplan-toolbar { padding: 8px; gap: 6px; }
+}
