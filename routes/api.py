@@ -20,6 +20,62 @@ def notify():
     broadcast_update()
 
 
+# ── DEBUG ENDPOINT (temporary) ───────────────────────────
+
+@api.route('/debug-reservation', methods=['POST'])
+def debug_reservation():
+    """Temporary debug endpoint to isolate 500 error."""
+    import traceback as tb_module
+    from pydantic import ValidationError as PydanticValidationError
+
+    steps = []
+    try:
+        steps.append('start')
+        if not request.is_json:
+            return jsonify({'steps': steps, 'error': 'not json'}), 400
+
+        raw = request.json
+        steps.append(f'got_json:{list(raw.keys())}')
+
+        # Step 1: Pydantic validation
+        try:
+            data = ReservationCreate(**raw)
+            steps.append('pydantic_ok')
+        except PydanticValidationError as e:
+            return jsonify({'steps': steps, 'error': f'pydantic_validation:{str(e)[:300]}'}), 400
+        except BaseException as e:
+            return jsonify({'steps': steps, 'error': f'pydantic_other:{type(e).__name__}:{str(e)[:300]}', 'tb': tb_module.format_exc()[-500:]}), 500
+
+        # Step 2: model_dump
+        try:
+            reservation_data = data.model_dump(mode='json')
+            steps.append(f'dump_ok:{list(reservation_data.keys())}')
+        except BaseException as e:
+            return jsonify({'steps': steps, 'error': f'dump:{type(e).__name__}:{str(e)[:300]}'}), 500
+
+        # Step 3: service call
+        try:
+            r = res_svc.create_reservation(reservation_data)
+            steps.append(f'service_ok:id={r.id}')
+        except ValueError as e:
+            return jsonify({'steps': steps, 'error': f'value_error:{str(e)}'}), 400
+        except BaseException as e:
+            return jsonify({'steps': steps, 'error': f'service:{type(e).__name__}:{str(e)[:300]}', 'tb': tb_module.format_exc()[-800:]}), 500
+
+        # Step 4: to_dict
+        try:
+            r_dict = r.to_dict()
+            steps.append('to_dict_ok')
+        except BaseException as e:
+            return jsonify({'steps': steps, 'error': f'to_dict:{type(e).__name__}:{str(e)[:300]}', 'tb': tb_module.format_exc()[-800:]}), 500
+
+        steps.append('all_done')
+        return jsonify({'steps': steps, 'result': r_dict}), 201
+
+    except BaseException as e:
+        return jsonify({'steps': steps, 'error': f'outer:{type(e).__name__}:{str(e)[:300]}', 'tb': tb_module.format_exc()[-500:]}), 500
+
+
 # ── Reservations ──────────────────────────────────────────
 
 @api.route('/reservations', methods=['GET'])
