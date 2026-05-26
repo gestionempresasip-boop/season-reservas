@@ -50,8 +50,8 @@ def create_reservation(data: ReservationCreate):
         - email: (optional) string
         - notes: (optional) string
     """
-    # Convert Pydantic model to dict for service
-    reservation_data = data.dict()
+    # Convert Pydantic model to dict for service (mode='json' ensures date → ISO string)
+    reservation_data = data.model_dump(mode='json')
     r = res_svc.create_reservation(reservation_data)
     notify()
     return jsonify(r.to_dict()), 201
@@ -70,7 +70,7 @@ def update_reservation(rid):
     # Validate with partial schema (all fields optional)
     try:
         data = ReservationUpdate(**request.json)
-        update_dict = data.dict(exclude_unset=True)
+        update_dict = data.model_dump(mode='json', exclude_unset=True)
     except Exception as e:
         return error_response(f'Validación fallida: {str(e)}', 400)
 

@@ -122,7 +122,7 @@ def validate_and_handle(schema_class):
                 import traceback
                 tb = traceback.format_exc()
                 current_app.logger.error(f'Error in {f.__name__}: {str(e)}\n{tb}')
-                return error_response(f'Error interno: {str(e)}', 500)
+                return error_response('Error interno del servidor', 500)
 
         return decorated_function
     return decorator
