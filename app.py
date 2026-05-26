@@ -79,6 +79,7 @@ def create_app():
     socketio = SocketIO(
         app,
         cors_allowed_origins='*',
+        async_mode='threading',  # Prevent gevent monkey-patching with gthread workers
         transport=['polling'],
         engineio_logger=False,
         socketio_logger=False

@@ -115,7 +115,7 @@ def validate_and_handle(schema_class):
             except Exception as e:
                 tb = traceback.format_exc()
                 current_app.logger.error(f'Schema error in {schema_class.__name__}: {type(e).__name__}: {str(e)}\n{tb}')
-                return error_response(f'ERR1:{type(e).__name__}:{str(e)[:200]}', 500)
+                return error_response('Error interno del servidor', 500)
 
             # Step 2: Call function with error handling
             try:
@@ -126,7 +126,7 @@ def validate_and_handle(schema_class):
             except Exception as e:
                 tb = traceback.format_exc()
                 current_app.logger.error(f'Error in {f.__name__}: {str(e)}\n{tb}')
-                return error_response(f'ERR2:{type(e).__name__}:{str(e)[:200]}', 500)
+                return error_response('Error interno del servidor', 500)
 
         return decorated_function
     return decorator
