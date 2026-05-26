@@ -5,6 +5,57 @@
 
 let allReservations = [];
 let selectedTableIds = []; // For multi-table selection in form
+let _cachedAvailableTables = []; // Cache from API, only re-fetched on date/time/shift/duration change
+let _lastFetchKey = ''; // Used to detect when we need to refetch
+
+// Resolve table capacity from multiple possible sources
+function getTableCapacity(tableId) {
+    tableId = Number(tableId);
+    // 1) From cached available tables (most reliable, has full data)
+    const cached = _cachedAvailableTables.find(t => t.id === tableId);
+    if (cached) return cached.capacity;
+    // 2) From tableDataMap (may be slim, may have capacity)
+    if (typeof tableDataMap !== 'undefined') {
+        const t = Object.values(tableDataMap).find(x => x.id === tableId);
+        if (t && t.capacity) return t.capacity;
+        // Lookup by number if id missing
+        if (t && t.number !== undefined && typeof TABLE_DEFS !== 'undefined') {
+            const def = TABLE_DEFS.find(d => d.n === t.number);
+            if (def) return def.cap;
+        }
+    }
+    // 3) From TABLE_DEFS by id-mapped number (best effort)
+    if (typeof tableDataMap !== 'undefined' && typeof TABLE_DEFS !== 'undefined') {
+        const t = Object.values(tableDataMap).find(x => x.id === tableId);
+        if (t) {
+            const def = TABLE_DEFS.find(d => d.n === t.number);
+            if (def) return def.cap;
+        }
+    }
+    return 0;
+}
+
+function getTableInfo(tableId) {
+    tableId = Number(tableId);
+    const cached = _cachedAvailableTables.find(t => t.id === tableId);
+    if (cached) return cached;
+    if (typeof tableDataMap !== 'undefined') {
+        const t = Object.values(tableDataMap).find(x => x.id === tableId);
+        if (t) {
+            // Enrich with TABLE_DEFS info if needed
+            if (!t.capacity && typeof TABLE_DEFS !== 'undefined') {
+                const def = TABLE_DEFS.find(d => d.n === t.number);
+                if (def) return { ...t, capacity: def.cap, zone: t.zone || zoneFromShort(def.zone), table_type: def.type };
+            }
+            return t;
+        }
+    }
+    return null;
+}
+
+function zoneFromShort(z) {
+    return ({ 'ext': 'exterior', 'sp': 'salon_principal', 'si': 'salon_interior' })[z] || z;
+}
 
 async function loadReservationsList() {
     const data = await apiGet(`/api/reservations?date=${currentDate}&shift=${currentShift}&all=true`);
@@ -134,17 +185,14 @@ function openNewReservationModal(preselectedTableIds) {
     document.getElementById('resTime').value = defaultTime;
 
     // If preselected tables, auto-set guests to fit total capacity (if > current)
-    if (selectedTableIds.length > 0 && typeof tableDataMap !== 'undefined') {
-        const totalCap = selectedTableIds.reduce((sum, tid) => {
-            const t = Object.values(tableDataMap).find(x => x.id == tid);
-            return sum + (t ? t.capacity : 0);
-        }, 0);
-        // Default guests = totalCap (user can change)
+    if (selectedTableIds.length > 0) {
+        const totalCap = selectedTableIds.reduce((sum, tid) => sum + getTableCapacity(tid), 0);
         if (totalCap > 0) {
             document.getElementById('resGuests').value = Math.min(totalCap, 14);
         }
     }
 
+    _lastFetchKey = '';  // force fetch next time
     loadAvailableTables();
     openModal('modalReservation');
 }
@@ -177,6 +225,7 @@ function fillEditForm(r) {
     // Multi-table: set selectedTableIds
     selectedTableIds = (r.table_ids || (r.table_id ? [r.table_id] : [])).map(Number);
 
+    _lastFetchKey = '';  // force fetch
     loadAvailableTables();
     openModal('modalReservation');
 }
@@ -184,9 +233,13 @@ function fillEditForm(r) {
 /**
  * Load tables for selection in the form.
  * FIXED BUG: preserves selected tables when changing guests/time.
- * If a previously selected table no longer fits (capacity), shows warning but keeps it.
+ * - Re-fetches from API ONLY when date/time/shift/duration/editId changes.
+ * - Otherwise re-renders from cache instantly (fast click feedback).
  */
-async function loadAvailableTables() {
+async function loadAvailableTables(forceFetch) {
+    const container = document.getElementById('tablePickerContainer');
+    if (!container) return;
+
     const d = document.getElementById('resDate').value || currentDate;
     const s = document.getElementById('resShift').value || currentShift;
     const g = parseInt(document.getElementById('resGuests').value) || 2;
@@ -194,38 +247,36 @@ async function loadAvailableTables() {
     const dur = parseInt(document.getElementById('resDuration')?.value || 120);
     const editId = document.getElementById('resEditId').value;
 
-    const container = document.getElementById('tablePickerContainer');
-    if (!container) return;
+    const fetchKey = `${d}|${s}|${time}|${dur}|${editId}`;
+    const needsFetch = forceFetch || fetchKey !== _lastFetchKey;
 
-    // Build URL with time + duration + exclude_id (so editing doesn't conflict with itself)
-    let url = `/api/tables/available?date=${d}&shift=${s}&guests=1`;
-    if (time) url += `&time=${time}&duration=${dur}`;
-    if (editId) url += `&exclude_reservation_id=${editId}`;
-
-    let availableTables = [];
-    try {
-        availableTables = await apiGet(url);
-    } catch (e) {
-        console.warn('Error cargando mesas disponibles:', e);
-        // Fallback to local data
-        availableTables = (typeof tableDataMap !== 'undefined')
-            ? Object.values(tableDataMap).filter(t => t.status === 'free' && t.id)
-            : [];
+    if (needsFetch) {
+        let url = `/api/tables/available?date=${d}&shift=${s}&guests=1`;
+        if (time) url += `&time=${time}&duration=${dur}`;
+        if (editId) url += `&exclude_reservation_id=${editId}`;
+        try {
+            _cachedAvailableTables = await apiGet(url);
+            _lastFetchKey = fetchKey;
+        } catch (e) {
+            console.warn('Error cargando mesas:', e);
+            _cachedAvailableTables = (typeof tableDataMap !== 'undefined')
+                ? Object.values(tableDataMap).filter(t => t.status === 'free' && t.id)
+                    .map(t => ({...t, capacity: t.capacity || (TABLE_DEFS.find(d => d.n === t.number)?.cap || 2)}))
+                : [];
+        }
     }
 
-    // Always include currently selected tables (even if not "available" in API response)
-    const availableIds = new Set(availableTables.map(t => t.id));
+    // Build full list = cached available + preserved selected (even if conflicted)
+    const availableIds = new Set(_cachedAvailableTables.map(t => t.id));
+    const allTables = [..._cachedAvailableTables];
     selectedTableIds.forEach(tid => {
         if (!availableIds.has(tid)) {
-            // Find this table in tableDataMap or fetch
-            const t = Object.values(tableDataMap || {}).find(x => x.id == tid);
-            if (t) {
-                availableTables.push({...t, _selected_preserved: true});
-            }
+            const info = getTableInfo(tid);
+            if (info) allTables.push({...info, _selected_preserved: true, capacity: info.capacity || getTableCapacity(tid)});
         }
     });
 
-    renderTablePicker(container, availableTables, g);
+    renderTablePicker(container, allTables, g);
 }
 
 function renderTablePicker(container, tables, guestsNeeded) {
@@ -237,7 +288,7 @@ function renderTablePicker(container, tables, guestsNeeded) {
 
     const totalSelectedCap = selectedTableIds.reduce((sum, tid) => {
         const t = sorted.find(x => x.id == tid);
-        return sum + (t ? t.capacity : 0);
+        return sum + (t && t.capacity ? t.capacity : getTableCapacity(tid));
     }, 0);
 
     const capacityWarning = (selectedTableIds.length > 0 && totalSelectedCap < guestsNeeded)
@@ -299,20 +350,22 @@ function toggleTableSelection(tableId) {
     } else {
         selectedTableIds.push(tableId);
     }
-    loadAvailableTables();
+    // FAST: no re-fetch, just re-render from cache (instant)
+    loadAvailableTables(false);
 }
 
 function clearSelectedTables() {
     selectedTableIds = [];
-    loadAvailableTables();
+    loadAvailableTables(false);
 }
 
 // Reload table picker when guests/time/shift/date changes (PRESERVES selection)
-document.getElementById('resGuests')?.addEventListener('input', () => loadAvailableTables());
-document.getElementById('resShift')?.addEventListener('change', () => loadAvailableTables());
-document.getElementById('resDate')?.addEventListener('change', () => loadAvailableTables());
-document.getElementById('resTime')?.addEventListener('change', () => loadAvailableTables());
-document.getElementById('resDuration')?.addEventListener('change', () => loadAvailableTables());
+// Only date/time/shift/duration trigger API refetch. Guests just re-render warning.
+document.getElementById('resGuests')?.addEventListener('input', () => loadAvailableTables(false));
+document.getElementById('resShift')?.addEventListener('change', () => loadAvailableTables(true));
+document.getElementById('resDate')?.addEventListener('change', () => loadAvailableTables(true));
+document.getElementById('resTime')?.addEventListener('change', () => loadAvailableTables(true));
+document.getElementById('resDuration')?.addEventListener('change', () => loadAvailableTables(true));
 
 function validateReservationDateTime(resDate, resTime, isEdit) {
     const now = new Date();
