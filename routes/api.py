@@ -239,9 +239,10 @@ def dashboard():
     reservations = [r.to_dict() for r in res_svc.get_all_reservations_for_date(target, shift)]
 
     # Slim down table data for mobile (only essential fields)
+    # Skip special entries like _unassigned (no 'id' field)
     slim_tables = [
         {'id': t['id'], 'number': t['number'], 'status': t['status'], 'reservation': t.get('reservation')}
-        for t in tables
+        for t in tables if 'id' in t
     ]
 
     result = {
