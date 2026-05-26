@@ -102,6 +102,7 @@ def validate_and_handle(schema_class):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            import traceback
             # Step 1: Validate JSON
             if not request.is_json:
                 return error_response('Content-Type must be application/json', 400)
@@ -111,6 +112,10 @@ def validate_and_handle(schema_class):
             except ValidationError as e:
                 errors = format_validation_errors(e.errors())
                 return error_response('Validación fallida', 400, errors)
+            except Exception as e:
+                tb = traceback.format_exc()
+                current_app.logger.error(f'Schema error in {schema_class.__name__}: {type(e).__name__}: {str(e)}\n{tb}')
+                return error_response(f'ERR1:{type(e).__name__}:{str(e)[:200]}', 500)
 
             # Step 2: Call function with error handling
             try:
@@ -119,10 +124,9 @@ def validate_and_handle(schema_class):
                 current_app.logger.warning(f'Business error: {str(e)}')
                 return error_response(str(e), 400)
             except Exception as e:
-                import traceback
                 tb = traceback.format_exc()
                 current_app.logger.error(f'Error in {f.__name__}: {str(e)}\n{tb}')
-                return error_response(f'DBG:{type(e).__name__}:{str(e)[:200]}', 500)
+                return error_response(f'ERR2:{type(e).__name__}:{str(e)[:200]}', 500)
 
         return decorated_function
     return decorator
