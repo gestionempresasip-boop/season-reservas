@@ -422,10 +422,13 @@ function sourceBadge(source) {
 function zoneName(zone) {
     const map = {
         exterior: 'Exterior',
+        ext: 'Exterior',
         salon_principal: 'Sal. Principal',
+        sp: 'Sal. Principal',
         salon_interior: 'Sal. Interior',
+        si: 'Sal. Interior',
     };
-    return map[zone] || zone;
+    return map[zone] || zone || '—';
 }
 
 // Actualizar fecha automaticamente cada dia

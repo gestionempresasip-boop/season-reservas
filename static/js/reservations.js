@@ -180,25 +180,25 @@ async function loadAvailableTables() {
     const g = parseInt(document.getElementById('resGuests').value) || 2;
     const select = document.getElementById('resTable');
     const isEditing = document.getElementById('resEditId').value !== '';
-    const currentTableId = select.value; // 🔧 Preservar mesa actual
+    const currentTableId = select.value; // Preservar mesa seleccionada antes de reconstruir
 
     // Primero: llenar con datos locales de tableDataMap (instantáneo)
     fillTableSelect(select, g);
+    if (currentTableId) select.value = currentTableId;
 
-    // Luego: intentar cargar desde API para datos más frescos
+    // Luego: cargar desde API para datos frescos
     try {
         const tables = await apiGet(`/api/tables/available?date=${d}&shift=${s}&guests=${g}`);
 
-        // 🔧 ARREGLO: Preservar mesa asignada si estamos editando
+        // Si editando, guardar el option de la mesa actual (puede no estar en "disponibles")
         let preservedOption = null;
         if (isEditing && currentTableId) {
-            // Guardar el option de la mesa actual antes de limpiar
             preservedOption = select.querySelector(`option[value="${currentTableId}"]`);
         }
 
         select.innerHTML = '<option value="">Asignar después</option>';
 
-        // 🔧 Si estamos editando, restaurar primero la mesa actual
+        // Si editando, restaurar primero la mesa actual aunque esté ocupada
         if (preservedOption && isEditing) {
             select.appendChild(preservedOption);
         }
@@ -211,6 +211,9 @@ async function loadAvailableTables() {
                 select.appendChild(opt);
             }
         });
+
+        // Restaurar la mesa previamente seleccionada (tanto en nueva reserva como editando)
+        if (currentTableId) select.value = currentTableId;
 
         if (g > 6) {
             const optgroup = document.createElement('optgroup');
