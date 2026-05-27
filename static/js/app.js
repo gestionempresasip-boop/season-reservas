@@ -159,60 +159,31 @@ function initNavigation() {
 // ── Refresh ─────────────────────────────────────
 
 async function refreshAll() {
+    let dashboardLoaded = false;
+    let lastError = null;
+
+    // ── PRIMARY: Load dashboard (single retry, never throws) ────────────
     try {
-        if (isMobile) {
-            // Mobile: split into 2 lightweight calls (parallel) instead of 1 heavy
-            const [statsRes, dashRes] = await Promise.allSettled([
-                apiGet(`/api/quick-status?date=${currentDate}&shift=${currentShift}`),
-                apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`)
-            ]);
+        const data = await apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`);
 
-            if (statsRes.status === 'fulfilled') {
-                const stats = statsRes.value;
-                document.getElementById('statReservas').textContent = stats.reservations;
-                document.getElementById('statComensales').textContent = stats.guests;
-                document.getElementById('statOcupacion').textContent = stats.occupancy + '%';
-                document.getElementById('statSentadas').textContent = stats.seated;
-                document.getElementById('statPendientes').textContent = stats.pending;
-            }
-
-            if (dashRes.status === 'fulfilled') {
-                const data = dashRes.value;
-                tableDataMap = {};
-                if (data.tables) data.tables.forEach(t => { tableDataMap[t.number] = t; });
-
-                // Procesar reservas sin mesa asignada para mostrarlas en el plano
-                if (data.reservations) {
-                    const unassignedReservations = data.reservations.filter(r => !r.table_id && (r.status === 'confirmed' || r.status === 'seated'));
-                    if (unassignedReservations.length > 0) {
-                        tableDataMap._unassigned = {
-                            unassignedReservations: unassignedReservations
-                        };
-                    }
-                }
-
-                if (typeof renderFloorPlan === 'function') renderFloorPlan();
-                if (typeof allReservations !== 'undefined' && data.reservations) {
-                    allReservations = data.reservations;
-                }
-            }
-        } else {
-            // Desktop: single dashboard call
-            const data = await apiGet(`/api/dashboard?date=${currentDate}&shift=${currentShift}`);
+        if (data && data.stats) {
             document.getElementById('statReservas').textContent = data.stats.reservations;
             document.getElementById('statComensales').textContent = data.stats.guests;
             document.getElementById('statOcupacion').textContent = data.stats.occupancy + '%';
             document.getElementById('statSentadas').textContent = data.stats.seated;
             document.getElementById('statPendientes').textContent = data.stats.pending;
+        }
 
+        if (data && data.tables) {
             tableDataMap = {};
             data.tables.forEach(t => { tableDataMap[t.number] = t; });
 
             // Procesar reservas sin mesa asignada para mostrarlas en el plano
             if (data.reservations) {
-                const unassignedReservations = data.reservations.filter(r => !r.table_id && (r.status === 'confirmed' || r.status === 'seated'));
+                const unassignedReservations = data.reservations.filter(
+                    r => !r.table_id && (r.status === 'confirmed' || r.status === 'seated')
+                );
                 if (unassignedReservations.length > 0) {
-                    // Crear un pseudo-entry en tableDataMap para mostrar reservas pendientes
                     tableDataMap._unassigned = {
                         unassignedReservations: unassignedReservations
                     };
@@ -220,23 +191,42 @@ async function refreshAll() {
             }
 
             if (typeof renderFloorPlan === 'function') renderFloorPlan();
-
-            if (typeof allReservations !== 'undefined') {
-                allReservations = data.reservations;
-            }
         }
 
-        // Refresh active view with already-loaded data
+        if (data && data.reservations && typeof allReservations !== 'undefined') {
+            allReservations = data.reservations;
+        }
+
+        dashboardLoaded = true;
+        // If banner was visible, hide it now
+        document.querySelectorAll('[data-error="connection"]').forEach(el => el.remove());
+    } catch (e) {
+        lastError = e;
+        console.warn('Dashboard fetch falló:', e?.message || e);
+    }
+
+    // ── SECONDARY: Refresh active view (errors ignored, never trigger banner)
+    try {
         const active = document.querySelector('.view.active');
         if (active) {
-            if (active.id === 'viewReservas' && typeof renderReservationsList === 'function') {
-                if (typeof allReservations !== 'undefined') renderReservationsList(allReservations);
-            } else if (active.id === 'viewEspera') loadWaitlist();
-            else if (active.id === 'viewClientes') loadClientsList();
-            else if (active.id === 'viewAgenda') loadCalendar();
+            if (active.id === 'viewReservas' && typeof renderReservationsList === 'function' && typeof allReservations !== 'undefined') {
+                renderReservationsList(allReservations);
+            } else if (active.id === 'viewEspera' && typeof loadWaitlist === 'function') {
+                loadWaitlist().catch(e => console.warn('Waitlist refresh:', e?.message));
+            } else if (active.id === 'viewClientes' && typeof loadClientsList === 'function') {
+                loadClientsList().catch(e => console.warn('Clientes refresh:', e?.message));
+            } else if (active.id === 'viewAgenda' && typeof loadCalendar === 'function') {
+                loadCalendar().catch(e => console.warn('Calendar refresh:', e?.message));
+            }
         }
     } catch (e) {
-        console.error('❌ Error en refresh:', e);
+        // Secondary errors must NEVER show the connection banner
+        console.warn('View refresh secondario:', e?.message || e);
+    }
+
+    // Only show connection error if primary dashboard FAILED
+    if (!dashboardLoaded) {
+        console.error('❌ Refresh principal falló:', lastError?.message || lastError);
         showConnectionError();
     }
 }
@@ -318,9 +308,9 @@ function showToast(msg, type = '') {
 
 // ── API Functions with Retry Logic ──────────────
 
-const MAX_RETRIES = 1; // Menos reintentos
-const RETRY_DELAY = 500;
-const API_TIMEOUT = 10000; // 10s timeout (fallar rápido es mejor que esperar)
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 800;
+const API_TIMEOUT = 20000; // 20s - Render Starter plan puede ser lento (cold start, networking)
 
 function createTimeout(ms) {
     const controller = new AbortController();
