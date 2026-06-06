@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=24">
+    <link rel="stylesheet" href="/static/css/pro.css?v=26">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -69,6 +69,7 @@
             <div class="floorplan-toolbar">
                 <button class="btn-secondary btn-sm" id="btnGroupMode" onclick="toggleGroupMode()" title="Selecciona varias mesas para hacer una reserva combinada">🔗 Agrupar mesas</button>
                 <button class="btn-secondary btn-sm" onclick="openNewReservationModal()">+ Nueva reserva</button>
+                <button class="btn-walkin btn-sm" onclick="openWalkInModal()">🚶 Walk-in</button>
                 <div class="legend-mini">
                     <span class="lm-item"><span class="lm-color free"></span>Libre</span>
                     <span class="lm-item"><span class="lm-color confirmed"></span>Reservada</span>
@@ -404,6 +405,55 @@
         </div>
     </div>
 
+    <!-- MODAL: Walk-in -->
+    <div class="modal-overlay hidden" id="modalWalkIn">
+        <div class="modal modal-walkin">
+            <div class="modal-header wi-modal-header">
+                <div>
+                    <h3>🚶 Walk-in</h3>
+                    <p class="wi-subtitle">Sin reserva previa &middot; entrada directa</p>
+                </div>
+                <button class="btn-close" onclick="closeModal('modalWalkIn')">&times;</button>
+            </div>
+
+            <!-- Info bar: fecha, turno, hora actual -->
+            <div class="wi-info-bar">
+                <span id="wiInfoDate"></span>
+                <span class="wi-dot">&middot;</span>
+                <span id="wiInfoShift"></span>
+                <span class="wi-dot">&middot;</span>
+                <span id="wiInfoTime"></span>
+            </div>
+
+            <!-- Contador de comensales -->
+            <div class="wi-guests-row">
+                <span class="wi-guests-label">Comensales</span>
+                <div class="wi-counter">
+                    <button type="button" class="wi-count-btn" onclick="wiChangeGuests(-1)">&#8722;</button>
+                    <span id="wiGuestsNum" class="wi-count-num">2</span>
+                    <button type="button" class="wi-count-btn" onclick="wiChangeGuests(1)">&#43;</button>
+                </div>
+            </div>
+
+            <!-- Plano de mesas -->
+            <div class="form-group">
+                <label>Selecciona mesa(s) <span style="font-weight:normal;opacity:0.6;font-size:11px">— puedes elegir varias</span></label>
+                <div id="wiTablePickerContainer" class="table-picker-container"></div>
+            </div>
+
+            <!-- Notas opcionales -->
+            <div class="form-group">
+                <label>Notas <span style="font-weight:normal;opacity:0.5;font-size:11px">— opcional</span></label>
+                <textarea id="wiNotes" class="form-input" rows="1" placeholder="Alergia, cumplea&ntilde;os..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('modalWalkIn')">Cancelar</button>
+                <button type="button" class="btn-walkin btn-walkin-lg" onclick="submitWalkIn()">🪑 Sentar ahora</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: Table Detail -->
     <div class="modal-overlay hidden" id="modalTableDetail">
         <div class="modal modal-sm">
@@ -526,7 +576,7 @@
     </script>
     <script src="/static/js/app.js?v=24"></script>
     <script src="/static/js/floorplan.js?v=24"></script>
-    <script src="/static/js/reservations.js?v=24"></script>
+    <script src="/static/js/reservations.js?v=26"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=24"></script>

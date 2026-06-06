@@ -8,6 +8,12 @@ let selectedTableIds = []; // For multi-table selection in form
 let _cachedAvailableTables = []; // Cache from API, only re-fetched on date/time/shift/duration change
 let _lastFetchKey = ''; // Used to detect when we need to refetch
 
+// Walk-in state
+let wiSelectedTableIds = [];
+let _wiCachedTables = [];
+let _wiLastFetchKey = '';
+let _wiGuests = 2;
+
 // Resolve table capacity from multiple possible sources
 function getTableCapacity(tableId) {
     tableId = Number(tableId);
@@ -320,25 +326,110 @@ function renderFromCache(container, guestsNeeded) {
 }
 
 function renderTablePicker(container, tables, guestsNeeded) {
-    // Sort tables by zone then number
-    const sorted = [...tables].sort((a, b) => {
-        if (a.zone !== b.zone) return (a.zone || '').localeCompare(b.zone || '');
-        return (a.number || 0) - (b.number || 0);
-    });
+    const hasDefs = typeof TABLE_DEFS !== 'undefined' && TABLE_DEFS.length > 0;
+    if (!hasDefs) {
+        renderTablePickerGrid(container, tables, guestsNeeded);
+        return;
+    }
+
+    const byNumber = new Map(tables.map(t => [t.number, t]));
 
     const totalSelectedCap = selectedTableIds.reduce((sum, tid) => {
-        const t = sorted.find(x => x.id == tid);
-        return sum + (t && t.capacity ? t.capacity : getTableCapacity(tid));
+        const t = tables.find(x => x.id == tid);
+        return sum + (t?.capacity || getTableCapacity(tid) || 2);
     }, 0);
 
     const capacityWarning = (selectedTableIds.length > 0 && totalSelectedCap < guestsNeeded)
         ? `<div class="capacity-warning">⚠️ Capacidad seleccionada (${totalSelectedCap}) menor que comensales (${guestsNeeded}). Añade más mesas.</div>`
         : '';
-
     const capacityOk = (selectedTableIds.length > 0 && totalSelectedCap >= guestsNeeded)
         ? `<div class="capacity-ok">✓ ${totalSelectedCap} plazas para ${guestsNeeded} comensales</div>`
         : '';
 
+    const tablesSVG = TABLE_DEFS.map(def => {
+        const avail = byNumber.get(def.n);
+        const tableId = avail?.id;
+        const isSelected = tableId ? selectedTableIds.includes(tableId) : false;
+        const isUnavailable = !avail;
+        const tooSmall = avail && !avail._selected_preserved && avail.capacity < guestsNeeded && !isSelected;
+        const isPreserved = avail?._selected_preserved;
+
+        const cx = def.x + def.w / 2;
+        const cy = def.y + def.h / 2;
+
+        let groupCls = 'tp-tg';
+        if (isSelected) groupCls += ' tp-sel';
+        else if (isUnavailable) groupCls += ' tp-unavail';
+        else if (tooSmall) groupCls += ' tp-small';
+        if (isPreserved) groupCls += ' tp-preserved';
+
+        const clickAttr = (tableId && !isUnavailable) ? `onclick="toggleTableSelection(${tableId})"` : '';
+
+        return `<g class="${groupCls}" ${clickAttr}>
+            <rect x="${def.x}" y="${def.y}" width="${def.w}" height="${def.h}" rx="1" class="tp-rect"/>
+            ${_pickerChairs(def)}
+            <text x="${cx}" y="${cy - 0.3}" class="tp-num">${def.n}</text>
+            <text x="${cx}" y="${cy + 2.2}" class="tp-cap">${def.cap}p</text>
+        </g>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="table-picker-header">
+            <div class="table-picker-info">
+                ${selectedTableIds.length === 0
+                    ? '<span class="hint">Toca una mesa para seleccionar (puedes elegir varias)</span>'
+                    : `<span class="selected-summary">${selectedTableIds.length} mesa${selectedTableIds.length > 1 ? 's' : ''} · ${totalSelectedCap} plazas</span>`
+                }
+            </div>
+            ${selectedTableIds.length > 0 ? `<button type="button" class="btn-secondary btn-sm" onclick="clearSelectedTables()">Quitar todas</button>` : ''}
+        </div>
+        ${capacityWarning}${capacityOk}
+        <div class="tp-svg-wrap">
+            <svg class="tp-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                <rect x="1" y="1" width="98" height="28" rx="1.5" fill="#f0f7f5" stroke="#1a8a7d" stroke-width="0.3" stroke-dasharray="1,0.5"/>
+                <text x="82" y="4" class="zone-label">EXTERIOR</text>
+                <rect x="1" y="30" width="52" height="69" rx="1.5" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.3"/>
+                <text x="5" y="33" class="zone-label">SALÓN PRINCIPAL</text>
+                <rect x="54" y="30" width="35" height="54" rx="1.5" fill="#faf8f3" stroke="#d0d0d0" stroke-width="0.3"/>
+                <text x="58" y="33" class="zone-label">SALÓN INTERIOR</text>
+                <rect x="90" y="60" width="9" height="30" rx="1" fill="#f5f0e6" stroke="#c5b896" stroke-width="0.3"/>
+                <text x="94.5" y="71" class="cava-letter">C</text>
+                <text x="94.5" y="75" class="cava-letter">A</text>
+                <text x="94.5" y="79" class="cava-letter">V</text>
+                <text x="94.5" y="83" class="cava-letter">A</text>
+                ${tablesSVG}
+            </svg>
+        </div>
+        <div class="tp-legend">
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-avail"></span> Disponible</span>
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-sel"></span> Seleccionada</span>
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-unavail"></span> Ocupada</span>
+        </div>
+    `;
+}
+
+function _pickerChairs(def) {
+    if (typeof getChairPositions !== 'function') return '';
+    return getChairPositions(def).map(([cx, cy]) =>
+        `<circle cx="${cx}" cy="${cy}" r="0.8" class="tp-chair"/>`
+    ).join('');
+}
+
+function renderTablePickerGrid(container, tables, guestsNeeded) {
+    const sorted = [...tables].sort((a, b) => {
+        if (a.zone !== b.zone) return (a.zone || '').localeCompare(b.zone || '');
+        return (a.number || 0) - (b.number || 0);
+    });
+    const totalSelectedCap = selectedTableIds.reduce((sum, tid) => {
+        const t = sorted.find(x => x.id == tid);
+        return sum + (t && t.capacity ? t.capacity : getTableCapacity(tid));
+    }, 0);
+    const capacityWarning = (selectedTableIds.length > 0 && totalSelectedCap < guestsNeeded)
+        ? `<div class="capacity-warning">⚠️ Capacidad seleccionada (${totalSelectedCap}) menor que comensales (${guestsNeeded}). Añade más mesas.</div>`
+        : '';
+    const capacityOk = (selectedTableIds.length > 0 && totalSelectedCap >= guestsNeeded)
+        ? `<div class="capacity-ok">✓ ${totalSelectedCap} plazas para ${guestsNeeded} comensales</div>`
+        : '';
     container.innerHTML = `
         <div class="table-picker-header">
             <div class="table-picker-info">
@@ -349,23 +440,19 @@ function renderTablePicker(container, tables, guestsNeeded) {
             </div>
             ${selectedTableIds.length > 0 ? `<button type="button" class="btn-secondary btn-sm" onclick="clearSelectedTables()">Quitar todas</button>` : ''}
         </div>
-        ${capacityWarning}
-        ${capacityOk}
+        ${capacityWarning}${capacityOk}
         <div class="table-picker-grid">
             ${sorted.map(t => {
                 const isSelected = selectedTableIds.includes(t.id);
-                const preservedWarn = t._selected_preserved ? '⚠' : '';
                 const tooSmall = t.capacity < guestsNeeded && !isSelected;
-                return `
-                    <button type="button"
-                            class="table-pick-btn ${isSelected ? 'selected' : ''} ${tooSmall ? 'too-small' : ''} zone-${t.zone}"
-                            onclick="toggleTableSelection(${t.id})"
-                            data-table-id="${t.id}">
-                        <div class="t-num">${t.number}${preservedWarn}</div>
-                        <div class="t-cap">${t.capacity}p</div>
-                        <div class="t-zone">${zoneShort(t.zone)}</div>
-                    </button>
-                `;
+                return `<button type="button"
+                    class="table-pick-btn ${isSelected ? 'selected' : ''} ${tooSmall ? 'too-small' : ''} zone-${t.zone}"
+                    onclick="toggleTableSelection(${t.id})"
+                    data-table-id="${t.id}">
+                    <div class="t-num">${t.number}${t._selected_preserved ? '⚠' : ''}</div>
+                    <div class="t-cap">${t.capacity}p</div>
+                    <div class="t-zone">${zoneShort(t.zone)}</div>
+                </button>`;
             }).join('')}
         </div>
     `;
@@ -612,6 +699,200 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ══════════════════════════════════════════════════
+//  WALK-IN  — entrada directa sin reserva previa
+// ══════════════════════════════════════════════════
+
+function openWalkInModal() {
+    // Reset state
+    wiSelectedTableIds = [];
+    _wiCachedTables = [];
+    _wiLastFetchKey = '';
+    _wiGuests = 2;
+
+    // Fill info bar
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const dayStr = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+    const shiftName = currentShift === 'comida' ? 'Comida' : 'Cena';
+    document.getElementById('wiInfoDate').textContent = dayStr.charAt(0).toUpperCase() + dayStr.slice(1);
+    document.getElementById('wiInfoShift').textContent = shiftName;
+    document.getElementById('wiInfoTime').textContent = `${hh}:${mm}`;
+    document.getElementById('wiGuestsNum').textContent = '2';
+    document.getElementById('wiNotes').value = '';
+    document.getElementById('wiTablePickerContainer').innerHTML =
+        '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Cargando mesas…</div>';
+
+    openModal('modalWalkIn');
+    _loadWiTables(true);
+}
+
+function wiChangeGuests(delta) {
+    _wiGuests = Math.max(1, Math.min(20, _wiGuests + delta));
+    document.getElementById('wiGuestsNum').textContent = _wiGuests;
+    _renderWiPicker(document.getElementById('wiTablePickerContainer'), _wiCachedTables, _wiGuests);
+}
+
+async function _loadWiTables(forceFetch) {
+    const container = document.getElementById('wiTablePickerContainer');
+    if (!container) return;
+
+    // Instant render from local TABLE_DEFS
+    if (_wiCachedTables.length === 0) {
+        _wiCachedTables = buildLocalTableList().filter(t => !t._occupied);
+    }
+    _renderWiPicker(container, _wiCachedTables, _wiGuests);
+
+    // Refine with API
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const fetchKey = `${currentDate}|${currentShift}|${time.slice(0,4)}`; // round to 10 min
+    if (forceFetch || fetchKey !== _wiLastFetchKey) {
+        _wiLastFetchKey = fetchKey;
+        try {
+            const apiTables = await apiGet(
+                `/api/tables/available?date=${currentDate}&shift=${currentShift}&guests=1&time=${time}&duration=120`
+            );
+            _wiCachedTables = apiTables;
+            _renderWiPicker(
+                document.getElementById('wiTablePickerContainer'),
+                _wiCachedTables,
+                _wiGuests
+            );
+        } catch (e) {
+            console.warn('Walk-in: error cargando mesas', e);
+        }
+    }
+}
+
+function _renderWiPicker(container, tables, guestsNeeded) {
+    if (!container) return;
+    if (typeof TABLE_DEFS === 'undefined' || !TABLE_DEFS.length) return;
+
+    const byNumber = new Map(tables.map(t => [t.number, t]));
+    const totalCap = wiSelectedTableIds.reduce((sum, tid) => {
+        const t = tables.find(x => x.id == tid);
+        return sum + (t?.capacity || getTableCapacity(tid) || 2);
+    }, 0);
+
+    const capWarning = (wiSelectedTableIds.length > 0 && totalCap < guestsNeeded)
+        ? `<div class="capacity-warning">⚠️ Capacidad (${totalCap}p) menor que comensales (${guestsNeeded}). Añade más mesas.</div>` : '';
+    const capOk = (wiSelectedTableIds.length > 0 && totalCap >= guestsNeeded)
+        ? `<div class="capacity-ok">✓ ${totalCap} plazas para ${guestsNeeded} comensales</div>` : '';
+
+    const tablesSVG = TABLE_DEFS.map(def => {
+        const avail = byNumber.get(def.n);
+        const tableId = avail?.id;
+        const isSelected = tableId ? wiSelectedTableIds.includes(tableId) : false;
+        const isUnavailable = !avail;
+        const tooSmall = avail && avail.capacity < guestsNeeded && !isSelected;
+
+        const cx = def.x + def.w / 2;
+        const cy = def.y + def.h / 2;
+        let groupCls = 'tp-tg';
+        if (isSelected)       groupCls += ' tp-sel';
+        else if (isUnavailable) groupCls += ' tp-unavail';
+        else if (tooSmall)    groupCls += ' tp-small';
+
+        const clickAttr = (tableId && !isUnavailable) ? `onclick="toggleWiTable(${tableId})"` : '';
+
+        return `<g class="${groupCls}" ${clickAttr}>
+            <rect x="${def.x}" y="${def.y}" width="${def.w}" height="${def.h}" rx="1" class="tp-rect"/>
+            ${_pickerChairs(def)}
+            <text x="${cx}" y="${cy - 0.3}" class="tp-num">${def.n}</text>
+            <text x="${cx}" y="${cy + 2.2}" class="tp-cap">${def.cap}p</text>
+        </g>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="table-picker-header">
+            <div class="table-picker-info">
+                ${wiSelectedTableIds.length === 0
+                    ? '<span class="hint">Toca una mesa para asignar</span>'
+                    : `<span class="selected-summary">${wiSelectedTableIds.length} mesa${wiSelectedTableIds.length > 1 ? 's' : ''} · ${totalCap} plazas</span>`
+                }
+            </div>
+            ${wiSelectedTableIds.length > 0
+                ? `<button type="button" class="btn-secondary btn-sm" onclick="clearWiTables()">Quitar todas</button>` : ''}
+        </div>
+        ${capWarning}${capOk}
+        <div class="tp-svg-wrap">
+            <svg class="tp-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                <rect x="1" y="1" width="98" height="28" rx="1.5" fill="#f0f7f5" stroke="#1a8a7d" stroke-width="0.3" stroke-dasharray="1,0.5"/>
+                <text x="82" y="4" class="zone-label">EXTERIOR</text>
+                <rect x="1" y="30" width="52" height="69" rx="1.5" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.3"/>
+                <text x="5" y="33" class="zone-label">SALÓN PRINCIPAL</text>
+                <rect x="54" y="30" width="35" height="54" rx="1.5" fill="#faf8f3" stroke="#d0d0d0" stroke-width="0.3"/>
+                <text x="58" y="33" class="zone-label">SALÓN INTERIOR</text>
+                <rect x="90" y="60" width="9" height="30" rx="1" fill="#f5f0e6" stroke="#c5b896" stroke-width="0.3"/>
+                <text x="94.5" y="71" class="cava-letter">C</text>
+                <text x="94.5" y="75" class="cava-letter">A</text>
+                <text x="94.5" y="79" class="cava-letter">V</text>
+                <text x="94.5" y="83" class="cava-letter">A</text>
+                ${tablesSVG}
+            </svg>
+        </div>
+        <div class="tp-legend">
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-avail"></span> Disponible</span>
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-sel"></span> Seleccionada</span>
+            <span class="tp-leg-item"><span class="tp-leg-dot tp-leg-unavail"></span> Ocupada</span>
+        </div>
+    `;
+}
+
+function toggleWiTable(tableId) {
+    tableId = Number(tableId);
+    const idx = wiSelectedTableIds.indexOf(tableId);
+    if (idx >= 0) wiSelectedTableIds.splice(idx, 1);
+    else wiSelectedTableIds.push(tableId);
+    _renderWiPicker(document.getElementById('wiTablePickerContainer'), _wiCachedTables, _wiGuests);
+}
+
+function clearWiTables() {
+    wiSelectedTableIds = [];
+    _renderWiPicker(document.getElementById('wiTablePickerContainer'), _wiCachedTables, _wiGuests);
+}
+
+async function submitWalkIn() {
+    if (wiSelectedTableIds.length === 0) {
+        showToast('Selecciona al menos una mesa', 'error');
+        return;
+    }
+
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+
+    const payload = {
+        client_name: 'Walk-in',
+        client_phone: '',
+        date: currentDate,
+        shift: currentShift,
+        time: `${hh}:${mm}`,
+        guests: _wiGuests,
+        table_ids: wiSelectedTableIds,
+        source: 'walk_in',
+        duration_minutes: 120,
+        notes: document.getElementById('wiNotes').value.trim(),
+    };
+
+    const btn = document.querySelector('.btn-walkin-lg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+    try {
+        const res = await apiPost('/api/reservations', payload);
+        // Immediately seat (mark as occupied)
+        await apiPut(`/api/reservations/${res.id}/seat`, {});
+        closeModal('modalWalkIn');
+        showToast('✅ Walk-in sentado correctamente', 'success');
+        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
+    } catch (e) {
+        showToast('Error: ' + (e.message || 'No se pudo crear el walk-in'), 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '🪑 Sentar ahora'; }
+    }
+}
 
 // Export CSV
 function exportReservationsCSV() {
