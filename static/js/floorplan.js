@@ -452,33 +452,73 @@ function openTableDetail(tableNumber) {
     openModal('modalTableDetail');
 }
 
+// ── Optimistic update: cambia la UI instantáneamente, la API confirma en segundo plano ──
+function _applyOptimistic(resId, newStatus) {
+    for (const key of Object.keys(tableDataMap)) {
+        const td = tableDataMap[key];
+        if (td && td.reservation && td.reservation.id === resId) {
+            if (newStatus === 'free') {
+                tableDataMap[key] = { ...td, status: 'free', reservation: null };
+            } else {
+                tableDataMap[key] = {
+                    ...td,
+                    status: newStatus,
+                    reservation: { ...td.reservation, status: newStatus }
+                };
+            }
+            break;
+        }
+    }
+    renderFloorPlan();
+}
+
 async function seatFromPlan(resId) {
+    _applyOptimistic(resId, 'seated');   // ← INSTANTE: mesa verde ya
     closeModal('modalTableDetail');
-    await apiPut(`/api/reservations/${resId}/seat`);
-    showToast('Mesa sentada', 'success');
-    debouncedRefresh();
+    showToast('Mesa sentada ✓', 'success');
+    try {
+        await apiPut(`/api/reservations/${resId}/seat`);
+    } catch (e) {
+        showToast('Error al sentar mesa', 'error');
+    }
+    loadFloorPlan(); // sincroniza desde servidor (sin debounce de 500ms)
 }
 
 async function cancelFromPlan(resId) {
+    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
     closeModal('modalTableDetail');
-    await apiDelete(`/api/reservations/${resId}`);
-    showToast('Reserva cancelada');
-    debouncedRefresh();
+    showToast('Reserva cancelada', 'success');
+    try {
+        await apiDelete(`/api/reservations/${resId}`);
+    } catch (e) {
+        showToast('Error al cancelar', 'error');
+    }
+    loadFloorPlan();
 }
 
 async function completeFromPlan(resId) {
+    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
     closeModal('modalTableDetail');
-    await apiPut(`/api/reservations/${resId}/complete`);
-    showToast('Mesa completada', 'success');
-    debouncedRefresh();
+    showToast('Mesa completada ✓', 'success');
+    try {
+        await apiPut(`/api/reservations/${resId}/complete`);
+    } catch (e) {
+        showToast('Error al completar', 'error');
+    }
+    loadFloorPlan();
 }
 
 async function deleteFromPlan(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
+    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
     closeModal('modalTableDetail');
-    await apiDelete(`/api/reservations/${resId}/delete`);
-    showToast('Reserva eliminada', 'error');
-    debouncedRefresh();
+    try {
+        await apiDelete(`/api/reservations/${resId}/delete`);
+        showToast('Reserva eliminada');
+    } catch (e) {
+        showToast('Error al eliminar', 'error');
+    }
+    loadFloorPlan();
 }
 
 function editReservationFromPlan(resId) {

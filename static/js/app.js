@@ -86,11 +86,11 @@ function refreshActiveView() {
     if (active.id === 'viewAgenda') loadCalendar();
 }
 
-// Debounced refresh: múltiples llamadas en 500ms se agrupan en una sola
+// Debounced refresh: múltiples eventos socket en 100ms se agrupan en una sola llamada
 let _refreshTimer = null;
 function debouncedRefresh() {
     if (_refreshTimer) clearTimeout(_refreshTimer);
-    _refreshTimer = setTimeout(() => { refreshAll(); }, 500);
+    _refreshTimer = setTimeout(() => { refreshAll(); }, 100);
 }
 
 // ── Date ────────────────────────────────────────
@@ -308,9 +308,9 @@ function showToast(msg, type = '') {
 
 // ── API Functions with Retry Logic ──────────────
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 800;
-const API_TIMEOUT = 20000; // 20s - Render Starter plan puede ser lento (cold start, networking)
+const MAX_RETRIES = 1;       // Un reintento es suficiente para operaciones rápidas
+const RETRY_DELAY = 400;
+const API_TIMEOUT = 10000;  // 10s timeout (el cold start ya pasó después de iniciar)
 
 function createTimeout(ms) {
     const controller = new AbortController();

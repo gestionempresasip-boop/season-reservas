@@ -544,8 +544,7 @@ async function submitReservation(e) {
             showToast(selectedTableIds.length > 1 ? `Reserva creada con ${selectedTableIds.length} mesas` : 'Reserva creada', 'success');
         }
         closeModal('modalReservation');
-        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
-        refreshAll();
+        if (typeof loadFloorPlan === 'function') loadFloorPlan(); // no-await: async en segundo plano
     } catch (error) {
         showToast(error.message || 'Error al guardar reserva', 'error');
     }
@@ -554,36 +553,40 @@ async function submitReservation(e) {
 // ── Quick Actions ───────────────────────────────
 
 async function quickSeat(resId) {
-    await apiPut(`/api/reservations/${resId}/seat`);
-    showToast('Mesa sentada', 'success');
-    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'seated'); // instante
+    showToast('Mesa sentada ✓', 'success');
+    try { await apiPut(`/api/reservations/${resId}/seat`); } catch (e) { showToast('Error', 'error'); }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
     refreshAll();
 }
 
 async function quickComplete(resId) {
-    await apiPut(`/api/reservations/${resId}/complete`);
-    showToast('Mesa completada', 'success');
-    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
+    showToast('Mesa completada ✓', 'success');
+    try { await apiPut(`/api/reservations/${resId}/complete`); } catch (e) { showToast('Error', 'error'); }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
     refreshAll();
 }
 
 async function quickNoShow(resId) {
-    await apiPut(`/api/reservations/${resId}/noshow`);
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
     showToast('Marcado como No Show', 'error');
-    if (typeof loadFloorPlan === 'function') await loadFloorPlan();
+    try { await apiPut(`/api/reservations/${resId}/noshow`); } catch (e) { showToast('Error', 'error'); }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
     refreshAll();
 }
 
 async function quickDelete(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
     try {
         await apiDelete(`/api/reservations/${resId}/delete`);
-        showToast('Reserva eliminada', 'error');
-        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
-        refreshAll();
+        showToast('Reserva eliminada');
     } catch (error) {
         showToast('Error al eliminar reserva', 'error');
     }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
+    refreshAll();
 }
 
 // ── Drag-drop: drop reservation card on a table ─────────────────────
@@ -592,22 +595,22 @@ async function assignReservationToTable(reservationId, tableId) {
     try {
         await apiPut(`/api/reservations/${reservationId}/assign-tables`, { table_ids: [tableId] });
         showToast('Mesa asignada', 'success');
-        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
-        refreshAll();
     } catch (e) {
         showToast(e.message || 'Error al asignar mesa', 'error');
     }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
+    refreshAll();
 }
 
 async function assignReservationToTables(reservationId, tableIds) {
     try {
         await apiPut(`/api/reservations/${reservationId}/assign-tables`, { table_ids: tableIds });
         showToast(`${tableIds.length} mesas asignadas`, 'success');
-        if (typeof loadFloorPlan === 'function') await loadFloorPlan();
-        refreshAll();
     } catch (e) {
         showToast(e.message || 'Error al asignar mesas', 'error');
     }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
+    refreshAll();
 }
 
 // ── Client Autocomplete ─────────────────────────
