@@ -30,9 +30,32 @@ def process_message(phone, message):
     data = json.loads(session.data) if session.data else {}
     msg = message.strip().lower()
 
-    if msg in ['cancelar', 'salir', 'cancel']:
+    # Cancelar en cualquier paso
+    if msg in ['cancelar', 'salir', 'cancel', 'stop']:
         reset_session(phone)
         return "Reserva cancelada. Escribe *RESERVAR* cuando quieras hacer una nueva reserva."
+
+    # RESERVAR reinicia siempre, desde cualquier paso
+    is_reservar = 'reservar' in msg or msg in ['reserva', 'mesa', 'hola', 'inicio', 'start', 'menu', 'menú']
+    if is_reservar and session.step != 'start':
+        reset_session(phone)
+        session = get_or_create_session(phone)
+        data = {}
+
+    # Auto-reset si la sesión tiene una fecha pasada (sesión caducada)
+    if session.step not in ('start', 'date') and data.get('date'):
+        try:
+            stored_date = date.fromisoformat(data['date'])
+            if stored_date < date.today():
+                reset_session(phone)
+                session = get_or_create_session(phone)
+                data = {}
+                return (
+                    "⚠️ Tu sesión anterior ha caducado (la fecha ya pasó).\n\n"
+                    "Escribe *RESERVAR* para empezar de nuevo."
+                )
+        except (ValueError, KeyError):
+            pass
 
     if session.step == 'start':
         if 'reservar' in msg or 'reserva' in msg or 'mesa' in msg or msg == 'hola':
@@ -176,27 +199,40 @@ def process_message(phone, message):
 
     if session.step == 'confirm':
         if msg in ['si', 'sí', 'yes', 'ok', 'confirmar', 'confirmo']:
-            reservation = create_reservation({
-                'client_name': data['name'],
-                'client_phone': phone,
-                'date': data['date'],
-                'shift': data['shift'],
-                'time': data['time'],
-                'guests': data['guests'],
-                'table_id': data.get('suggested_table'),
-                'source': 'whatsapp',
-            })
-            reset_session(phone)
-            fecha = date.fromisoformat(data['date']).strftime('%d/%m/%Y')
-            return (
-                f"✅ *Reserva confirmada!*\n\n"
-                f"Reserva #{reservation.id}\n"
-                f"\U0001f464 {data['name']}\n"
-                f"\U0001f4c5 {fecha} a las {data['time']}\n"
-                f"\U0001f465 {data['guests']} personas\n\n"
-                f"Te esperamos en *Season*! \U0001f33f\n\n"
-                f"Para cancelar, llámanos al restaurante."
-            )
+            try:
+                reservation = create_reservation({
+                    'client_name': data['name'],
+                    'client_phone': phone,
+                    'date': data['date'],
+                    'shift': data['shift'],
+                    'time': data['time'],
+                    'guests': data['guests'],
+                    'table_id': data.get('suggested_table'),
+                    'source': 'whatsapp',
+                })
+                reset_session(phone)
+                fecha = date.fromisoformat(data['date']).strftime('%d/%m/%Y')
+                return (
+                    f"✅ *Reserva confirmada!*\n\n"
+                    f"Reserva #{reservation.id}\n"
+                    f"\U0001f464 {data['name']}\n"
+                    f"\U0001f4c5 {fecha} a las {data['time']}\n"
+                    f"\U0001f465 {data['guests']} personas\n\n"
+                    f"Te esperamos en *Season*! \U0001f33f\n\n"
+                    f"Para cancelar, llámanos al restaurante."
+                )
+            except ValueError as e:
+                reset_session(phone)
+                return (
+                    f"❌ No se pudo crear la reserva: {str(e)}\n\n"
+                    f"Escribe *RESERVAR* para intentarlo de nuevo."
+                )
+            except Exception:
+                reset_session(phone)
+                return (
+                    "❌ Hubo un error al crear la reserva. Por favor inténtalo de nuevo.\n\n"
+                    "Escribe *RESERVAR* para empezar."
+                )
         elif msg in ['no', 'cancelar']:
             reset_session(phone)
             return "Reserva cancelada. Escribe *RESERVAR* cuando quieras intentarlo de nuevo."
