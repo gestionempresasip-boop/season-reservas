@@ -219,16 +219,15 @@
 
         <!-- STEP 2: Floor Plan Selection -->
         <div class="booking-panel" id="panelStep2" style="display:none;">
-            <h2>&#127869; Elige tu mesa</h2>
+            <h2>&#127869; Elige tu(s) mesa(s)</h2>
             <p style="font-size:13px; color:var(--gray-500); margin-bottom:12px;">
-                Selecciona una mesa disponible para <strong id="pubGuestsLabel">2</strong> personas.
-                Las mesas que no tienen capacidad suficiente aparecen en amarillo.
+                Toca las mesas para seleccionarlas para <strong id="pubGuestsLabel">2</strong> personas.
+                Puedes combinar varias mesas para grupos grandes.
             </p>
             <div class="legend">
                 <div class="legend-item"><div class="legend-dot" style="background:#d1fae5; border:2px solid #16a34a;"></div> Disponible</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#fee2e2; border:2px solid #ef4444;"></div> Ocupada</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#dbeafe; border:2px solid #2563eb;"></div> Tu selecci&oacute;n</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#fef3c7; border:2px solid #d97706;"></div> Insuficiente</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#dbeafe; border:2px solid #2563eb;"></div> Seleccionada</div>
             </div>
             <div class="floorplan-pub">
                 <svg id="pubFloorplan" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
@@ -243,11 +242,12 @@
                 </svg>
             </div>
             <div id="selectedMesaInfo" style="display:none;" class="selected-mesa-info">
-                <div>
+                <div style="flex:1;">
                     <div class="mesa-name" id="selectedMesaName">Mesa 1</div>
-                    <div class="mesa-detail" id="selectedMesaDetail">Sal. Principal &middot; 4 personas</div>
+                    <div class="mesa-detail" id="selectedMesaDetail">4 personas</div>
+                    <div id="capBanner" style="font-size:12px; margin-top:4px;"></div>
                 </div>
-                <button class="btn-pub btn-pub-secondary" onclick="clearSelection()" style="padding:8px 16px;">Cambiar</button>
+                <button class="btn-pub btn-pub-secondary" onclick="clearSelection()" style="padding:8px 16px;">Quitar todas</button>
             </div>
             <div class="pub-actions">
                 <button class="btn-pub btn-pub-secondary" onclick="goToStep1()">&#8592; Atr&aacute;s</button>
@@ -325,8 +325,8 @@ const ZONES = {ext:'Exterior', sp:'Sal. Principal', si:'Sal. Interior'};
 
 let pubShift = 'comida';
 let pubTableStatus = {};
-let selectedTableId = null;
-let selectedTableDef = null;
+let selectedTableIds = [];   // array of table DB ids
+let selectedTableDefs = [];  // array of TABLE_DEFS entries
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -366,7 +366,14 @@ async function goToStep2() {
 }
 
 function goToStep3() {
-    if (!selectedTableId) { alert('Selecciona una mesa'); return; }
+    if (selectedTableIds.length === 0) { alert('Selecciona al menos una mesa'); return; }
+    const guests = parseInt(document.getElementById('pubGuests').value) || 2;
+    const totalCap = selectedTableDefs.reduce((s, d) => s + d.cap, 0);
+    const maxWithExtra = totalCap + 2 * selectedTableIds.length;
+    if (maxWithExtra < guests) {
+        alert(`Capacidad insuficiente: ${totalCap} plazas (máx. ${maxWithExtra} con sillas extra) para ${guests} comensales. Añade más mesas.`);
+        return;
+    }
     showStep(3);
     renderSummary();
 }
@@ -402,12 +409,11 @@ function renderPublicFloorplan() {
     TABLE_DEFS.forEach(def => {
         const td = pubTableStatus[def.n] || {};
         const occupied = td.status && td.status !== 'free';
-        const tooSmall = !occupied && def.cap < guests;
-        const isSelected = selectedTableId === td.id;
+        const isSelected = selectedTableIds.includes(td.id);
 
         const g = document.createElementNS('http://www.w3.org/2000/svg','g');
         g.classList.add('pub-table');
-        if (occupied || tooSmall) g.classList.add('disabled');
+        if (occupied) g.classList.add('disabled');
 
         const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
         rect.setAttribute('x', def.x); rect.setAttribute('y', def.y);
@@ -415,7 +421,6 @@ function renderPublicFloorplan() {
         rect.classList.add('pub-table-rect');
         if (isSelected) rect.classList.add('selected');
         else if (occupied) rect.classList.add('occupied');
-        else if (tooSmall) rect.classList.add('too-small');
         else rect.classList.add('free');
         g.appendChild(rect);
 
@@ -435,22 +440,21 @@ function renderPublicFloorplan() {
         const statusText = document.createElementNS('http://www.w3.org/2000/svg','text');
         statusText.setAttribute('x', cx); statusText.setAttribute('y', def.y + def.h + 2.5);
         statusText.classList.add('pub-table-status');
-        if (isSelected) { statusText.textContent = 'TU MESA'; statusText.style.fill = '#2563eb'; }
+        if (isSelected) { statusText.textContent = '✓'; statusText.style.fill = '#2563eb'; }
         else if (occupied) { statusText.textContent = 'OCUPADA'; statusText.style.fill = '#ef4444'; }
-        else if (tooSmall) { statusText.textContent = 'Pequeña'; statusText.style.fill = '#d97706'; }
         g.appendChild(statusText);
 
         // Chairs
         getChairPos(def).forEach(([px,py]) => {
             const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
             c.setAttribute('cx',px); c.setAttribute('cy',py); c.setAttribute('r', 0.7);
-            c.style.fill = isSelected ? '#3b82f6' : occupied ? '#fca5a5' : tooSmall ? '#fcd34d' : '#86efac';
+            c.style.fill = isSelected ? '#3b82f6' : occupied ? '#fca5a5' : '#86efac';
             c.style.opacity = '0.6';
             g.appendChild(c);
         });
 
-        if (!occupied && !tooSmall) {
-            g.addEventListener('click', () => selectTable(td.id, def));
+        if (!occupied) {
+            g.addEventListener('click', () => toggleTable(td.id, def));
         }
 
         svg.appendChild(g);
@@ -466,18 +470,54 @@ function getChairPos(def) {
     return pos;
 }
 
-function selectTable(tableId, def) {
-    selectedTableId = tableId;
-    selectedTableDef = def;
-    document.getElementById('selectedMesaInfo').style.display = 'flex';
-    document.getElementById('selectedMesaName').textContent = 'Mesa ' + def.n;
-    document.getElementById('selectedMesaDetail').textContent = ZONES[def.zone] + ' · ' + def.cap + ' personas';
-    document.getElementById('btnToStep3').disabled = false;
+function toggleTable(tableId, def) {
+    if (!tableId) return;
+    const idx = selectedTableIds.indexOf(tableId);
+    if (idx >= 0) {
+        selectedTableIds.splice(idx, 1);
+        selectedTableDefs.splice(selectedTableDefs.findIndex(d => d.n === def.n), 1);
+    } else {
+        selectedTableIds.push(tableId);
+        selectedTableDefs.push(def);
+    }
+    updateSelectionUI();
     renderPublicFloorplan();
 }
 
+function updateSelectionUI() {
+    const guests = parseInt(document.getElementById('pubGuests').value) || 2;
+    const info = document.getElementById('selectedMesaInfo');
+    const btn = document.getElementById('btnToStep3');
+
+    if (selectedTableIds.length === 0) {
+        info.style.display = 'none';
+        btn.disabled = true;
+        return;
+    }
+
+    info.style.display = 'flex';
+    const totalCap = selectedTableDefs.reduce((s, d) => s + d.cap, 0);
+    const maxWithExtra = totalCap + 2 * selectedTableIds.length;
+    const names = selectedTableDefs.map(d => 'Mesa ' + d.n).join(' + ');
+    const zones = [...new Set(selectedTableDefs.map(d => ZONES[d.zone]))].join(', ');
+
+    document.getElementById('selectedMesaName').textContent = names;
+    document.getElementById('selectedMesaDetail').textContent = zones + ' · ' + totalCap + 'p (máx. ' + maxWithExtra + 'p con sillas extra)';
+
+    const banner = document.getElementById('capBanner');
+    if (maxWithExtra >= guests) {
+        banner.style.color = '#16a34a';
+        banner.textContent = '✓ Capacidad suficiente para ' + guests + ' personas';
+        btn.disabled = false;
+    } else {
+        banner.style.color = '#d97706';
+        banner.textContent = '⚠ Faltan plazas · Añade más mesas (' + maxWithExtra + '/' + guests + ')';
+        btn.disabled = true;
+    }
+}
+
 function clearSelection() {
-    selectedTableId = null; selectedTableDef = null;
+    selectedTableIds = []; selectedTableDefs = [];
     document.getElementById('selectedMesaInfo').style.display = 'none';
     document.getElementById('btnToStep3').disabled = true;
     renderPublicFloorplan();
@@ -493,8 +533,8 @@ function renderSummary() {
         <div class="summary-item"><div class="summary-label">HORA</div><div class="summary-value">${document.getElementById('pubTime').value}</div></div>
         <div class="summary-item"><div class="summary-label">COMENSALES</div><div class="summary-value">${document.getElementById('pubGuests').value} personas</div></div>
         <div class="summary-item" style="grid-column:1/-1;background:#dbeafe;">
-            <div class="summary-label" style="color:#3b82f6;">TU MESA</div>
-            <div class="summary-value" style="color:#1e40af;">Mesa ${selectedTableDef.n} &middot; ${ZONES[selectedTableDef.zone]} &middot; ${selectedTableDef.cap}p</div>
+            <div class="summary-label" style="color:#3b82f6;">TU${selectedTableDefs.length > 1 ? 'S MESAS' : ' MESA'}</div>
+            <div class="summary-value" style="color:#1e40af;">${selectedTableDefs.map(d => 'Mesa ' + d.n + ' (' + ZONES[d.zone] + ')').join(' + ')}</div>
         </div>
     `;
     document.getElementById('bookingSummary').innerHTML = html;
@@ -516,7 +556,7 @@ async function confirmBooking() {
         shift: pubShift,
         time: document.getElementById('pubTime').value,
         guests: parseInt(document.getElementById('pubGuests').value),
-        table_id: selectedTableId,
+        table_ids: selectedTableIds,
         source: 'web',
         notes: document.getElementById('pubNotes').value.trim(),
     };
@@ -534,7 +574,7 @@ async function confirmBooking() {
         document.getElementById('successDetail').innerHTML =
             `<strong>${name}</strong><br>` +
             `${dateObj.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} a las ${data.time}<br>` +
-            `${data.guests} personas &middot; Mesa ${selectedTableDef.n} (${ZONES[selectedTableDef.zone]})`;
+            `${data.guests} personas &middot; ${selectedTableDefs.map(d => 'Mesa ' + d.n).join(' + ')}`;
 
         document.getElementById('panelStep3').style.display = 'none';
         document.getElementById('panelSuccess').style.display = '';
@@ -548,7 +588,7 @@ async function confirmBooking() {
 }
 
 function resetBooking() {
-    selectedTableId = null; selectedTableDef = null;
+    selectedTableIds = []; selectedTableDefs = [];
     document.getElementById('pubName').value = '';
     document.getElementById('pubPhone').value = '';
     document.getElementById('pubEmail').value = '';
