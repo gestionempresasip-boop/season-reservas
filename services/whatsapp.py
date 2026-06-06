@@ -155,20 +155,28 @@ def process_message(phone, message):
             return "Escribe un número válido de comensales."
 
         target_date = date.fromisoformat(data['date'])
-        available = find_available_tables(target_date, data['shift'], guests)
-        if not available:
+        all_free = find_available_tables(target_date, data['shift'], guests)
+
+        # Filter: only tables where capacity + 2 extra chairs can seat the guests
+        fitting = [t for t in all_free if t.capacity + 2 >= guests]
+        # Sort: prefer tables that fit without extras first, then by closest capacity
+        fitting.sort(key=lambda t: (0 if t.capacity >= guests else 1, abs(t.capacity - guests)))
+
+        if not fitting:
             session.step = 'start'
             session.data = '{}'
             db.session.commit()
             return (
-                "Lo sentimos, no hay mesas disponibles para ese número de comensales "
-                "en la fecha y turno seleccionados.\n\n"
-                "Escribe *RESERVAR* para intentar con otra fecha u horario."
+                f"Lo sentimos, no hay ninguna mesa disponible para {guests} comensales "
+                f"en ese turno.\n\n"
+                f"Prueba con otra fecha u horario, o llámanos directamente.\n\n"
+                f"Escribe *RESERVAR* para intentarlo de nuevo."
             )
 
-        data['suggested_table'] = available[0].id
-        data['suggested_table_number'] = available[0].number
-        data['suggested_table_zone'] = available[0].zone
+        best = fitting[0]
+        data['suggested_table'] = best.id
+        data['suggested_table_number'] = best.number
+        data['suggested_table_zone'] = best.zone
 
         session.step = 'name'
         session.data = json.dumps(data)
