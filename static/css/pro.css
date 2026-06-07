@@ -1450,3 +1450,100 @@
     background: #e5e7eb;
 }
 .qop-divider span { color: #9ca3af; font-size: 11px; }
+
+/* ═══════════════════════════════════════════════
+   EXPORT DROPDOWN
+   ═══════════════════════════════════════════════ */
+
+.export-dropdown {
+    position: relative;
+}
+
+.export-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 180px;
+    overflow: hidden;
+}
+
+.export-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.export-menu button:hover {
+    background: #f3f4f6;
+}
+
+.export-menu button + button {
+    border-top: 1px solid #f3f4f6;
+}
+
+/* ═══════════════════════════════════════════════
+   PRINT / PDF STYLES
+   ═══════════════════════════════════════════════ */
+
+@media print {
+    /* Hide everything except the reports section */
+    body > *:not(#appRoot) { display: none !important; }
+    .app-header,
+    .bottom-nav,
+    .report-mode-bar,
+    .export-dropdown,
+    #viewReservas,
+    #viewPlano,
+    #viewClientes,
+    #viewAjustes { display: none !important; }
+
+    #viewInformes { display: block !important; }
+    #reportsContent { display: block !important; }
+
+    /* Clean up for print */
+    .rc-section {
+        break-inside: avoid;
+        border: 1px solid #e5e7eb !important;
+        margin-bottom: 16px;
+        box-shadow: none !important;
+    }
+
+    .rc-section-row {
+        flex-direction: column;
+    }
+
+    .rc-half {
+        width: 100% !important;
+    }
+
+    .rw-kpi, .rh-metric {
+        break-inside: avoid;
+    }
+
+    svg { max-width: 100%; }
+
+    /* Print header */
+    #reportsContent::before {
+        content: 'Season — Informe de reservas';
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: #1a8a7d;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #1a8a7d;
+    }
+}

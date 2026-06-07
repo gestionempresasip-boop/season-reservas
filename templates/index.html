@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=31">
+    <link rel="stylesheet" href="/static/css/pro.css?v=32">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -221,8 +221,13 @@
                     <input type="date" id="reportTo" class="date-picker">
                     <button class="btn-primary btn-sm" onclick="loadReports()">Ver</button>
                 </div>
-                <div style="margin-left:auto">
-                    <button class="btn-secondary btn-sm" onclick="exportReportCSV()">📥 Exportar</button>
+                <div style="margin-left:auto" class="export-dropdown">
+                    <button class="btn-secondary btn-sm" onclick="toggleExportMenu()">📥 Exportar ▾</button>
+                    <div id="exportDropdownMenu" class="export-menu" style="display:none">
+                        <button onclick="exportPDF();document.getElementById('exportDropdownMenu').style.display='none'">🖨️ PDF / Imprimir</button>
+                        <button onclick="exportExcel();document.getElementById('exportDropdownMenu').style.display='none'">📊 Excel (.xlsx)</button>
+                        <button onclick="exportReportCSV();document.getElementById('exportDropdownMenu').style.display='none'">📋 CSV</button>
+                    </div>
                 </div>
             </div>
 
@@ -586,7 +591,7 @@
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=24"></script>
-    <script src="/static/js/reports.js?v=32"></script>
+    <script src="/static/js/reports.js?v=33"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">

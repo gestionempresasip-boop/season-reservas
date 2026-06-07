@@ -150,10 +150,13 @@ function renderHourBars(hours) {
 
 async function renderSemana(container) {
     const today = new Date();
+    const from7 = new Date(today); from7.setDate(from7.getDate() - 6);
+    const qs7 = `from=${localISODate(from7)}&to=${localISODate(today)}`;
     const safe = fn => fn.catch(() => null);
-    const [weekData, retention] = await Promise.all([
+    const [weekData, retention, hours] = await Promise.all([
         safe(apiGet(`/api/reports/week-comparison?from=${localISODate(today)}`)),
-        safe(apiGet(`/api/reports/new-vs-returning?from=${localISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate()-6))}&to=${localISODate(today)}`)),
+        safe(apiGet(`/api/reports/new-vs-returning?${qs7}`)),
+        safe(apiGet(`/api/reports/hours?${qs7}`)),
     ]);
 
     if (!weekData) { container.innerHTML = '<div class="report-error">No se pudieron cargar los datos de esta semana</div>'; return; }
@@ -163,11 +166,9 @@ async function renderSemana(container) {
     const days = weekData.days || [];
     const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
-    // Max guests for bar scaling
     const maxGuests = Math.max(...days.map(d => d.guests||0), 1);
 
     container.innerHTML = `
-        <!-- KPIs semana vs semana anterior -->
         <div class="rw-kpis">
             ${renderKPIBlock('Reservas', t.reservations||0, ch.reservations, '')}
             ${renderKPIBlock('Comensales', t.guests||0, ch.guests, '')}
@@ -176,11 +177,10 @@ async function renderSemana(container) {
         </div>
         <div class="rw-vs-label">vs semana anterior · ${p.reservations||0} res · ${p.guests||0}p</div>
 
-        <!-- Gráfico de barras por día -->
         <div class="rc-section">
             <div class="rc-section-title">📊 Comensales por día</div>
             <div class="rw-bars">
-                ${days.length ? days.map((d, i) => {
+                ${days.length ? days.map((d) => {
                     const dt = new Date(d.date + 'T12:00:00');
                     const dayName = dayNames[dt.getDay() === 0 ? 6 : dt.getDay()-1];
                     const dayNum = dt.getDate() + '/' + (dt.getMonth()+1);
@@ -205,20 +205,20 @@ async function renderSemana(container) {
             </div>
         </div>
 
-        <!-- Retención -->
         <div class="rc-section-row">
             <div class="rc-section rc-half">
-                <div class="rc-section-title">👥 Clientes nuevos vs recurrentes</div>
-                <div style="padding:12px 16px">
-                    ${renderRetentionChart(retention)}
-                </div>
+                <div class="rc-section-title">⏰ Horas punta</div>
+                <div style="padding:10px 16px 16px">${renderHourBars(hours||[])}</div>
             </div>
             <div class="rc-section rc-half">
                 <div class="rc-section-title">📉 Análisis No-Shows</div>
-                <div style="padding:12px 16px">
-                    ${renderNoShowInsight(t)}
-                </div>
+                <div style="padding:12px 16px">${renderNoShowInsight(t)}</div>
             </div>
+        </div>
+
+        <div class="rc-section">
+            <div class="rc-section-title">👥 Clientes nuevos vs recurrentes</div>
+            <div style="padding:12px 16px">${renderRetentionChart(retention||{})}</div>
         </div>
     `;
 }
@@ -283,20 +283,20 @@ async function renderMes(container) {
     const qs = `from=${localISODate(from30)}&to=${localISODate(today)}`;
 
     const safe = fn => fn.catch(() => null);
-    const [kpi, trend, heatmap, sources, topClients, retention] = await Promise.all([
+    const [kpi, trend, heatmap, sources, topClients, retention, hours] = await Promise.all([
         safe(apiGet(`/api/reports/kpi?${qs}`)),
         safe(apiGet(`/api/reports/trend?${qs}`)),
         safe(apiGet(`/api/reports/heatmap?${qs}`)),
         safe(apiGet(`/api/reports/sources?${qs}`)),
         safe(apiGet(`/api/reports/clients?${qs}&limit=5`)),
         safe(apiGet(`/api/reports/new-vs-returning?${qs}`)),
+        safe(apiGet(`/api/reports/hours?${qs}`)),
     ]);
 
-    const curr = kpi.current || {};
-    const ch = kpi.changes || {};
+    const curr = (kpi||{}).current || {};
+    const ch = (kpi||{}).changes || {};
 
     container.innerHTML = `
-        <!-- KPIs mes -->
         <div class="rw-kpis rm-kpis">
             ${renderKPIBlock('Reservas', curr.total||0, ch.total)}
             ${renderKPIBlock('Comensales', curr.guests||0, ch.guests)}
@@ -304,46 +304,38 @@ async function renderMes(container) {
             ${renderKPIBlock('No-show', (curr.no_show_rate||0)+'%', ch.no_show_rate, '', true)}
             ${renderKPIBlock('Media grupo', (curr.avg_guests||0)+' p', null)}
         </div>
-        <div class="rw-vs-label">vs mes anterior · ${(kpi.previous||{}).reservations||0} res · ${(kpi.previous||{}).guests||0}p</div>
+        <div class="rw-vs-label">vs mes anterior · ${((kpi||{}).previous||{}).reservations||0} res · ${((kpi||{}).previous||{}).guests||0}p</div>
 
-        <!-- Tendencia diaria -->
         <div class="rc-section">
             <div class="rc-section-title">📈 Tendencia de ocupación — 30 días</div>
-            <div style="padding:8px 12px 16px">
-                ${renderTrendSVG(trend)}
-            </div>
+            <div style="padding:8px 12px 16px">${renderTrendSVG(trend||[])}</div>
         </div>
 
-        <!-- Heatmap + Fuentes -->
         <div class="rc-section-row">
             <div class="rc-section rc-half">
                 <div class="rc-section-title">🔥 Días y turnos más concurridos</div>
-                <div style="padding:10px 16px 16px">
-                    ${renderHeatmapInline(heatmap)}
-                </div>
+                <div style="padding:10px 16px 16px">${renderHeatmapInline(heatmap||[])}</div>
             </div>
             <div class="rc-section rc-half">
-                <div class="rc-section-title">📣 Origen de reservas</div>
-                <div style="padding:10px 16px 16px">
-                    ${renderSourcesInline(sources)}
-                </div>
+                <div class="rc-section-title">⏰ Horas punta</div>
+                <div style="padding:10px 16px 16px">${renderHourBars(hours||[])}</div>
             </div>
         </div>
 
-        <!-- Clientes top + retención -->
         <div class="rc-section-row">
             <div class="rc-section rc-half">
-                <div class="rc-section-title">⭐ Top clientes del mes</div>
-                <div style="padding:8px 16px 16px">
-                    ${renderTopClientsInline(topClients)}
-                </div>
+                <div class="rc-section-title">📣 Origen de reservas</div>
+                <div style="padding:10px 16px 16px">${renderSourcesInline(sources||[])}</div>
             </div>
             <div class="rc-section rc-half">
-                <div class="rc-section-title">👥 Fidelización</div>
-                <div style="padding:12px 16px">
-                    ${renderRetentionChart(retention)}
-                </div>
+                <div class="rc-section-title">👥 Clientes nuevos vs recurrentes</div>
+                <div style="padding:12px 16px">${renderRetentionChart(retention||{})}</div>
             </div>
+        </div>
+
+        <div class="rc-section">
+            <div class="rc-section-title">⭐ Top clientes del mes</div>
+            <div style="padding:8px 16px 16px">${renderTopClientsInline(topClients||[])}</div>
         </div>
     `;
 }
@@ -362,17 +354,19 @@ async function renderCustom(container) {
     const qs = `from=${from}&to=${to}`;
     const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
 
-    const [kpi, trend, sources, topClients, noShows, retention] = await Promise.all([
-        apiGet(`/api/reports/kpi?${qs}`),
-        apiGet(`/api/reports/trend?${qs}`),
-        apiGet(`/api/reports/sources?${qs}`),
-        apiGet(`/api/reports/clients?${qs}&limit=8`),
-        apiGet(`/api/reports/no-shows?${qs}`),
-        apiGet(`/api/reports/new-vs-returning?${qs}`),
+    const safe = fn => fn.catch(() => null);
+    const [kpi, trend, sources, topClients, retention, hours, heatmap] = await Promise.all([
+        safe(apiGet(`/api/reports/kpi?${qs}`)),
+        safe(apiGet(`/api/reports/trend?${qs}`)),
+        safe(apiGet(`/api/reports/sources?${qs}`)),
+        safe(apiGet(`/api/reports/clients?${qs}&limit=8`)),
+        safe(apiGet(`/api/reports/new-vs-returning?${qs}`)),
+        safe(apiGet(`/api/reports/hours?${qs}`)),
+        safe(apiGet(`/api/reports/heatmap?${qs}`)),
     ]);
 
-    const curr = kpi.current || {};
-    const ch = kpi.changes || {};
+    const curr = (kpi||{}).current || {};
+    const ch = (kpi||{}).changes || {};
 
     container.innerHTML = `
         <div class="rh-top" style="padding:12px 16px 4px">
@@ -390,23 +384,34 @@ async function renderCustom(container) {
 
         <div class="rc-section">
             <div class="rc-section-title">📈 Tendencia diaria</div>
-            <div style="padding:8px 12px 16px">${renderTrendSVG(trend)}</div>
+            <div style="padding:8px 12px 16px">${renderTrendSVG(trend||[])}</div>
+        </div>
+
+        <div class="rc-section-row">
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">⏰ Horas punta</div>
+                <div style="padding:10px 16px 16px">${renderHourBars(hours||[])}</div>
+            </div>
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">🔥 Días más concurridos</div>
+                <div style="padding:10px 16px 16px">${renderHeatmapInline(heatmap||[])}</div>
+            </div>
         </div>
 
         <div class="rc-section-row">
             <div class="rc-section rc-half">
                 <div class="rc-section-title">📣 Origen de reservas</div>
-                <div style="padding:10px 16px 16px">${renderSourcesInline(sources)}</div>
+                <div style="padding:10px 16px 16px">${renderSourcesInline(sources||[])}</div>
             </div>
             <div class="rc-section rc-half">
                 <div class="rc-section-title">👥 Fidelización</div>
-                <div style="padding:12px 16px">${renderRetentionChart(retention)}</div>
+                <div style="padding:12px 16px">${renderRetentionChart(retention||{})}</div>
             </div>
         </div>
 
         <div class="rc-section">
             <div class="rc-section-title">⭐ Clientes frecuentes</div>
-            <div style="padding:8px 16px 16px">${renderTopClientsInline(topClients)}</div>
+            <div style="padding:8px 16px 16px">${renderTopClientsInline(topClients||[])}</div>
         </div>
     `;
 }
@@ -536,6 +541,52 @@ function exportReportCSV() {
     const from = document.getElementById('reportFrom')?.value || localISODate(new Date(new Date().setDate(new Date().getDate()-30)));
     const to = document.getElementById('reportTo')?.value || localISODate(new Date());
     window.open(`/api/export/reservations.csv?from=${from}&to=${to}`);
+}
+
+function _exportDateRange() {
+    const today = localISODate(new Date());
+    if (_reportMode === 'hoy') return { from: today, to: today };
+    if (_reportMode === 'semana') {
+        const f = new Date(); f.setDate(f.getDate()-6);
+        return { from: localISODate(f), to: today };
+    }
+    if (_reportMode === 'mes') {
+        const f = new Date(); f.setDate(f.getDate()-29);
+        return { from: localISODate(f), to: today };
+    }
+    // custom
+    return {
+        from: document.getElementById('reportFrom')?.value || localISODate(new Date(new Date().setDate(new Date().getDate()-30))),
+        to: document.getElementById('reportTo')?.value || today,
+    };
+}
+
+function exportPDF() {
+    // Print the current reports view
+    window.print();
+}
+
+function exportExcel() {
+    const { from, to } = _exportDateRange();
+    window.open(`/api/export/report.xlsx?from=${from}&to=${to}`);
+}
+
+function toggleExportMenu() {
+    const menu = document.getElementById('exportDropdownMenu');
+    if (!menu) return;
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    // Close on outside click
+    if (!isOpen) {
+        setTimeout(() => {
+            document.addEventListener('click', function handler(e) {
+                if (!e.target.closest('.export-dropdown')) {
+                    menu.style.display = 'none';
+                }
+                document.removeEventListener('click', handler);
+            });
+        }, 0);
+    }
 }
 
 // WhatsApp test

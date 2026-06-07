@@ -643,6 +643,190 @@ def export_reservations_csv():
     )
 
 
+@api.route('/export/report.xlsx', methods=['GET'])
+def export_report_xlsx():
+    """Export a full analytics report as Excel (.xlsx) with multiple sheets."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io as _io
+
+    from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    from_date_d = date.fromisoformat(from_d)
+    to_date_d = date.fromisoformat(to_d)
+
+    wb = Workbook()
+
+    # ── Styles ──────────────────────────────────
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill('solid', fgColor='1A8A7D')
+    subheader_fill = PatternFill('solid', fgColor='E8F5F3')
+    subheader_font = Font(bold=True, color='1A8A7D', size=10)
+    center = Alignment(horizontal='center', vertical='center')
+    thin = Side(style='thin', color='D1D5DB')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def style_header_row(ws, row, cols):
+        for col in range(1, cols + 1):
+            cell = ws.cell(row=row, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center
+            cell.border = border
+
+    def style_data_row(ws, row, cols, alt=False):
+        fill = PatternFill('solid', fgColor='F9FAFB') if alt else None
+        for col in range(1, cols + 1):
+            cell = ws.cell(row=row, column=col)
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+            if fill: cell.fill = fill
+
+    # ── HOJA 1: Reservas detalladas ──────────────
+    ws1 = wb.active
+    ws1.title = 'Reservas'
+    ws1.sheet_view.showGridLines = False
+
+    title_cell = ws1['A1']
+    title_cell.value = f'RESERVAS — {from_d} a {to_d}'
+    title_cell.font = Font(bold=True, size=13, color='111827')
+    ws1.merge_cells('A1:M1')
+    ws1['A1'].alignment = center
+    ws1.row_dimensions[1].height = 28
+
+    headers1 = ['ID', 'Fecha', 'Turno', 'Hora', 'Cliente', 'Teléfono',
+                'Comensales', 'Mesa(s)', 'Estado', 'Origen', 'Duración', 'Notas', 'Creada']
+    for i, h in enumerate(headers1, 1):
+        ws1.cell(row=2, column=i, value=h)
+    style_header_row(ws1, 2, len(headers1))
+    ws1.row_dimensions[2].height = 20
+
+    status_map = {'confirmed': 'Confirmada', 'seated': 'Sentada', 'completed': 'Completada',
+                  'cancelled': 'Cancelada', 'no_show': 'No Show'}
+    source_map = {'phone': 'Teléfono', 'whatsapp': 'WhatsApp', 'walk_in': 'Walk-in', 'web': 'Web'}
+
+    items = Reservation.query.filter(
+        Reservation.date >= from_date_d, Reservation.date <= to_date_d
+    ).order_by(Reservation.date, Reservation.time).all()
+
+    for i, r in enumerate(items, 3):
+        nums = r.all_table_numbers()
+        row_data = [
+            r.id, r.date.isoformat(), r.shift.capitalize(), r.time,
+            r.client_name, r.client_phone or '',
+            r.guests, ' + '.join(str(n) for n in nums) if nums else 'Sin mesa',
+            status_map.get(r.status, r.status), source_map.get(r.source, r.source or ''),
+            f"{r.duration_minutes or 120} min", r.notes or '',
+            r.created_at.strftime('%d/%m/%Y %H:%M') if r.created_at else ''
+        ]
+        for j, val in enumerate(row_data, 1):
+            ws1.cell(row=i, column=j, value=val)
+        style_data_row(ws1, i, len(headers1), alt=(i % 2 == 0))
+
+    col_widths1 = [6, 12, 10, 8, 22, 14, 11, 12, 12, 12, 10, 24, 16]
+    for i, w in enumerate(col_widths1, 1):
+        ws1.column_dimensions[get_column_letter(i)].width = w
+
+    # ── HOJA 2: Resumen por día ──────────────────
+    ws2 = wb.create_sheet('Resumen por día')
+    ws2.sheet_view.showGridLines = False
+    ws2['A1'].value = f'RESUMEN POR DÍA — {from_d} a {to_d}'
+    ws2['A1'].font = Font(bold=True, size=13, color='111827')
+    ws2.merge_cells('A1:H1')
+    ws2['A1'].alignment = center
+    ws2.row_dimensions[1].height = 28
+
+    headers2 = ['Fecha', 'Día', 'Reservas', 'Comensales', 'Comida (p)', 'Cena (p)', 'Ocupación %', 'No Shows']
+    for i, h in enumerate(headers2, 1):
+        ws2.cell(row=2, column=i, value=h)
+    style_header_row(ws2, 2, len(headers2))
+
+    trend = rpt_svc.weekly_occupancy(from_date_d, to_date_d)
+    days_es = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    for i, d_data in enumerate(trend, 3):
+        dt = date.fromisoformat(d_data['date'])
+        noshows = Reservation.query.filter_by(date=dt, status='no_show').count()
+        row_data = [
+            dt.strftime('%d/%m/%Y'),
+            days_es[dt.weekday()],
+            d_data['reservations'], d_data['guests'],
+            d_data.get('comida', 0), d_data.get('cena', 0),
+            f"{d_data['occupancy']}%", noshows
+        ]
+        for j, val in enumerate(row_data, 1):
+            ws2.cell(row=i, column=j, value=val)
+        style_data_row(ws2, i, len(headers2), alt=(i % 2 == 0))
+
+    for i, w in enumerate([14, 12, 10, 12, 12, 10, 12, 10], 1):
+        ws2.column_dimensions[get_column_letter(i)].width = w
+
+    # ── HOJA 3: KPIs del período ─────────────────
+    ws3 = wb.create_sheet('KPIs')
+    ws3.sheet_view.showGridLines = False
+    ws3['A1'].value = f'MÉTRICAS — {from_d} a {to_d}'
+    ws3['A1'].font = Font(bold=True, size=13, color='111827')
+    ws3.merge_cells('A1:C1')
+    ws3['A1'].alignment = center
+    ws3.row_dimensions[1].height = 28
+
+    kpi = rpt_svc.kpi_summary(from_date_d, to_date_d)
+    curr = kpi['current']
+    kpi_rows = [
+        ('Métrica', 'Período actual', 'Período anterior'),
+        ('Total reservas', curr['total'], kpi['previous']['total']),
+        ('Total comensales', curr['guests'], kpi['previous']['guests']),
+        ('Ocupación media (%)', curr['occupancy_avg'], kpi['previous']['occupancy_avg']),
+        ('Tasa No-Show (%)', curr['no_show_rate'], kpi['previous']['no_show_rate']),
+        ('Media comensales/reserva', curr['avg_guests'], kpi['previous']['avg_guests']),
+        ('Reservas completadas', curr['completed'], kpi['previous']['completed']),
+        ('Reservas canceladas', curr['cancelled'], kpi['previous']['cancelled']),
+    ]
+    for i, row in enumerate(kpi_rows, 2):
+        for j, val in enumerate(row, 1):
+            ws3.cell(row=i, column=j, value=val)
+        if i == 2:
+            style_header_row(ws3, i, 3)
+        else:
+            style_data_row(ws3, i, 3, alt=(i % 2 == 0))
+    for i, w in enumerate([28, 18, 18], 1):
+        ws3.column_dimensions[get_column_letter(i)].width = w
+
+    # ── HOJA 4: Top Clientes ─────────────────────
+    ws4 = wb.create_sheet('Top Clientes')
+    ws4.sheet_view.showGridLines = False
+    ws4['A1'].value = f'TOP CLIENTES — {from_d} a {to_d}'
+    ws4['A1'].font = Font(bold=True, size=13, color='111827')
+    ws4.merge_cells('A1:F1')
+    ws4['A1'].alignment = center
+    ws4.row_dimensions[1].height = 28
+
+    headers4 = ['#', 'Cliente', 'Teléfono', 'Visitas', 'Total comensales', 'Última visita']
+    for i, h in enumerate(headers4, 1):
+        ws4.cell(row=2, column=i, value=h)
+    style_header_row(ws4, 2, len(headers4))
+
+    clients = rpt_svc.client_frequency_report(from_date_d, to_date_d, limit=30)
+    for i, c in enumerate(clients, 3):
+        row_data = [i-2, c['name'], c['phone'] or '', c['visits'], c['total_guests'],
+                    c['last_visit'] if c['last_visit'] else '']
+        for j, val in enumerate(row_data, 1):
+            ws4.cell(row=i, column=j, value=val)
+        style_data_row(ws4, i, len(headers4), alt=(i % 2 == 0))
+    for i, w in enumerate([5, 24, 16, 10, 16, 14], 1):
+        ws4.column_dimensions[get_column_letter(i)].width = w
+
+    # ── Return file ──────────────────────────────
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=informe_season_{from_d}_a_{to_d}.xlsx'}
+    )
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # DRAG-DROP: ASSIGN RESERVATION TO TABLE(S)
 # ═══════════════════════════════════════════════════════════════════════════
