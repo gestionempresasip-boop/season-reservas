@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=29">
+    <link rel="stylesheet" href="/static/css/pro.css?v=30">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -209,116 +209,25 @@
 
         <!-- REPORTS VIEW -->
         <section class="view" id="viewInformes">
-            <div class="view-header">
-                <h2>Informes y M&eacute;tricas</h2>
-                <button class="btn-secondary btn-sm" onclick="exportReportCSV()" title="Exportar datos">📥 Exportar</button>
-            </div>
-
-            <!-- Date preset tabs -->
-            <div class="report-presets">
-                <button class="preset-btn" data-preset="7" onclick="setReportPreset(7)">7 d&iacute;as</button>
-                <button class="preset-btn active" data-preset="30" onclick="setReportPreset(30)">30 d&iacute;as</button>
-                <button class="preset-btn" data-preset="90" onclick="setReportPreset(90)">90 d&iacute;as</button>
-                <button class="preset-btn" data-preset="custom" onclick="setReportPreset('custom')">Personalizado</button>
-                <div class="report-custom-range" id="reportCustomRange" style="display:none">
+            <!-- Mode tabs -->
+            <div class="report-mode-bar">
+                <button class="rmode-btn active" data-mode="hoy" onclick="setReportMode('hoy')">📅 Hoy</button>
+                <button class="rmode-btn" data-mode="semana" onclick="setReportMode('semana')">📆 Semana</button>
+                <button class="rmode-btn" data-mode="mes" onclick="setReportMode('mes')">🗓 Mes</button>
+                <button class="rmode-btn" data-mode="custom" onclick="setReportMode('custom')">✦ Personalizado</button>
+                <div class="rmode-custom hidden" id="rmodeCustomRange">
                     <input type="date" id="reportFrom" class="date-picker">
-                    <span style="color:#9ca3af">—</span>
+                    <span>—</span>
                     <input type="date" id="reportTo" class="date-picker">
-                    <button class="btn-primary btn-sm" onclick="loadReports()">Aplicar</button>
+                    <button class="btn-primary btn-sm" onclick="loadReports()">Ver</button>
+                </div>
+                <div style="margin-left:auto">
+                    <button class="btn-secondary btn-sm" onclick="exportReportCSV()">📥 Exportar</button>
                 </div>
             </div>
 
-            <!-- KPI strip -->
-            <div class="kpi-strip" id="kpiStrip">
-                <div class="kpi-card" id="kpiReservas">
-                    <div class="kpi-value">—</div>
-                    <div class="kpi-label">Reservas</div>
-                    <div class="kpi-change"></div>
-                </div>
-                <div class="kpi-card" id="kpiComensales">
-                    <div class="kpi-value">—</div>
-                    <div class="kpi-label">Comensales</div>
-                    <div class="kpi-change"></div>
-                </div>
-                <div class="kpi-card" id="kpiOcupacion">
-                    <div class="kpi-value">—</div>
-                    <div class="kpi-label">Ocupaci&oacute;n media</div>
-                    <div class="kpi-change"></div>
-                </div>
-                <div class="kpi-card" id="kpiNoShow">
-                    <div class="kpi-value">—</div>
-                    <div class="kpi-label">Tasa No-Show</div>
-                    <div class="kpi-change"></div>
-                </div>
-                <div class="kpi-card" id="kpiAvgGuests">
-                    <div class="kpi-value">—</div>
-                    <div class="kpi-label">Media comensales/reserva</div>
-                    <div class="kpi-change"></div>
-                </div>
-            </div>
-
-            <!-- Charts grid -->
-            <div class="reports-grid" id="reportsGrid">
-                <!-- Trend chart — full width -->
-                <div class="report-card report-card-wide" id="reportTrend">
-                    <div class="report-card-header">
-                        <h3>Tendencia de ocupaci&oacute;n</h3>
-                        <span class="report-subtitle" id="trendSubtitle"></span>
-                    </div>
-                    <div class="report-content report-trend-content"></div>
-                </div>
-
-                <!-- Heatmap — full width -->
-                <div class="report-card report-card-wide" id="reportHeatmap">
-                    <div class="report-card-header">
-                        <h3>Mapa de calor — D&iacute;a &times; Turno</h3>
-                        <span class="report-subtitle">Reservas activas por d&iacute;a de la semana</span>
-                    </div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Sources -->
-                <div class="report-card" id="reportSources">
-                    <div class="report-card-header"><h3>Origen de Reservas</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Zones -->
-                <div class="report-card" id="reportZones">
-                    <div class="report-card-header"><h3>Rendimiento por Zona</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Hours -->
-                <div class="report-card" id="reportHours">
-                    <div class="report-card-header"><h3>Horas pico</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- No-shows detail -->
-                <div class="report-card" id="reportNoShows">
-                    <div class="report-card-header"><h3>An&aacute;lisis No Shows</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Top clients -->
-                <div class="report-card report-card-wide" id="reportTopClients">
-                    <div class="report-card-header"><h3>Clientes Frecuentes</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Popular tables -->
-                <div class="report-card" id="reportPopularTables">
-                    <div class="report-card-header"><h3>Mesas M&aacute;s Reservadas</h3></div>
-                    <div class="report-content"></div>
-                </div>
-
-                <!-- Daily summary today -->
-                <div class="report-card" id="reportSummary">
-                    <div class="report-card-header"><h3>Resumen de Hoy</h3></div>
-                    <div class="report-content"></div>
-                </div>
-            </div>
+            <!-- Dynamic content — rendered by JS per mode -->
+            <div id="reportsContent" style="padding-bottom:80px"></div>
         </section>
 
         <!-- SETTINGS VIEW -->
@@ -671,13 +580,13 @@
             });
         }
     </script>
-    <script src="/static/js/app.js?v=28"></script>
+    <script src="/static/js/app.js?v=30"></script>
     <script src="/static/js/floorplan.js?v=29"></script>
     <script src="/static/js/reservations.js?v=27"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=24"></script>
-    <script src="/static/js/reports.js?v=27"></script>
+    <script src="/static/js/reports.js?v=30"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">

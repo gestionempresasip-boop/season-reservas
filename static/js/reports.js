@@ -1,488 +1,557 @@
 /* ═══════════════════════════════════════════════
-   SEASON - Reports & Analytics v2
-   KPIs con comparativa, heatmap, tendencia, presets
+   SEASON · Informes v3 — 4 modos con métricas reales
+   HOY | SEMANA | MES | PERSONALIZADO
    ═══════════════════════════════════════════════ */
 
-let _reportPreset = 30; // active preset in days
+let _reportMode = 'hoy';
 
 function localISODate(d) {
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 function initReportDates() {
-    const today = new Date();
-    const thirtyAgo = new Date(today);
-    thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-    const fromEl = document.getElementById('reportFrom');
-    const toEl = document.getElementById('reportTo');
-    if (fromEl) fromEl.value = localISODate(thirtyAgo);
-    if (toEl) toEl.value = localISODate(today);
-    setReportPreset(30);
+    setReportMode('hoy');
 }
 
-function setReportPreset(preset) {
-    _reportPreset = preset;
-    // Update active button
-    document.querySelectorAll('.preset-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.preset == preset);
-    });
-
-    const customRange = document.getElementById('reportCustomRange');
-    if (preset === 'custom') {
-        if (customRange) customRange.style.display = 'flex';
-        return; // wait for user to click Apply
-    }
-    if (customRange) customRange.style.display = 'none';
-
-    const today = new Date();
-    const from = new Date(today);
-    from.setDate(from.getDate() - Number(preset) + 1);
-
-    const fromEl = document.getElementById('reportFrom');
-    const toEl = document.getElementById('reportTo');
-    if (fromEl) fromEl.value = localISODate(from);
-    if (toEl) toEl.value = localISODate(today);
-
-    loadReports();
+function setReportMode(mode) {
+    _reportMode = mode;
+    document.querySelectorAll('.rmode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    const customRange = document.getElementById('rmodeCustomRange');
+    if (customRange) customRange.classList.toggle('hidden', mode !== 'custom');
+    if (mode !== 'custom') loadReports();
 }
 
 async function loadReports() {
-    const from = document.getElementById('reportFrom')?.value;
-    const to = document.getElementById('reportTo')?.value;
-    if (!from || !to) return;
-    const qs = `from=${from}&to=${to}`;
+    const content = document.getElementById('reportsContent');
+    if (!content) return;
+    content.innerHTML = '<div class="report-loading">Cargando datos…</div>';
+    try {
+        if (_reportMode === 'hoy')    await renderHoy(content);
+        else if (_reportMode === 'semana') await renderSemana(content);
+        else if (_reportMode === 'mes')    await renderMes(content);
+        else if (_reportMode === 'custom') await renderCustom(content);
+    } catch (e) {
+        content.innerHTML = `<div class="report-error">Error al cargar datos: ${e.message}</div>`;
+    }
+}
 
-    // Load all in parallel — errors per card, never global
-    await Promise.all([
-        loadKPI(qs).catch(e => console.warn('KPI:', e?.message)),
-        loadTrendReport(qs).catch(e => console.warn('Trend:', e?.message)),
-        loadHeatmapReport(qs).catch(e => console.warn('Heatmap:', e?.message)),
-        loadSourcesReport(qs).catch(e => console.warn('Sources:', e?.message)),
-        loadZonesReport(qs).catch(e => console.warn('Zones:', e?.message)),
-        loadHoursReport(qs).catch(e => console.warn('Hours:', e?.message)),
-        loadNoShowsReport(qs).catch(e => console.warn('NoShows:', e?.message)),
-        loadTopClientsReport(qs).catch(e => console.warn('Clients:', e?.message)),
-        loadPopularTablesReport(qs).catch(e => console.warn('Tables:', e?.message)),
-        loadSummaryReport().catch(e => console.warn('Summary:', e?.message)),
+// ═══════════════════════════════════════════════
+// MODO HOY
+// ═══════════════════════════════════════════════
+
+async function renderHoy(container) {
+    const today = localISODate(new Date());
+    const [summary, hours] = await Promise.all([
+        apiGet(`/api/reports/summary?date=${today}`),
+        apiGet(`/api/reports/hours?from=${today}&to=${today}`),
     ]);
-}
 
-// ── KPI Strip ────────────────────────────────────
+    const c = summary.comida || {};
+    const n = summary.cena || {};
+    const totalRes = (c.total||0) + (n.total||0);
+    const totalGuests = (c.guests||0) + (n.guests||0);
+    const totalSentadas = (c.seated||0) + (n.seated||0);
+    const totalNoShow = (c.no_show||0) + (n.no_show||0);
+    const totalCompleted = (c.completed||0) + (n.completed||0);
+    const ocup = Math.round(totalGuests / 114 * 100);
 
-async function loadKPI(qs) {
-    const data = await apiGet(`/api/reports/kpi?${qs}`);
-    const curr = data.current;
-    const changes = data.changes;
-
-    function renderKPI(id, value, change, suffix='', invert=false) {
-        const card = document.getElementById(id);
-        if (!card) return;
-        const valEl = card.querySelector('.kpi-value');
-        const chEl = card.querySelector('.kpi-change');
-        if (valEl) valEl.textContent = value + suffix;
-
-        if (chEl && change !== null && change !== undefined) {
-            const up = change > 0;
-            const good = invert ? !up : up; // invert=true means lower is better (no-show)
-            const arrow = up ? '▲' : '▼';
-            const color = good ? '#16a34a' : '#ef4444';
-            chEl.innerHTML = `<span style="color:${color}">${arrow} ${Math.abs(change)}% vs período anterior</span>`;
-        } else if (chEl) {
-            chEl.innerHTML = '<span style="color:#9ca3af">— sin período previo</span>';
-        }
-    }
-
-    renderKPI('kpiReservas', curr.total, changes.total);
-    renderKPI('kpiComensales', curr.guests, changes.guests);
-    renderKPI('kpiOcupacion', curr.occupancy_avg, changes.occupancy_avg, '%');
-    renderKPI('kpiNoShow', curr.no_show_rate, changes.no_show_rate, '%', true);
-    renderKPI('kpiAvgGuests', curr.avg_guests, null, ' p');
-}
-
-// ── Trend Chart ──────────────────────────────────
-
-async function loadTrendReport(qs) {
-    const data = await apiGet(`/api/reports/trend?${qs}`);
-    const el = document.querySelector('#reportTrend .report-content');
-    const subtitle = document.getElementById('trendSubtitle');
-    if (!el) return;
-
-    if (!data.length) {
-        el.innerHTML = '<p style="color:#9ca3af;padding:16px">Sin datos en este período</p>';
-        return;
-    }
-
-    const maxGuests = Math.max(...data.map(d => d.guests), 1);
-    const maxOcc = Math.max(...data.map(d => d.occupancy), 1);
-
-    if (subtitle) subtitle.textContent = `${data.length} días · máx. ${maxOcc}% ocupación`;
-
-    // SVG trend chart
-    const W = 600, H = 120, PAD = 32;
-    const points = data.map((d, i) => {
-        const x = PAD + (i / (data.length - 1 || 1)) * (W - PAD * 2);
-        const y = H - PAD - ((d.occupancy / maxOcc) * (H - PAD * 2));
-        return { x, y, d };
-    });
-
-    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-    const areaD = `M ${points[0].x.toFixed(1)} ${H - PAD} ` + points.map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ` L ${points[points.length-1].x.toFixed(1)} ${H - PAD} Z`;
-
-    // X axis labels (show up to 10)
-    const step = Math.ceil(data.length / 10);
-    const labels = data.map((d, i) => {
-        if (i % step !== 0 && i !== data.length - 1) return '';
-        const dt = new Date(d.date + 'T12:00:00');
-        return `${dt.getDate()}/${dt.getMonth() + 1}`;
-    });
-
-    const xLabels = points.map((p, i) => labels[i] ? `<text x="${p.x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#9ca3af">${labels[i]}</text>` : '').join('');
-
-    // Dots for data points
-    const dots = points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#1a8a7d" stroke="white" stroke-width="1.5">
-        <title>${p.d.date}: ${p.d.occupancy}% · ${p.d.reservations} res · ${p.d.guests}p</title>
-    </circle>`).join('');
-
-    el.innerHTML = `
-        <div style="overflow-x:auto">
-            <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:300px;height:${H}px">
-                <defs>
-                    <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#1a8a7d" stop-opacity="0.3"/>
-                        <stop offset="100%" stop-color="#1a8a7d" stop-opacity="0.02"/>
-                    </linearGradient>
-                </defs>
-                <!-- Grid lines -->
-                ${[25,50,75,100].map(pct => {
-                    const gy = H - PAD - (pct / 100 * (H - PAD * 2));
-                    return `<line x1="${PAD}" y1="${gy.toFixed(1)}" x2="${W - PAD}" y2="${gy.toFixed(1)}" stroke="#f3f4f6" stroke-width="1"/>
-                    <text x="${PAD - 4}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#d1d5db">${pct}%</text>`;
-                }).join('')}
-                <!-- Area -->
-                <path d="${areaD}" fill="url(#trendGrad)"/>
-                <!-- Line -->
-                <path d="${pathD}" fill="none" stroke="#1a8a7d" stroke-width="2" stroke-linejoin="round"/>
-                <!-- Dots -->
-                ${dots}
-                <!-- X labels -->
-                ${xLabels}
-            </svg>
+    container.innerHTML = `
+        <!-- Cabecera del día -->
+        <div class="rh-top">
+            <div class="rh-date">${formatDateES(today)}</div>
+            <div class="rh-tagline">${totalRes === 0 ? 'Sin reservas hoy' : `${totalRes} reservas · ${totalGuests} comensales`}</div>
         </div>
-        <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6b7280;flex-wrap:wrap">
-            <span>📊 <strong>${data.reduce((s,d) => s+d.reservations, 0)}</strong> reservas totales</span>
-            <span>👥 <strong>${data.reduce((s,d) => s+d.guests, 0)}</strong> comensales</span>
-            <span>📈 Media <strong>${(data.reduce((s,d) => s+d.occupancy, 0) / data.length).toFixed(1)}%</strong> ocupación</span>
+
+        <!-- Ocupación visual -->
+        <div class="rh-occ-bar-wrap">
+            <div class="rh-occ-label">Ocupación total hoy</div>
+            <div class="rh-occ-bar">
+                <div class="rh-occ-fill" style="width:${Math.min(ocup,100)}%">
+                    <span>${ocup}%</span>
+                </div>
+            </div>
+            <div class="rh-occ-cap">/ 114 aforo</div>
         </div>
+
+        <!-- Turnos side by side -->
+        <div class="rh-shifts">
+            ${renderShiftCard('☀️ COMIDA', c, '#f59e0b', '#fffbeb', '#fde68a')}
+            ${renderShiftCard('🌙 CENA', n, '#3b82f6', '#eff6ff', '#bfdbfe')}
+        </div>
+
+        <!-- Métricas rápidas -->
+        <div class="rh-quick-metrics">
+            ${renderQuickMetric('Ahora sentadas', totalSentadas, 'mesas activas', '#16a34a')}
+            ${renderQuickMetric('No shows', totalNoShow, totalRes > 0 ? Math.round(totalNoShow/totalRes*100)+'% de las reservas' : '—', totalNoShow > 0 ? '#ef4444' : '#9ca3af')}
+            ${renderQuickMetric('Completadas', totalCompleted, 'reservas cerradas', '#1a8a7d')}
+            ${renderQuickMetric('Media grupo', totalRes > 0 ? (totalGuests/totalRes).toFixed(1) : '—', 'pers. por reserva', '#7c3aed')}
+        </div>
+
+        <!-- Horas pico hoy -->
+        ${hours.length ? `
+        <div class="rc-section">
+            <div class="rc-section-title">⏰ Distribución por hora</div>
+            <div style="padding:0 16px 16px">
+                ${renderHourBars(hours)}
+            </div>
+        </div>` : ''}
     `;
 }
 
-// ── Heatmap ──────────────────────────────────────
-
-async function loadHeatmapReport(qs) {
-    const data = await apiGet(`/api/reports/heatmap?${qs}`);
-    const el = document.querySelector('#reportHeatmap .report-content');
-    if (!el) return;
-
-    const maxVal = Math.max(...data.flatMap(d => [d.comida, d.cena]), 1);
-
-    function heatColor(val) {
-        const intensity = val / maxVal;
-        if (intensity === 0) return '#f9fafb';
-        const r = Math.round(26 + (intensity * (239 - 26)));
-        const g = Math.round(138 + (intensity * (68 - 138)));
-        const b = Math.round(125 + (intensity * (68 - 125)));
-        return `rgb(${r},${g},${b})`;
-    }
-
-    function textColor(val) {
-        return (val / maxVal) > 0.4 ? 'white' : '#374151';
-    }
-
-    el.innerHTML = `
-        <div class="heatmap-grid">
-            <div class="heatmap-label"></div>
-            ${data.map(d => `<div class="heatmap-day-header">${d.day}</div>`).join('')}
-            <div class="heatmap-shift-label">☀️ Comida</div>
-            ${data.map(d => `
-                <div class="heatmap-cell" style="background:${heatColor(d.comida)};color:${textColor(d.comida)}" title="${d.day} comida: ${d.comida} reservas">
-                    ${d.comida || ''}
-                </div>`).join('')}
-            <div class="heatmap-shift-label">🌙 Cena</div>
-            ${data.map(d => `
-                <div class="heatmap-cell" style="background:${heatColor(d.cena)};color:${textColor(d.cena)}" title="${d.day} cena: ${d.cena} reservas">
-                    ${d.cena || ''}
-                </div>`).join('')}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:#9ca3af">
-            <span>Menos</span>
-            <div style="display:flex;gap:2px">
-                ${[0.1,0.3,0.5,0.7,0.9,1.0].map(i => `<div style="width:20px;height:12px;border-radius:2px;background:${heatColor(Math.round(i*maxVal))}"></div>`).join('')}
-            </div>
-            <span>Más reservas</span>
-        </div>
-    `;
-}
-
-// ── Sources ──────────────────────────────────────
-
-async function loadSourcesReport(qs) {
-    const data = await apiGet(`/api/reports/sources?${qs}`);
-    const el = document.querySelector('#reportSources .report-content');
-    if (!el) return;
-    if (!data.length) { el.innerHTML = '<p style="color:#9ca3af">Sin datos</p>'; return; }
-
-    const total = data.reduce((s, d) => s + d.count, 0);
-    const colors = { phone: '#3b82f6', whatsapp: '#22c55e', walk_in: '#8b5cf6', web: '#1a8a7d' };
-    const labels = { phone: '📞 Teléfono', whatsapp: '💬 WhatsApp', walk_in: '🚶 Walk-in', web: '🌐 Web' };
-    const icons = { phone: '📞', whatsapp: '💬', walk_in: '🚶', web: '🌐' };
-
-    el.innerHTML = data.map(d => {
-        const pct = total > 0 ? Math.round(d.count / total * 100) : 0;
-        return `
-            <div class="report-bar">
-                <div class="report-bar-label">${labels[d.source] || d.source}</div>
-                <div class="report-bar-track">
-                    <div class="report-bar-fill" style="width:${Math.max(pct, 4)}%;background:${colors[d.source] || '#6b7280'}">
-                        <span class="report-bar-value">${d.count} · ${pct}%</span>
-                    </div>
-                </div>
-            </div>`;
-    }).join('') + `<div style="text-align:center;margin-top:12px;font-size:12px;color:#9ca3af">Total: <strong>${total}</strong> reservas</div>`;
-}
-
-// ── Zones ────────────────────────────────────────
-
-async function loadZonesReport(qs) {
-    const data = await apiGet(`/api/reports/zones?${qs}`);
-    const el = document.querySelector('#reportZones .report-content');
-    if (!el) return;
-    if (!data.length) { el.innerHTML = '<p style="color:#9ca3af">Sin datos</p>'; return; }
-
-    const colors = { exterior: '#22c55e', salon_principal: '#1a8a7d', salon_interior: '#f59e0b' };
-    const icons = { exterior: '🌿', salon_principal: '🏛', salon_interior: '🪑' };
-    const maxGuests = Math.max(...data.map(d => d.guests), 1);
-
-    el.innerHTML = data.map(d => {
-        const pct = Math.round(d.guests / maxGuests * 100);
-        const color = colors[d.zone] || '#6b7280';
-        return `
-        <div style="margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                <span style="font-weight:600;color:#374151">${icons[d.zone] || ''} ${zoneName(d.zone)}</span>
-                <span style="font-size:12px;color:#6b7280">${d.reservations} res · ${d.guests}p</span>
-            </div>
-            <div class="report-bar-track">
-                <div class="report-bar-fill" style="width:${Math.max(pct,4)}%;background:${color}">
-                    <span class="report-bar-value">${d.guests}p</span>
-                </div>
-            </div>
+function renderShiftCard(label, s, color, bg, border) {
+    if (!s || !s.total) return `
+        <div class="rh-shift-card" style="background:${bg};border-color:${border}">
+            <div class="rh-shift-label" style="color:${color}">${label}</div>
+            <div style="color:#9ca3af;font-size:13px;padding:12px 0">Sin reservas</div>
         </div>`;
-    }).join('');
+    const active = (s.total||0) - (s.cancelled||0) - (s.no_show||0);
+    const occ = Math.round((s.guests||0) / 114 * 100);
+    return `
+    <div class="rh-shift-card" style="background:${bg};border-color:${border}">
+        <div class="rh-shift-label" style="color:${color}">${label}</div>
+        <div class="rh-shift-big">${s.guests||0}<span>p</span></div>
+        <div class="rh-shift-sub">${s.total||0} reservas · ${occ}% ocupación</div>
+        <div class="rh-shift-states">
+            <span style="color:#f97316">●  ${s.confirmed||0} conf.</span>
+            <span style="color:#16a34a">●  ${s.seated||0} sent.</span>
+            <span style="color:#1a8a7d">●  ${s.completed||0} comp.</span>
+            ${s.no_show > 0 ? `<span style="color:#ef4444">●  ${s.no_show} N/S</span>` : ''}
+        </div>
+    </div>`;
 }
 
-// ── Hours peak ───────────────────────────────────
+function renderQuickMetric(label, value, sub, color) {
+    return `
+    <div class="rh-metric">
+        <div class="rh-metric-val" style="color:${color}">${value}</div>
+        <div class="rh-metric-label">${label}</div>
+        <div class="rh-metric-sub">${sub}</div>
+    </div>`;
+}
 
-async function loadHoursReport(qs) {
-    const data = await apiGet(`/api/reports/hours?${qs}`);
-    const el = document.querySelector('#reportHours .report-content');
-    if (!el) return;
-    if (!data.length) { el.innerHTML = '<p style="color:#9ca3af">Sin datos</p>'; return; }
-
-    const max = Math.max(...data.map(d => d.count), 1);
-    el.innerHTML = data.map(d => `
-        <div class="report-bar">
-            <div class="report-bar-label" style="width:56px">${d.hour} ${d.shift === 'comida' ? '☀️' : '🌙'}</div>
+function renderHourBars(hours) {
+    const max = Math.max(...hours.map(h => h.count), 1);
+    return hours.map(h => `
+        <div class="report-bar" style="margin-bottom:6px">
+            <div class="report-bar-label" style="width:60px">${h.hour} ${h.shift==='comida'?'☀️':'🌙'}</div>
             <div class="report-bar-track">
-                <div class="report-bar-fill" style="width:${Math.max(d.count/max*100,4)}%;background:${d.shift==='comida'?'#f59e0b':'#3b82f6'}">
-                    <span class="report-bar-value">${d.count} res · ${d.guests}p</span>
+                <div class="report-bar-fill" style="width:${Math.max(h.count/max*100,4)}%;background:${h.shift==='comida'?'#f59e0b':'#3b82f6'}">
+                    <span class="report-bar-value">${h.count} res · ${h.guests}p</span>
                 </div>
             </div>
         </div>`).join('');
 }
 
-// ── No Shows ─────────────────────────────────────
+// ═══════════════════════════════════════════════
+// MODO SEMANA
+// ═══════════════════════════════════════════════
 
-async function loadNoShowsReport(qs) {
-    const data = await apiGet(`/api/reports/no-shows?${qs}`);
-    const el = document.querySelector('#reportNoShows .report-content');
-    if (!el) return;
+async function renderSemana(container) {
+    const today = new Date();
+    const [weekData, retention] = await Promise.all([
+        apiGet(`/api/reports/week-comparison?from=${localISODate(today)}`),
+        apiGet(`/api/reports/new-vs-returning?from=${localISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate()-6))}&to=${localISODate(today)}`),
+    ]);
 
-    const isGood = data.rate <= 10;
-    const rateColor = isGood ? '#16a34a' : data.rate <= 20 ? '#f59e0b' : '#ef4444';
-    const emoji = isGood ? '✅' : data.rate <= 20 ? '⚠️' : '🚨';
+    const t = weekData.totals || {};
+    const ch = weekData.changes || {};
+    const p = weekData.prev_totals || {};
+    const days = weekData.days || [];
+    const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
-    el.innerHTML = `
-        <div style="text-align:center;padding:12px 0">
-            <div style="font-size:42px;font-weight:800;color:${rateColor};line-height:1">${data.rate}%</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:4px">Tasa de No-Show ${emoji}</div>
-            <div style="margin-top:16px;font-size:13px;color:#374151">
-                <strong style="color:#ef4444">${data.no_shows}</strong> de <strong>${data.total_reservations}</strong> reservas
+    // Max guests for bar scaling
+    const maxGuests = Math.max(...days.map(d => d.guests||0), 1);
+
+    container.innerHTML = `
+        <!-- KPIs semana vs semana anterior -->
+        <div class="rw-kpis">
+            ${renderKPIBlock('Reservas', t.reservations||0, ch.reservations, '')}
+            ${renderKPIBlock('Comensales', t.guests||0, ch.guests, '')}
+            ${renderKPIBlock('Ocupación media', (t.occupancy_avg||0)+'%', ch.occupancy_avg, '')}
+            ${renderKPIBlock('No-shows', (t.no_show_rate||0)+'%', ch.no_show_rate, '', true)}
+        </div>
+        <div class="rw-vs-label">vs semana anterior · ${p.reservations||0} res · ${p.guests||0}p</div>
+
+        <!-- Gráfico de barras por día -->
+        <div class="rc-section">
+            <div class="rc-section-title">📊 Comensales por día</div>
+            <div class="rw-bars">
+                ${days.length ? days.map((d, i) => {
+                    const dt = new Date(d.date + 'T12:00:00');
+                    const dayName = dayNames[dt.getDay() === 0 ? 6 : dt.getDay()-1];
+                    const dayNum = dt.getDate() + '/' + (dt.getMonth()+1);
+                    const heightComida = maxGuests > 0 ? Math.max((d.comida_guests||0) / maxGuests * 100, 0) : 0;
+                    const heightCena = maxGuests > 0 ? Math.max((d.cena_guests||0) / maxGuests * 100, 0) : 0;
+                    const isToday = d.date === localISODate(new Date());
+                    return `
+                    <div class="rw-bar-col ${isToday ? 'rw-today' : ''}">
+                        <div class="rw-bar-stacked">
+                            ${d.cena_guests > 0 ? `<div class="rw-bar-cena" style="height:${heightCena}%" title="Cena: ${d.cena_guests}p"></div>` : ''}
+                            ${d.comida_guests > 0 ? `<div class="rw-bar-comida" style="height:${heightComida}%" title="Comida: ${d.comida_guests}p"></div>` : ''}
+                        </div>
+                        <div class="rw-bar-total">${d.guests||0}</div>
+                        <div class="rw-bar-label">${dayName}</div>
+                        <div class="rw-bar-date">${dayNum}</div>
+                    </div>`;
+                }).join('') : '<p style="color:#9ca3af;padding:16px">Sin datos esta semana</p>'}
+            </div>
+            <div class="rw-legend">
+                <span><span class="rw-dot rw-dot-comida"></span>Comida</span>
+                <span><span class="rw-dot rw-dot-cena"></span>Cena</span>
             </div>
         </div>
-        <div style="margin-top:16px;padding:10px;border-radius:8px;background:${isGood?'#f0fdf4':'#fef2f2'};font-size:12px;color:#374151;text-align:center">
-            ${isGood ? '✅ Tasa excelente. Menos del 10% es el objetivo.' : data.rate <= 20 ? '⚠️ Tasa moderada. Considera enviar recordatorios.' : '🚨 Tasa alta. Revisa política de confirmaciones.'}
+
+        <!-- Retención -->
+        <div class="rc-section-row">
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">👥 Clientes nuevos vs recurrentes</div>
+                <div style="padding:12px 16px">
+                    ${renderRetentionChart(retention)}
+                </div>
+            </div>
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">📉 Análisis No-Shows</div>
+                <div style="padding:12px 16px">
+                    ${renderNoShowInsight(t)}
+                </div>
+            </div>
         </div>
     `;
 }
 
-// ── Top Clients ──────────────────────────────────
+function renderKPIBlock(label, value, change, suffix, invertGood=false) {
+    let changeHtml = '';
+    if (change !== null && change !== undefined) {
+        const up = change > 0;
+        const good = invertGood ? !up : up;
+        changeHtml = `<div class="rw-kpi-change" style="color:${good?'#16a34a':'#ef4444'}">${up?'▲':'▼'} ${Math.abs(change)}%</div>`;
+    }
+    return `
+    <div class="rw-kpi">
+        <div class="rw-kpi-val">${value}${suffix}</div>
+        <div class="rw-kpi-label">${label}</div>
+        ${changeHtml}
+    </div>`;
+}
 
-async function loadTopClientsReport(qs) {
-    const data = await apiGet(`/api/reports/clients?${qs}&limit=10`);
-    const el = document.querySelector('#reportTopClients .report-content');
-    if (!el) return;
-    if (!data.length) { el.innerHTML = '<p style="color:#9ca3af">Sin datos</p>'; return; }
-
-    const maxVisits = Math.max(...data.map(c => c.visits), 1);
-
-    el.innerHTML = `
-        <div style="overflow-x:auto">
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Cliente</th>
-                        <th>Visitas</th>
-                        <th>Comensales</th>
-                        <th>Última visita</th>
-                        <th>Fidelidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map((c, i) => `
-                        <tr>
-                            <td style="color:#9ca3af;font-size:12px">${i+1}</td>
-                            <td>
-                                <strong>${c.name}</strong>
-                                ${c.vip ? '<span class="badge badge-vip" style="margin-left:4px">VIP</span>' : ''}
-                                ${c.phone ? `<div style="font-size:11px;color:#9ca3af">${c.phone}</div>` : ''}
-                            </td>
-                            <td><strong style="color:#1a8a7d">${c.visits}</strong></td>
-                            <td>${c.total_guests}</td>
-                            <td style="font-size:12px;color:#6b7280">${c.last_visit ? formatDate(c.last_visit) : '—'}</td>
-                            <td>
-                                <div style="width:64px;height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">
-                                    <div style="width:${c.visits/maxVisits*100}%;height:100%;background:${c.vip?'#f59e0b':'#1a8a7d'};border-radius:99px"></div>
-                                </div>
-                            </td>
-                        </tr>`).join('')}
-                </tbody>
-            </table>
+function renderRetentionChart(r) {
+    if (!r || !r.total) return '<p style="color:#9ca3af">Sin datos</p>';
+    const newPct = Math.round(r.new / r.total * 100);
+    const retPct = 100 - newPct;
+    return `
+        <div style="display:flex;gap:8px;height:16px;border-radius:8px;overflow:hidden;margin-bottom:10px">
+            <div style="width:${newPct}%;background:#3b82f6;transition:width 0.5s"></div>
+            <div style="flex:1;background:#16a34a;transition:width 0.5s"></div>
+        </div>
+        <div style="display:flex;gap:16px;font-size:13px">
+            <div><span style="color:#3b82f6;font-weight:700">${r.new}</span><br><span style="color:#6b7280">Nuevos (${newPct}%)</span></div>
+            <div><span style="color:#16a34a;font-weight:700">${r.returning}</span><br><span style="color:#6b7280">Recurrentes (${retPct}%)</span></div>
+        </div>
+        <div style="margin-top:10px;padding:8px;border-radius:8px;background:${r.returning_rate>40?'#f0fdf4':'#eff6ff'};font-size:12px;color:#374151">
+            ${r.returning_rate > 50 ? '✅ Alta fidelización — más de la mitad repite' :
+              r.returning_rate > 30 ? '💡 Buena base de clientes recurrentes' :
+              '📢 Potencial de mejora en fidelización'}
         </div>`;
 }
 
-// ── Popular Tables ───────────────────────────────
+function renderNoShowInsight(t) {
+    const rate = t.no_show_rate || 0;
+    const noshows = t.no_shows || 0;
+    const color = rate <= 5 ? '#16a34a' : rate <= 15 ? '#f59e0b' : '#ef4444';
+    const msg = rate <= 5 ? '✅ Excelente — tasa muy baja' :
+                rate <= 15 ? '⚠️ Modera — envía recordatorios WhatsApp' :
+                '🚨 Alta — considera confirmaciones 24h antes';
+    return `
+        <div style="text-align:center;padding:8px 0">
+            <div style="font-size:36px;font-weight:800;color:${color}">${rate}%</div>
+            <div style="font-size:12px;color:#6b7280">${noshows} personas no aparecieron</div>
+        </div>
+        <div style="margin-top:12px;padding:8px 10px;border-radius:8px;background:#f9fafb;font-size:12px;color:#374151">${msg}</div>`;
+}
 
-async function loadPopularTablesReport(qs) {
-    const data = await apiGet(`/api/reports/popular-tables?${qs}`);
-    const el = document.querySelector('#reportPopularTables .report-content');
-    if (!el) return;
-    if (!data.length) { el.innerHTML = '<p style="color:#9ca3af">Sin datos</p>'; return; }
+// ═══════════════════════════════════════════════
+// MODO MES
+// ═══════════════════════════════════════════════
 
-    const max = Math.max(...data.map(d => d.times_reserved), 1);
-    const zoneColors = { exterior: '#22c55e', salon_principal: '#1a8a7d', salon_interior: '#f59e0b' };
+async function renderMes(container) {
+    const today = new Date();
+    const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
+    const qs = `from=${localISODate(from30)}&to=${localISODate(today)}`;
 
-    el.innerHTML = data.slice(0, 10).map(d => {
-        const color = zoneColors[d.zone] || '#6b7280';
-        return `
-        <div class="report-bar">
-            <div class="report-bar-label" style="width:48px">Mesa ${d.table_number}</div>
+    const [kpi, trend, heatmap, sources, topClients, retention] = await Promise.all([
+        apiGet(`/api/reports/kpi?${qs}`),
+        apiGet(`/api/reports/trend?${qs}`),
+        apiGet(`/api/reports/heatmap?${qs}`),
+        apiGet(`/api/reports/sources?${qs}`),
+        apiGet(`/api/reports/clients?${qs}&limit=5`),
+        apiGet(`/api/reports/new-vs-returning?${qs}`),
+    ]);
+
+    const curr = kpi.current || {};
+    const ch = kpi.changes || {};
+
+    container.innerHTML = `
+        <!-- KPIs mes -->
+        <div class="rw-kpis rm-kpis">
+            ${renderKPIBlock('Reservas', curr.total||0, ch.total)}
+            ${renderKPIBlock('Comensales', curr.guests||0, ch.guests)}
+            ${renderKPIBlock('Ocupación media', (curr.occupancy_avg||0)+'%', ch.occupancy_avg)}
+            ${renderKPIBlock('No-show', (curr.no_show_rate||0)+'%', ch.no_show_rate, '', true)}
+            ${renderKPIBlock('Media grupo', (curr.avg_guests||0)+' p', null)}
+        </div>
+        <div class="rw-vs-label">vs mes anterior · ${(kpi.previous||{}).reservations||0} res · ${(kpi.previous||{}).guests||0}p</div>
+
+        <!-- Tendencia diaria -->
+        <div class="rc-section">
+            <div class="rc-section-title">📈 Tendencia de ocupación — 30 días</div>
+            <div style="padding:8px 12px 16px">
+                ${renderTrendSVG(trend)}
+            </div>
+        </div>
+
+        <!-- Heatmap + Fuentes -->
+        <div class="rc-section-row">
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">🔥 Días y turnos más concurridos</div>
+                <div style="padding:10px 16px 16px">
+                    ${renderHeatmapInline(heatmap)}
+                </div>
+            </div>
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">📣 Origen de reservas</div>
+                <div style="padding:10px 16px 16px">
+                    ${renderSourcesInline(sources)}
+                </div>
+            </div>
+        </div>
+
+        <!-- Clientes top + retención -->
+        <div class="rc-section-row">
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">⭐ Top clientes del mes</div>
+                <div style="padding:8px 16px 16px">
+                    ${renderTopClientsInline(topClients)}
+                </div>
+            </div>
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">👥 Fidelización</div>
+                <div style="padding:12px 16px">
+                    ${renderRetentionChart(retention)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ═══════════════════════════════════════════════
+// MODO PERSONALIZADO
+// ═══════════════════════════════════════════════
+
+async function renderCustom(container) {
+    const from = document.getElementById('reportFrom')?.value;
+    const to = document.getElementById('reportTo')?.value;
+    if (!from || !to) {
+        container.innerHTML = '<div class="report-loading">Selecciona un rango de fechas y pulsa Ver</div>';
+        return;
+    }
+    const qs = `from=${from}&to=${to}`;
+    const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+
+    const [kpi, trend, sources, topClients, noShows, retention] = await Promise.all([
+        apiGet(`/api/reports/kpi?${qs}`),
+        apiGet(`/api/reports/trend?${qs}`),
+        apiGet(`/api/reports/sources?${qs}`),
+        apiGet(`/api/reports/clients?${qs}&limit=8`),
+        apiGet(`/api/reports/no-shows?${qs}`),
+        apiGet(`/api/reports/new-vs-returning?${qs}`),
+    ]);
+
+    const curr = kpi.current || {};
+    const ch = kpi.changes || {};
+
+    container.innerHTML = `
+        <div class="rh-top" style="padding:12px 16px 4px">
+            <div class="rh-date">${formatDateES(from)} — ${formatDateES(to)}</div>
+            <div class="rh-tagline">${days} días · ${curr.total||0} reservas · ${curr.guests||0} comensales</div>
+        </div>
+        <div class="rw-kpis rm-kpis">
+            ${renderKPIBlock('Reservas', curr.total||0, ch.total)}
+            ${renderKPIBlock('Comensales', curr.guests||0, ch.guests)}
+            ${renderKPIBlock('Ocupación media', (curr.occupancy_avg||0)+'%', ch.occupancy_avg)}
+            ${renderKPIBlock('No-show', (curr.no_show_rate||0)+'%', ch.no_show_rate, '', true)}
+            ${renderKPIBlock('Media grupo', (curr.avg_guests||0)+' p', null)}
+        </div>
+        <div class="rw-vs-label">vs período anterior equivalente</div>
+
+        <div class="rc-section">
+            <div class="rc-section-title">📈 Tendencia diaria</div>
+            <div style="padding:8px 12px 16px">${renderTrendSVG(trend)}</div>
+        </div>
+
+        <div class="rc-section-row">
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">📣 Origen de reservas</div>
+                <div style="padding:10px 16px 16px">${renderSourcesInline(sources)}</div>
+            </div>
+            <div class="rc-section rc-half">
+                <div class="rc-section-title">👥 Fidelización</div>
+                <div style="padding:12px 16px">${renderRetentionChart(retention)}</div>
+            </div>
+        </div>
+
+        <div class="rc-section">
+            <div class="rc-section-title">⭐ Clientes frecuentes</div>
+            <div style="padding:8px 16px 16px">${renderTopClientsInline(topClients)}</div>
+        </div>
+    `;
+}
+
+// ═══════════════════════════════════════════════
+// COMPONENTES COMPARTIDOS
+// ═══════════════════════════════════════════════
+
+function renderTrendSVG(data) {
+    if (!data.length) return '<p style="color:#9ca3af;padding:8px">Sin datos en este período</p>';
+
+    const W = 560, H = 100, PL = 36, PR = 12, PT = 10, PB = 24;
+    const maxG = Math.max(...data.map(d => d.guests), 1);
+    const n = data.length;
+
+    const toX = i => PL + (i / Math.max(n - 1, 1)) * (W - PL - PR);
+    const toY = v => H - PB - (v / maxG) * (H - PT - PB);
+
+    const pts = data.map((d, i) => ({ x: toX(i), y: toY(d.guests), d }));
+    const line = pts.map((p, i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const area = `M${pts[0].x.toFixed(1)},${H-PB} ` + pts.map(p => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ` L${pts[n-1].x.toFixed(1)},${H-PB}Z`;
+
+    // x labels: show ~6
+    const step = Math.ceil(n / 6);
+    const xLabels = pts.map((p, i) => {
+        if (i % step !== 0 && i !== n-1) return '';
+        const dt = new Date(data[i].date + 'T12:00:00');
+        return `<text x="${p.x.toFixed(1)}" y="${H-2}" text-anchor="middle" font-size="9" fill="#9ca3af">${dt.getDate()}/${dt.getMonth()+1}</text>`;
+    }).join('');
+
+    const gridLines = [25,50,75,100].map(pct => {
+        const gy = toY(maxG * pct / 100);
+        return `<line x1="${PL}" y1="${gy.toFixed(1)}" x2="${W-PR}" y2="${gy.toFixed(1)}" stroke="#f3f4f6" stroke-width="1"/>
+                <text x="${PL-4}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#d1d5db">${Math.round(maxG*pct/100)}</text>`;
+    }).join('');
+
+    const dots = pts.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#1a8a7d" stroke="white" stroke-width="1.5"><title>${p.d.date}: ${p.d.guests}p · ${p.d.occupancy}%</title></circle>`).join('');
+
+    const totalGuests = data.reduce((s,d)=>s+d.guests,0);
+    const avgOcc = (data.reduce((s,d)=>s+d.occupancy,0)/n).toFixed(1);
+    const maxDay = data.reduce((a,b)=>b.guests>a.guests?b:a);
+
+    return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">
+            <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a8a7d" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#1a8a7d" stop-opacity="0.02"/>
+            </linearGradient></defs>
+            ${gridLines}
+            <path d="${area}" fill="url(#tg)"/>
+            <path d="${line}" fill="none" stroke="#1a8a7d" stroke-width="2" stroke-linejoin="round"/>
+            ${dots}
+            ${xLabels}
+        </svg>
+        <div class="trend-footer">
+            <span>👥 <strong>${totalGuests}</strong> comensales totales</span>
+            <span>📈 Media <strong>${avgOcc}%</strong> ocupación</span>
+            <span>🏆 Mejor día: <strong>${maxDay.date ? new Date(maxDay.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '—'}</strong> (${maxDay.guests}p)</span>
+        </div>`;
+}
+
+function renderHeatmapInline(data) {
+    if (!data.length) return '<p style="color:#9ca3af">Sin datos</p>';
+    const max = Math.max(...data.flatMap(d=>[d.comida,d.cena]), 1);
+    const cell = (val) => {
+        const t = val/max;
+        const bg = t === 0 ? '#f9fafb' : `rgba(26,138,125,${0.15 + t*0.85})`;
+        const color = t > 0.5 ? 'white' : '#374151';
+        return `<div class="heatmap-cell" style="background:${bg};color:${color}" title="${val} reservas">${val||''}</div>`;
+    };
+    return `
+        <div class="heatmap-grid">
+            <div class="heatmap-label"></div>
+            ${data.map(d=>`<div class="heatmap-day-header">${d.day}</div>`).join('')}
+            <div class="heatmap-shift-label">☀️</div>${data.map(d=>cell(d.comida)).join('')}
+            <div class="heatmap-shift-label">🌙</div>${data.map(d=>cell(d.cena)).join('')}
+        </div>`;
+}
+
+function renderSourcesInline(data) {
+    if (!data.length) return '<p style="color:#9ca3af">Sin datos</p>';
+    const total = data.reduce((s,d)=>s+d.count,0);
+    const colors = { phone:'#3b82f6', whatsapp:'#22c55e', walk_in:'#8b5cf6', web:'#1a8a7d' };
+    const labels = { phone:'📞 Teléfono', whatsapp:'💬 WhatsApp', walk_in:'🚶 Walk-in', web:'🌐 Web' };
+    return data.sort((a,b)=>b.count-a.count).map(d => {
+        const pct = total > 0 ? Math.round(d.count/total*100) : 0;
+        return `<div class="report-bar" style="margin-bottom:8px">
+            <div class="report-bar-label" style="width:90px;font-size:11px">${labels[d.source]||d.source}</div>
             <div class="report-bar-track">
-                <div class="report-bar-fill" style="width:${Math.max(d.times_reserved/max*100,4)}%;background:${color}">
-                    <span class="report-bar-value">${d.times_reserved}× · ${zoneName(d.zone)}</span>
+                <div class="report-bar-fill" style="width:${Math.max(pct,4)}%;background:${colors[d.source]||'#6b7280'}">
+                    <span class="report-bar-value">${d.count} · ${pct}%</span>
                 </div>
             </div>
         </div>`;
-    }).join('');
+    }).join('') + `<div style="text-align:right;font-size:11px;color:#9ca3af;margin-top:4px">Total: ${total}</div>`;
 }
 
-// ── Daily Summary ────────────────────────────────
-
-async function loadSummaryReport() {
-    const data = await apiGet(`/api/reports/summary?date=${currentDate}`);
-    const el = document.querySelector('#reportSummary .report-content');
-    if (!el) return;
-
-    let html = '';
-    for (const shift of ['comida', 'cena']) {
-        const s = data[shift];
-        if (!s) continue;
-        const icon = shift === 'comida' ? '☀️' : '🌙';
-        const active = s.total - s.cancelled - s.no_show;
-        const completionRate = s.total > 0 ? Math.round(s.completed / s.total * 100) : 0;
-        html += `
-            <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f3f4f6">
-                <div style="font-weight:700;color:#374151;margin-bottom:10px;font-size:14px">${icon} ${shift.charAt(0).toUpperCase() + shift.slice(1)}</div>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-                    <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:22px;font-weight:800;color:#16a34a">${s.total}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">Reservas</div>
-                    </div>
-                    <div style="background:#eff6ff;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:22px;font-weight:800;color:#3b82f6">${s.guests}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">Comensales</div>
-                    </div>
-                    <div style="background:#f5f3ff;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:22px;font-weight:800;color:#7c3aed">${s.seated}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">Sentadas</div>
-                    </div>
-                    <div style="background:#fef2f2;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:18px;font-weight:700;color:#ef4444">${s.cancelled}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">Canceladas</div>
-                    </div>
-                    <div style="background:#fff7ed;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:18px;font-weight:700;color:#ea580c">${s.no_show}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">No Show</div>
-                    </div>
-                    <div style="background:#f0fdf4;padding:8px;border-radius:8px;text-align:center">
-                        <div style="font-size:18px;font-weight:700;color:#16a34a">${completionRate}%</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:2px">Completadas</div>
-                    </div>
-                </div>
-            </div>`;
-    }
-    el.innerHTML = html || '<p style="color:#9ca3af;padding:16px;text-align:center">Sin datos para hoy</p>';
+function renderTopClientsInline(data) {
+    if (!data.length) return '<p style="color:#9ca3af">Sin datos</p>';
+    return data.map((c, i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f3f4f6">
+            <div style="font-size:13px;font-weight:700;color:#9ca3af;width:18px">${i+1}</div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px;color:#111827">${c.name} ${c.vip ? '<span class="badge badge-vip">VIP</span>' : ''}</div>
+                <div style="font-size:11px;color:#9ca3af">${c.phone || ''}</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-weight:800;color:#1a8a7d;font-size:14px">${c.visits}×</div>
+                <div style="font-size:11px;color:#9ca3af">${c.total_guests}p total</div>
+            </div>
+        </div>`).join('');
 }
 
-// ── Export report CSV ────────────────────────────
+// ═══════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════
+
+function formatDateES(iso) {
+    const d = new Date(iso + 'T12:00:00');
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 function exportReportCSV() {
-    const from = document.getElementById('reportFrom')?.value;
-    const to = document.getElementById('reportTo')?.value;
-    if (!from || !to) { showToast('Selecciona un período primero', 'error'); return; }
+    const from = document.getElementById('reportFrom')?.value || localISODate(new Date(new Date().setDate(new Date().getDate()-30)));
+    const to = document.getElementById('reportTo')?.value || localISODate(new Date());
     window.open(`/api/export/reservations.csv?from=${from}&to=${to}`);
 }
 
-// ── WhatsApp Test Chat ───────────────────────────
-
+// WhatsApp test
 async function sendWaTest() {
     const input = document.getElementById('waTestInput');
-    const msg = input.value.trim();
+    const msg = input?.value.trim();
     if (!msg) return;
-
     const chat = document.getElementById('waChatMessages');
-    chat.innerHTML += `<div class="wa-msg wa-user">${msg}</div>`;
-    input.value = '';
-
+    if (chat) chat.innerHTML += `<div class="wa-msg wa-user">${msg}</div>`;
+    if (input) input.value = '';
     try {
         const res = await apiPost('/api/whatsapp/test', { phone: '+34600000000', message: msg });
-        chat.innerHTML += `<div class="wa-msg wa-bot">${res.reply}</div>`;
+        if (chat) chat.innerHTML += `<div class="wa-msg wa-bot">${res.reply}</div>`;
     } catch (e) {
-        chat.innerHTML += `<div class="wa-msg wa-bot" style="color:#ef4444">Error de conexión</div>`;
+        if (chat) chat.innerHTML += `<div class="wa-msg wa-bot" style="color:#ef4444">Error</div>`;
     }
-
-    chat.scrollTop = chat.scrollHeight;
+    if (chat) chat.scrollTop = chat.scrollHeight;
 }
 
-document.getElementById('waTestInput')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendWaTest();
-});
+document.getElementById('waTestInput')?.addEventListener('keydown', e => { if (e.key==='Enter') sendWaTest(); });
 
 function copyWaLink() {
-    const link = document.getElementById('waLink').textContent;
-    navigator.clipboard.writeText(link).then(() => {
-        showToast('Enlace WhatsApp copiado', 'success');
-    }).catch(() => {
-        prompt('Copia este enlace:', link);
-    });
+    const link = document.getElementById('waLink')?.textContent;
+    if (!link) return;
+    navigator.clipboard.writeText(link).then(() => showToast('Enlace copiado', 'success')).catch(() => prompt('Copia:', link));
 }

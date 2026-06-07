@@ -498,6 +498,23 @@ def report_weekly():
     return jsonify(rpt_svc.weekly_trend(date.fromisoformat(from_d)))
 
 
+@api.route('/reports/new-vs-returning', methods=['GET'])
+def report_new_vs_returning():
+    from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    return jsonify(rpt_svc.new_vs_returning(date.fromisoformat(from_d), date.fromisoformat(to_d)))
+
+
+@api.route('/reports/week-comparison', methods=['GET'])
+def report_week_comparison():
+    # Monday of the requested week (default: current week)
+    from_d = request.args.get('from', date.today().isoformat())
+    target = date.fromisoformat(from_d)
+    # Find Monday of that week
+    monday = target - timedelta(days=target.weekday())
+    return jsonify(rpt_svc.weekly_comparison(monday))
+
+
 @api.route('/reports/clients', methods=['GET'])
 def report_clients():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())

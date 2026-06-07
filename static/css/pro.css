@@ -754,7 +754,233 @@
    INFORMES — KPI Strip + Reports
    ═══════════════════════════════════════════════ */
 
-/* Date presets */
+/* Mode bar */
+.report-mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 12px 8px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    flex-wrap: wrap;
+}
+.rmode-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+.rmode-btn:hover { border-color: #1a8a7d; color: #1a8a7d; }
+.rmode-btn.active { background: #1a8a7d; color: #fff; border-color: #1a8a7d; }
+.rmode-custom {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-left: 4px;
+}
+
+/* HOY styles */
+.rh-top { padding: 14px 16px 4px; }
+.rh-date { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
+.rh-tagline { font-size: 18px; font-weight: 800; color: #111827; margin-top: 2px; }
+.rh-occ-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 12px;
+}
+.rh-occ-label { font-size: 12px; color: #6b7280; white-space: nowrap; }
+.rh-occ-bar {
+    flex: 1;
+    height: 20px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.rh-occ-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1a8a7d, #16a34a);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    min-width: 32px;
+    transition: width 0.6s ease;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+}
+.rh-occ-cap { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+
+.rh-shifts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 12px 12px;
+}
+.rh-shift-card {
+    border: 1.5px solid;
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+.rh-shift-label { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 6px; }
+.rh-shift-big { font-size: 32px; font-weight: 800; color: #111827; line-height: 1; }
+.rh-shift-big span { font-size: 16px; color: #6b7280; font-weight: 500; }
+.rh-shift-sub { font-size: 11px; color: #6b7280; margin: 4px 0 8px; }
+.rh-shift-states { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; font-weight: 600; }
+
+.rh-quick-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 4px;
+}
+.rh-metric {
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid #f3f4f6;
+}
+.rh-metric:last-child { border-right: none; }
+.rh-metric-val { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.rh-metric-label { font-size: 11px; font-weight: 700; color: #374151; margin-top: 2px; }
+.rh-metric-sub { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+
+/* Section wrappers */
+.rc-section {
+    background: #fff;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 4px;
+}
+.rc-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 16px 0;
+}
+.rc-section-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 4px;
+}
+.rc-half { border-right: 1px solid #f3f4f6; }
+.rc-half:last-child { border-right: none; }
+
+/* SEMANA styles */
+.rw-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: #fff;
+    border-bottom: 1px solid #f3f4f6;
+}
+.rm-kpis { grid-template-columns: repeat(5, 1fr); }
+.rw-kpi {
+    padding: 14px 10px 10px;
+    text-align: center;
+    border-right: 1px solid #f3f4f6;
+}
+.rw-kpi:last-child { border-right: none; }
+.rw-kpi-val { font-size: 26px; font-weight: 800; color: #111827; line-height: 1.1; letter-spacing: -0.02em; }
+.rw-kpi-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
+.rw-kpi-change { font-size: 11px; margin-top: 4px; font-weight: 600; }
+.rw-vs-label { font-size: 11px; color: #9ca3af; padding: 4px 16px 8px; background: #fff; }
+
+/* Bar chart semana */
+.rw-bars {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    padding: 8px 16px 0;
+    height: 120px;
+}
+.rw-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+    justify-content: flex-end;
+}
+.rw-bar-col.rw-today .rw-bar-label { color: #1a8a7d; font-weight: 800; }
+.rw-bar-stacked {
+    width: 100%;
+    max-width: 40px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 1px;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+    min-height: 4px;
+}
+.rw-bar-comida {
+    background: #f59e0b;
+    min-height: 3px;
+    transition: height 0.4s ease;
+}
+.rw-bar-cena {
+    background: #3b82f6;
+    min-height: 3px;
+    transition: height 0.4s ease;
+}
+.rw-bar-total { font-size: 10px; font-weight: 700; color: #374151; }
+.rw-bar-label { font-size: 11px; font-weight: 600; color: #6b7280; }
+.rw-bar-date { font-size: 9px; color: #9ca3af; }
+.rw-legend {
+    display: flex;
+    gap: 12px;
+    padding: 8px 16px 12px;
+    font-size: 11px;
+    color: #6b7280;
+}
+.rw-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+.rw-dot-comida { background: #f59e0b; }
+.rw-dot-cena { background: #3b82f6; }
+
+/* Trend footer */
+.trend-footer {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 6px;
+}
+
+/* Loading / error */
+.report-loading {
+    padding: 40px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+}
+.report-error {
+    padding: 24px;
+    text-align: center;
+    color: #ef4444;
+    font-size: 13px;
+}
+
+/* Date presets (kept for compat) */
 .report-presets {
     display: flex;
     align-items: center;

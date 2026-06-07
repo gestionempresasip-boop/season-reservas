@@ -275,19 +275,128 @@ def heatmap_report(from_date, to_date):
 
 
 def weekly_occupancy(from_date, to_date):
-    """Week-by-week occupancy for trend chart."""
+    """Day-by-day occupancy for trend chart, split by shift."""
     results = db.session.query(
         Reservation.date,
+        Reservation.shift,
         func.count(Reservation.id).label('reservations'),
         func.sum(Reservation.guests).label('guests'),
     ).filter(
         Reservation.date.between(from_date, to_date),
         Reservation.status.in_(['confirmed', 'seated', 'completed']),
-    ).group_by(Reservation.date).order_by(Reservation.date).all()
+    ).group_by(Reservation.date, Reservation.shift).order_by(Reservation.date).all()
 
-    return [{
-        'date': r.date.isoformat(),
-        'reservations': r.reservations,
-        'guests': r.guests or 0,
-        'occupancy': round((r.guests or 0) / 114 * 100, 1),
-    } for r in results]
+    # Merge into per-day dict
+    days = {}
+    for r in results:
+        key = r.date.isoformat()
+        if key not in days:
+            days[key] = {'date': key, 'reservations': 0, 'guests': 0, 'comida': 0, 'cena': 0}
+        days[key]['reservations'] += r.reservations
+        days[key]['guests'] += r.guests or 0
+        days[key][r.shift] = r.guests or 0
+
+    return [{**d, 'occupancy': round(d['guests'] / 114 * 100, 1)} for d in sorted(days.values(), key=lambda x: x['date'])]
+
+
+def new_vs_returning(from_date, to_date):
+    """Count new clients (first reservation ever) vs returning in the period."""
+    # Clients with reservations in this period
+    period_clients = db.session.query(
+        Reservation.client_id,
+    ).filter(
+        Reservation.date.between(from_date, to_date),
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+        Reservation.client_id.isnot(None),
+    ).distinct().all()
+
+    period_ids = {r.client_id for r in period_clients}
+    new_count = 0
+    returning_count = 0
+
+    for cid in period_ids:
+        # Check if they had any reservation BEFORE this period
+        prior = Reservation.query.filter(
+            Reservation.client_id == cid,
+            Reservation.date < from_date,
+            Reservation.status.in_(['confirmed', 'seated', 'completed']),
+        ).first()
+        if prior:
+            returning_count += 1
+        else:
+            new_count += 1
+
+    # Walk-ins (no client_id) — always "new"
+    walkins = db.session.query(func.count(Reservation.id)).filter(
+        Reservation.date.between(from_date, to_date),
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+        Reservation.client_id.is_(None),
+    ).scalar() or 0
+
+    total = new_count + returning_count + walkins
+    return {
+        'new': new_count + walkins,
+        'returning': returning_count,
+        'total': total,
+        'returning_rate': round(returning_count / total * 100, 1) if total else 0,
+    }
+
+
+def weekly_comparison(target_monday):
+    """Current week vs previous week, day by day."""
+    from datetime import timedelta
+    week_end = target_monday + timedelta(days=6)
+    prev_start = target_monday - timedelta(days=7)
+    prev_end = target_monday - timedelta(days=1)
+
+    def week_data(start, end):
+        results = db.session.query(
+            Reservation.date,
+            Reservation.shift,
+            func.count(Reservation.id).label('reservations'),
+            func.sum(Reservation.guests).label('guests'),
+            func.sum(case((Reservation.status == 'no_show', 1), else_=0)).label('no_shows'),
+        ).filter(
+            Reservation.date.between(start, end),
+        ).group_by(Reservation.date, Reservation.shift).all()
+
+        days = {}
+        for r in results:
+            key = r.date.isoformat()
+            if key not in days:
+                days[key] = {'date': key, 'reservations': 0, 'guests': 0, 'no_shows': 0, 'comida_guests': 0, 'cena_guests': 0}
+            days[key]['reservations'] += r.reservations
+            days[key]['guests'] += r.guests or 0
+            days[key]['no_shows'] += r.no_shows or 0
+            days[key][f'{r.shift}_guests'] = (days[key].get(f'{r.shift}_guests', 0) + (r.guests or 0))
+
+        total_res = sum(d['reservations'] for d in days.values())
+        total_guests = sum(d['guests'] for d in days.values())
+        total_noshows = sum(d['no_shows'] for d in days.values())
+        return {
+            'days': sorted(days.values(), key=lambda x: x['date']),
+            'totals': {
+                'reservations': total_res,
+                'guests': total_guests,
+                'no_shows': total_noshows,
+                'no_show_rate': round(total_noshows / total_res * 100, 1) if total_res else 0,
+                'occupancy_avg': round(total_guests / 114 / 7 * 100, 1),
+            }
+        }
+
+    curr = week_data(target_monday, week_end)
+    prev = week_data(prev_start, prev_end)
+
+    def chg(c, p):
+        if p == 0: return None
+        return round((c - p) / p * 100, 1)
+
+    curr['changes'] = {
+        'reservations': chg(curr['totals']['reservations'], prev['totals']['reservations']),
+        'guests': chg(curr['totals']['guests'], prev['totals']['guests']),
+        'no_show_rate': chg(curr['totals']['no_show_rate'], prev['totals']['no_show_rate']),
+        'occupancy_avg': chg(curr['totals']['occupancy_avg'], prev['totals']['occupancy_avg']),
+    }
+    curr['prev_totals'] = prev['totals']
+    curr['period'] = {'from': target_monday.isoformat(), 'to': week_end.isoformat()}
+    return curr
