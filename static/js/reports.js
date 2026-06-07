@@ -17,7 +17,7 @@ function setReportMode(mode) {
     _reportMode = mode;
     document.querySelectorAll('.rmode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
     const customRange = document.getElementById('rmodeCustomRange');
-    if (customRange) customRange.classList.toggle('hidden', mode !== 'custom');
+    if (customRange) customRange.style.display = mode === 'custom' ? 'flex' : 'none';
     if (mode !== 'custom') loadReports();
 }
 
@@ -223,7 +223,7 @@ async function renderSemana(container) {
     `;
 }
 
-function renderKPIBlock(label, value, change, suffix, invertGood=false) {
+function renderKPIBlock(label, value, change, suffix='', invertGood=false) {
     let changeHtml = '';
     if (change !== null && change !== undefined) {
         const up = change > 0;

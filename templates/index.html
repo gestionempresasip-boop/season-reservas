@@ -215,7 +215,7 @@
                 <button class="rmode-btn" data-mode="semana" onclick="setReportMode('semana')">📆 Semana</button>
                 <button class="rmode-btn" data-mode="mes" onclick="setReportMode('mes')">🗓 Mes</button>
                 <button class="rmode-btn" data-mode="custom" onclick="setReportMode('custom')">✦ Personalizado</button>
-                <div class="rmode-custom hidden" id="rmodeCustomRange">
+                <div class="rmode-custom" id="rmodeCustomRange" style="display:none">
                     <input type="date" id="reportFrom" class="date-picker">
                     <span>—</span>
                     <input type="date" id="reportTo" class="date-picker">
@@ -586,7 +586,7 @@
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=24"></script>
-    <script src="/static/js/reports.js?v=31"></script>
+    <script src="/static/js/reports.js?v=32"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">
