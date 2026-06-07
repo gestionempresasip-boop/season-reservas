@@ -63,63 +63,101 @@ function zoneFromShort(z) {
     return ({ 'ext': 'exterior', 'sp': 'salon_principal', 'si': 'salon_interior' })[z] || z;
 }
 
+// ── Day view state ───────────────────────────────
+let _dayData = { comida: [], cena: [], stats: {} };
+
 async function loadReservationsList() {
-    const data = await apiGet(`/api/reservations?date=${currentDate}&shift=${currentShift}&all=true`);
-    allReservations = data;
-    renderReservationsList(data);
+    try {
+        const data = await apiGet(`/api/reservations/day?date=${currentDate}`);
+        _dayData = data;
+        allReservations = [...(data.comida || []), ...(data.cena || [])];
+        updateDayStats(data.stats || {});
+        applyDayFilters();
+    } catch (e) {
+        // fallback: load by shift as before
+        const data = await apiGet(`/api/reservations?date=${currentDate}&shift=${currentShift}&all=true`);
+        allReservations = data;
+        _dayData = { comida: currentShift === 'comida' ? data : [], cena: currentShift === 'cena' ? data : [], stats: {} };
+        applyDayFilters();
+    }
 }
 
-function renderReservationsList(items) {
-    const container = document.getElementById('reservationsList');
+function updateDayStats(stats) {
+    const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const d = new Date(currentDate + 'T12:00:00');
+    const today = new Date(); today.setHours(12,0,0,0);
+    const label = d.getTime() === today.getTime() ? 'HOY' : `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    const el = document.getElementById('dayViewDateLabel');
+    if (el) el.textContent = label;
 
-    if (!items.length) {
+    const setEl = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    setEl('dayStat_comida_res', stats.comida_total ?? '—');
+    setEl('dayStat_comida_guests', (stats.comida_guests ?? '—') + ' p');
+    setEl('dayStat_cena_res', stats.cena_total ?? '—');
+    setEl('dayStat_cena_guests', (stats.cena_guests ?? '—') + ' p');
+    const total = (stats.comida_total || 0) + (stats.cena_total || 0);
+    setEl('dayStat_total', total + ' reservas hoy');
+}
+
+function applyDayFilters() {
+    const q = (document.getElementById('searchReservas')?.value || '').toLowerCase();
+    const status = document.getElementById('filterStatus')?.value || 'all';
+    const shiftFilter = document.getElementById('filterShiftDay')?.value || 'all';
+
+    function filterList(list) {
+        return list.filter(r => {
+            const matchQ = !q ||
+                r.client_name.toLowerCase().includes(q) ||
+                (r.client_phone || '').includes(q) ||
+                (r.table_numbers || []).some(n => String(n).includes(q));
+            const matchStatus = status === 'all' || r.status === status;
+            return matchQ && matchStatus;
+        });
+    }
+
+    const comida = shiftFilter === 'cena' ? [] : filterList(_dayData.comida || []);
+    const cena = shiftFilter === 'comida' ? [] : filterList(_dayData.cena || []);
+    renderDayTimeline(comida, cena);
+}
+
+function renderDayTimeline(comida, cena) {
+    const container = document.getElementById('reservationsList');
+    if (!comida.length && !cena.length) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">&#128211;</div>
-                <div class="empty-state-text">No hay reservas para este turno</div>
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">No hay reservas para este día</div>
+                <button class="btn-primary" style="margin-top:16px" onclick="openNewReservationModal()">+ Nueva Reserva</button>
             </div>`;
         return;
     }
 
-    container.innerHTML = items.map(r => {
-        const tablesLabel = (r.table_numbers && r.table_numbers.length > 0)
-            ? (r.is_grouped ? `Mesas ${r.table_numbers.join(' + ')}` : `Mesa ${r.table_numbers[0]}`)
-            : '';
-        return `
-        <div class="reservation-card ${r.is_grouped ? 'is-grouped' : ''}" data-id="${r.id}" draggable="true">
-            <div class="res-time">${r.time}</div>
-            <div class="res-info">
-                <div class="res-name">
-                    ${r.client_name}
-                    ${r.client && r.client.vip ? '<span class="badge badge-vip">VIP</span>' : ''}
-                    ${r.is_grouped ? '<span class="badge badge-group">GRUPO</span>' : ''}
-                </div>
-                <div class="res-details">
-                    ${r.guests} comensales &middot; ${sourceBadge(r.source)}
-                    ${r.notes ? ' &middot; ' + r.notes : ''}
-                </div>
+    let html = '';
+    if (comida.length) {
+        html += `<div class="shift-block shift-block-comida">
+            <div class="shift-block-header">
+                <span class="shift-block-icon">☀️</span>
+                <span class="shift-block-name">COMIDA</span>
+                <span class="shift-block-count">${comida.length} res · ${comida.reduce((s,r)=>s+r.guests,0)} p</span>
             </div>
-            ${tablesLabel ? `<div class="res-table">${tablesLabel}</div>` : '<div class="res-table" style="opacity:0.4">Sin mesa</div>'}
-            <div>${statusBadge(r.status)}</div>
-            <div class="res-actions">
-                ${r.status === 'confirmed' ? `
-                    <button class="btn-primary btn-sm" onclick="event.stopPropagation(); quickSeat(${r.id})">Sentar</button>
-                    <button class="btn-danger btn-sm" onclick="event.stopPropagation(); quickNoShow(${r.id})">No Show</button>
-                ` : ''}
-                ${r.status === 'seated' ? `
-                    <button class="btn-primary btn-sm" onclick="event.stopPropagation(); quickComplete(${r.id})">Completar</button>
-                ` : ''}
-                <button class="btn-secondary btn-sm" style="color:#ef4444; border-color:#ef4444;" onclick="event.stopPropagation(); quickDelete(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>
+            <div class="shift-cards">${comida.map(r => renderResCard(r)).join('')}</div>
+        </div>`;
+    }
+    if (cena.length) {
+        html += `<div class="shift-block shift-block-cena">
+            <div class="shift-block-header">
+                <span class="shift-block-icon">🌙</span>
+                <span class="shift-block-name">CENA</span>
+                <span class="shift-block-count">${cena.length} res · ${cena.reduce((s,r)=>s+r.guests,0)} p</span>
             </div>
-        </div>
-        `;
-    }).join('');
+            <div class="shift-cards">${cena.map(r => renderResCard(r)).join('')}</div>
+        </div>`;
+    }
+    container.innerHTML = html;
 
+    // Attach event listeners
     container.querySelectorAll('.reservation-card').forEach(card => {
-        card.addEventListener('click', () => {
-            openEditReservation(parseInt(card.dataset.id));
-        });
-        // Drag-drop: drag reservation card → table on floor plan
+        card.addEventListener('click', () => openEditReservation(parseInt(card.dataset.id)));
         card.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/reservation-id', card.dataset.id);
             e.dataTransfer.effectAllowed = 'move';
@@ -129,25 +167,70 @@ function renderReservationsList(items) {
     });
 }
 
+function renderResCard(r) {
+    const tablesLabel = (r.table_numbers && r.table_numbers.length > 0)
+        ? (r.is_grouped ? `Mesas ${r.table_numbers.join(' + ')}` : `Mesa ${r.table_numbers[0]}`)
+        : null;
+
+    // Status color accent
+    const statusAccents = {
+        confirmed: 'accent-confirmed',
+        seated: 'accent-seated',
+        completed: 'accent-completed',
+        cancelled: 'accent-cancelled',
+        no_show: 'accent-noshow',
+    };
+    const accent = statusAccents[r.status] || '';
+
+    return `
+    <div class="reservation-card rc-day ${accent} ${r.is_grouped ? 'is-grouped' : ''}" data-id="${r.id}" draggable="true">
+        <div class="rc-time-col">
+            <div class="rc-time">${r.time}</div>
+            <div class="rc-duration">${r.duration_minutes || 120}′</div>
+        </div>
+        <div class="rc-main">
+            <div class="rc-name-row">
+                <span class="rc-name">${r.client_name}</span>
+                ${r.client && r.client.vip ? '<span class="badge badge-vip">VIP</span>' : ''}
+                ${r.is_grouped ? '<span class="badge badge-group">GRUPO</span>' : ''}
+                ${statusBadge(r.status)}
+            </div>
+            <div class="rc-meta">
+                <span class="rc-guests">👥 ${r.guests} pers.</span>
+                ${tablesLabel ? `<span class="rc-table-tag">🪑 ${tablesLabel}</span>` : '<span class="rc-table-tag rc-no-table">Sin mesa</span>'}
+                ${sourceBadge(r.source)}
+                ${r.client_phone ? `<span class="rc-phone">📞 ${r.client_phone}</span>` : ''}
+            </div>
+            ${r.notes ? `<div class="rc-notes">💬 ${r.notes}</div>` : ''}
+        </div>
+        <div class="rc-actions">
+            ${r.status === 'confirmed' ? `
+                <button class="rc-btn rc-btn-seat" onclick="event.stopPropagation(); quickSeat(${r.id})" title="Sentar">✓ Sentar</button>
+                <button class="rc-btn rc-btn-noshow" onclick="event.stopPropagation(); quickNoShow(${r.id})" title="No Show">✗ N/S</button>
+            ` : ''}
+            ${r.status === 'seated' ? `
+                <button class="rc-btn rc-btn-complete" onclick="event.stopPropagation(); quickComplete(${r.id})" title="Completar">✓ Completar</button>
+            ` : ''}
+            <button class="rc-btn rc-btn-edit" onclick="event.stopPropagation(); openEditReservation(${r.id})" title="Editar">✎</button>
+            <button class="rc-btn rc-btn-delete" onclick="event.stopPropagation(); quickDelete(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')" title="Eliminar">🗑</button>
+        </div>
+    </div>`;
+}
+
 // ── Search & Filter ─────────────────────────────
 
-document.getElementById('searchReservas')?.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase();
-    const filtered = allReservations.filter(r =>
-        r.client_name.toLowerCase().includes(q) ||
-        (r.client_phone || '').includes(q)
-    );
-    renderReservationsList(filtered);
-});
+document.getElementById('searchReservas')?.addEventListener('input', applyDayFilters);
+document.getElementById('filterStatus')?.addEventListener('change', applyDayFilters);
+document.getElementById('filterShiftDay')?.addEventListener('change', applyDayFilters);
 
-document.getElementById('filterStatus')?.addEventListener('change', (e) => {
-    const val = e.target.value;
-    if (val === 'all') {
-        renderReservationsList(allReservations);
-    } else {
-        renderReservationsList(allReservations.filter(r => r.status === val));
-    }
-});
+// Legacy renderReservationsList kept for refreshAll compatibility
+function renderReservationsList(items) {
+    allReservations = items;
+    // Re-split into shifts for day view
+    _dayData.comida = items.filter(r => r.shift === 'comida');
+    _dayData.cena = items.filter(r => r.shift === 'cena');
+    applyDayFilters();
+}
 
 // ── New Reservation ─────────────────────────────
 

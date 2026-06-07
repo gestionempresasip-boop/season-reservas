@@ -199,3 +199,95 @@ def hourly_distribution(from_date, to_date):
         hours[key]['guests'] += r.guests
 
     return sorted(hours.values(), key=lambda x: (x['shift'], x['hour']))
+
+
+def kpi_summary(from_date, to_date):
+    """Main KPIs with comparison to previous period of same length."""
+    delta = max((to_date - from_date).days + 1, 1)
+    prev_from = from_date - timedelta(days=delta)
+    prev_to = from_date - timedelta(days=1)
+
+    def get_metrics(f, t):
+        reservations = Reservation.query.filter(
+            Reservation.date.between(f, t)
+        ).all()
+        active = [r for r in reservations if r.status in ['confirmed', 'seated', 'completed']]
+        no_shows = sum(1 for r in reservations if r.status == 'no_show')
+        total = len(reservations)
+        guests = sum(r.guests for r in active)
+        avg_guests = round(guests / len(active), 1) if active else 0
+        no_show_rate = round(no_shows / total * 100, 1) if total else 0
+        occupancy_avg = round(guests / 114 / delta * 100, 1)
+        return {
+            'total': total,
+            'guests': guests,
+            'no_shows': no_shows,
+            'no_show_rate': no_show_rate,
+            'avg_guests': avg_guests,
+            'occupancy_avg': occupancy_avg,
+            'completed': sum(1 for r in reservations if r.status == 'completed'),
+            'cancelled': sum(1 for r in reservations if r.status == 'cancelled'),
+        }
+
+    curr = get_metrics(from_date, to_date)
+    prev = get_metrics(prev_from, prev_to)
+
+    def change(c, p):
+        if p == 0:
+            return None
+        return round((c - p) / p * 100, 1)
+
+    return {
+        'period': {'from': from_date.isoformat(), 'to': to_date.isoformat(), 'days': delta},
+        'current': curr,
+        'previous': prev,
+        'changes': {
+            'total': change(curr['total'], prev['total']),
+            'guests': change(curr['guests'], prev['guests']),
+            'no_show_rate': change(curr['no_show_rate'], prev['no_show_rate']),
+            'occupancy_avg': change(curr['occupancy_avg'], prev['occupancy_avg']),
+        },
+    }
+
+
+def heatmap_report(from_date, to_date):
+    """Returns reservation counts per day-of-week × shift."""
+    matrix = {i: {'comida': 0, 'cena': 0} for i in range(7)}
+
+    results = db.session.query(
+        extract('dow', Reservation.date).label('dow'),
+        Reservation.shift,
+        func.count(Reservation.id).label('count'),
+    ).filter(
+        Reservation.date.between(from_date, to_date),
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+    ).group_by('dow', Reservation.shift).all()
+
+    for r in results:
+        # PostgreSQL dow: 0=Sunday … 6=Saturday → convert to Mon=0 … Sun=6
+        dow = int(r.dow)
+        mon_first = (dow + 6) % 7
+        if mon_first in matrix and r.shift in ('comida', 'cena'):
+            matrix[mon_first][r.shift] = r.count
+
+    days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    return [{'day': days[i], 'comida': matrix[i]['comida'], 'cena': matrix[i]['cena']} for i in range(7)]
+
+
+def weekly_occupancy(from_date, to_date):
+    """Week-by-week occupancy for trend chart."""
+    results = db.session.query(
+        Reservation.date,
+        func.count(Reservation.id).label('reservations'),
+        func.sum(Reservation.guests).label('guests'),
+    ).filter(
+        Reservation.date.between(from_date, to_date),
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+    ).group_by(Reservation.date).order_by(Reservation.date).all()
+
+    return [{
+        'date': r.date.isoformat(),
+        'reservations': r.reservations,
+        'guests': r.guests or 0,
+        'occupancy': round((r.guests or 0) / 114 * 100, 1),
+    } for r in results]

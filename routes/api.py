@@ -451,6 +451,50 @@ def report_hours():
     return jsonify(rpt_svc.hourly_distribution(date.fromisoformat(from_d), date.fromisoformat(to_d)))
 
 
+@api.route('/reports/kpi', methods=['GET'])
+def report_kpi():
+    from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    return jsonify(rpt_svc.kpi_summary(date.fromisoformat(from_d), date.fromisoformat(to_d)))
+
+
+@api.route('/reports/heatmap', methods=['GET'])
+def report_heatmap():
+    from_d = request.args.get('from', (date.today() - timedelta(days=90)).isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    return jsonify(rpt_svc.heatmap_report(date.fromisoformat(from_d), date.fromisoformat(to_d)))
+
+
+@api.route('/reports/trend', methods=['GET'])
+def report_trend():
+    from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
+    to_d = request.args.get('to', date.today().isoformat())
+    return jsonify(rpt_svc.weekly_occupancy(date.fromisoformat(from_d), date.fromisoformat(to_d)))
+
+
+@api.route('/reservations/day', methods=['GET'])
+def list_reservations_day():
+    """Return all reservations for a date (both shifts), sorted by time."""
+    d = request.args.get('date', date.today().isoformat())
+    target = date.fromisoformat(d)
+    from models import Reservation as Res
+    comida = Res.query.filter_by(date=target, shift='comida').order_by(Res.time).all()
+    cena = Res.query.filter_by(date=target, shift='cena').order_by(Res.time).all()
+    return jsonify({
+        'comida': [r.to_dict() for r in comida],
+        'cena': [r.to_dict() for r in cena],
+        'date': d,
+        'stats': {
+            'comida_total': len(comida),
+            'comida_guests': sum(r.guests for r in comida),
+            'comida_active': sum(1 for r in comida if r.status in ('confirmed', 'seated', 'completed')),
+            'cena_total': len(cena),
+            'cena_guests': sum(r.guests for r in cena),
+            'cena_active': sum(1 for r in cena if r.status in ('confirmed', 'seated', 'completed')),
+        }
+    })
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # GLOBAL SEARCH (across all dates)
 # ═══════════════════════════════════════════════════════════════════════════
