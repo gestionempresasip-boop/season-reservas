@@ -41,10 +41,12 @@ async function loadReports() {
 
 async function renderHoy(container) {
     const today = localISODate(new Date());
+    const safe = fn => fn.catch(() => null);
     const [summary, hours] = await Promise.all([
-        apiGet(`/api/reports/summary?date=${today}`),
-        apiGet(`/api/reports/hours?from=${today}&to=${today}`),
+        safe(apiGet(`/api/reports/summary?date=${today}`)),
+        safe(apiGet(`/api/reports/hours?from=${today}&to=${today}`)),
     ]);
+    if (!summary) { container.innerHTML = '<div class="report-error">No se pudieron cargar los datos de hoy</div>'; return; }
 
     const c = summary.comida || {};
     const n = summary.cena || {};
@@ -148,11 +150,13 @@ function renderHourBars(hours) {
 
 async function renderSemana(container) {
     const today = new Date();
+    const safe = fn => fn.catch(() => null);
     const [weekData, retention] = await Promise.all([
-        apiGet(`/api/reports/week-comparison?from=${localISODate(today)}`),
-        apiGet(`/api/reports/new-vs-returning?from=${localISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate()-6))}&to=${localISODate(today)}`),
+        safe(apiGet(`/api/reports/week-comparison?from=${localISODate(today)}`)),
+        safe(apiGet(`/api/reports/new-vs-returning?from=${localISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate()-6))}&to=${localISODate(today)}`)),
     ]);
 
+    if (!weekData) { container.innerHTML = '<div class="report-error">No se pudieron cargar los datos de esta semana</div>'; return; }
     const t = weekData.totals || {};
     const ch = weekData.changes || {};
     const p = weekData.prev_totals || {};
@@ -278,13 +282,14 @@ async function renderMes(container) {
     const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
     const qs = `from=${localISODate(from30)}&to=${localISODate(today)}`;
 
+    const safe = fn => fn.catch(() => null);
     const [kpi, trend, heatmap, sources, topClients, retention] = await Promise.all([
-        apiGet(`/api/reports/kpi?${qs}`),
-        apiGet(`/api/reports/trend?${qs}`),
-        apiGet(`/api/reports/heatmap?${qs}`),
-        apiGet(`/api/reports/sources?${qs}`),
-        apiGet(`/api/reports/clients?${qs}&limit=5`),
-        apiGet(`/api/reports/new-vs-returning?${qs}`),
+        safe(apiGet(`/api/reports/kpi?${qs}`)),
+        safe(apiGet(`/api/reports/trend?${qs}`)),
+        safe(apiGet(`/api/reports/heatmap?${qs}`)),
+        safe(apiGet(`/api/reports/sources?${qs}`)),
+        safe(apiGet(`/api/reports/clients?${qs}&limit=5`)),
+        safe(apiGet(`/api/reports/new-vs-returning?${qs}`)),
     ]);
 
     const curr = kpi.current || {};
@@ -464,20 +469,22 @@ function renderTrendSVG(data) {
 }
 
 function renderHeatmapInline(data) {
-    if (!data.length) return '<p style="color:#9ca3af">Sin datos</p>';
-    const max = Math.max(...data.flatMap(d=>[d.comida,d.cena]), 1);
+    if (!data || !data.length) return '<p style="color:#9ca3af">Sin datos</p>';
+    const max = Math.max(...data.flatMap(d=>[d.comida||0,d.cena||0]), 1);
     const cell = (val) => {
-        const t = val/max;
+        const t = (val||0)/max;
         const bg = t === 0 ? '#f9fafb' : `rgba(26,138,125,${0.15 + t*0.85})`;
         const color = t > 0.5 ? 'white' : '#374151';
-        return `<div class="heatmap-cell" style="background:${bg};color:${color}" title="${val} reservas">${val||''}</div>`;
+        return `<div class="heatmap-cell" style="background:${bg};color:${color};font-size:11px" title="${val||0} reservas">${val||''}</div>`;
     };
     return `
-        <div class="heatmap-grid">
-            <div class="heatmap-label"></div>
-            ${data.map(d=>`<div class="heatmap-day-header">${d.day}</div>`).join('')}
-            <div class="heatmap-shift-label">☀️</div>${data.map(d=>cell(d.comida)).join('')}
-            <div class="heatmap-shift-label">🌙</div>${data.map(d=>cell(d.cena)).join('')}
+        <div class="heatmap-scroll-wrap">
+            <div class="heatmap-grid" style="grid-template-columns:48px repeat(${data.length},1fr)">
+                <div></div>
+                ${data.map(d=>`<div class="heatmap-day-header" style="font-size:10px">${d.day}</div>`).join('')}
+                <div class="heatmap-shift-label" style="font-size:11px">☀️</div>${data.map(d=>cell(d.comida)).join('')}
+                <div class="heatmap-shift-label" style="font-size:11px">🌙</div>${data.map(d=>cell(d.cena)).join('')}
+            </div>
         </div>`;
 }
 

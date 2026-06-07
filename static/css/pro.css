@@ -980,6 +980,52 @@
     font-size: 13px;
 }
 
+/* ── Responsive fixes for reports ── */
+@media (max-width: 640px) {
+    /* Stack 2-column sections vertically */
+    .rc-section-row {
+        grid-template-columns: 1fr;
+    }
+    .rc-half {
+        border-right: none;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .rc-half:last-child { border-bottom: none; }
+
+    /* 5-KPI strip → 2 columns */
+    .rm-kpis {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .rw-kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Heatmap scrollable in half-width */
+    .heatmap-grid {
+        min-width: 320px;
+    }
+
+    /* Quick metrics → 2x2 */
+    .rh-quick-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .rh-metric { border-bottom: 1px solid #f3f4f6; }
+    .rh-metric:nth-child(odd) { border-right: 1px solid #f3f4f6; }
+    .rh-metric:nth-child(even) { border-right: none; }
+
+    /* Shifts full width stacked */
+    .rh-shifts { grid-template-columns: 1fr; }
+    .rh-shift-big { font-size: 26px; }
+}
+/* Make heatmap always scrollable to avoid overflow */
+.heatmap-scroll-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.heatmap-grid {
+    min-width: 300px;
+}
+
 /* Date presets (kept for compat) */
 .report-presets {
     display: flex;
