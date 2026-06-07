@@ -146,13 +146,7 @@ function handleTableClick(tableNumber) {
         renderFloorPlan();
         updateGroupBar();
     } else {
-        // Free table → show quick-occupy popover
-        const td = tableDataMap[tableNumber];
-        if (td && td.status === 'free') {
-            showQuickOccupyPopover(tableNumber);
-        } else {
-            openTableDetail(tableNumber);
-        }
+        openTableDetail(tableNumber);
     }
 }
 
@@ -540,6 +534,7 @@ function openTableDetail(tableNumber) {
     const title = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
     title.textContent = `Mesa ${td.number} · ${zoneName(td.zone)}`;
+    _qopGuests = Math.min(2, td.capacity || 4); // reset counter on each open
 
     let html = `
         <div class="detail-section">
@@ -586,18 +581,73 @@ function openTableDetail(tableNumber) {
         }
         html += `</div>`;
     } else {
+        // FREE TABLE — show quick occupy + create reservation options
+        const cap = td.capacity || 4;
+        const defaultGuests = Math.min(2, cap);
         html += `
-            <div style="margin-top: 16px; display:flex; flex-direction:column; gap:8px;">
-                <button class="btn-free-table" onclick="closeModal('modalTableDetail'); showQuickOccupyPopover(${td.number})">
-                    🟢 Ocupar mesa rápido
+            <div class="quick-occupy-panel" id="qoPanelInModal">
+                <div class="qop-title">⚡ Ocupar ahora</div>
+                <div class="qop-subtitle">Sin reserva — solo marcar mesa ocupada</div>
+                <div class="qop-counter">
+                    <button class="qo-cnt-btn" onclick="qopChange(-1, ${cap})">−</button>
+                    <span class="qo-cnt-val" id="qopVal">2</span>
+                    <span class="qop-pax">personas</span>
+                    <button class="qo-cnt-btn" onclick="qopChange(1, ${cap})">+</button>
+                </div>
+                <button class="qop-occupy-btn" onclick="quickOccupyFromModal(${td.id}, ${td.number})">
+                    🟢 Ocupar mesa
                 </button>
-                <button class="btn-secondary" onclick="newReservationForTable(${td.number}, ${td.id})">📋 Crear reserva</button>
+            </div>
+            <div class="qop-divider"><span>o</span></div>
+            <div style="padding: 0 0 4px;">
+                <button class="btn-primary" style="width:100%" onclick="newReservationForTable(${td.number}, ${td.id})">
+                    📋 Crear reserva completa
+                </button>
             </div>
         `;
     }
 
     content.innerHTML = html;
     openModal('modalTableDetail');
+}
+
+// ── Quick Occupy (inline in modal) ──────────────
+
+let _qopGuests = 2;
+
+function qopChange(delta, maxCap) {
+    _qopGuests = Math.max(1, Math.min(maxCap, (_qopGuests || 2) + delta));
+    const el = document.getElementById('qopVal');
+    if (el) el.textContent = _qopGuests;
+}
+
+async function quickOccupyFromModal(tableId, tableNumber) {
+    const guests = _qopGuests || 2;
+    closeModal('modalTableDetail');
+
+    // Optimistic update
+    if (tableDataMap[tableNumber]) {
+        tableDataMap[tableNumber] = {
+            ...tableDataMap[tableNumber],
+            status: 'seated',
+            reservation: {
+                id: -1, client_name: 'Walk-in', guests,
+                time: new Date().toTimeString().slice(0, 5),
+                status: 'seated', source: 'walk_in', is_grouped: false,
+                table_numbers: [tableNumber],
+            }
+        };
+    }
+    renderFloorPlan();
+
+    try {
+        await apiPost(`/api/tables/${tableId}/quick-occupy`, { guests, shift: currentShift });
+        showToast(`Mesa ${tableNumber} ocupada · ${guests}p`, 'success');
+        refreshAll();
+    } catch (e) {
+        showToast('Error al ocupar mesa', 'error');
+        refreshAll();
+    }
 }
 
 // ── Quick Free Table ────────────────────────────

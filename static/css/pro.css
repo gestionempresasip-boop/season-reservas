@@ -1098,7 +1098,7 @@
 }
 .qo-details-link:hover { color: #6b7280; }
 
-/* Liberar / Ocupar rápido botón en panel */
+/* Liberar mesa botón */
 .btn-free-table {
     width: 100%;
     padding: 11px;
@@ -1113,3 +1113,68 @@
     text-align: center;
 }
 .btn-free-table:hover { background: #15803d; }
+
+/* Quick Occupy Panel (inside table detail modal) */
+.quick-occupy-panel {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 2px solid #86efac;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 4px;
+    text-align: center;
+}
+.qop-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #15803d;
+    margin-bottom: 2px;
+}
+.qop-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+.qop-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.qop-pax {
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
+}
+.qop-occupy-btn {
+    width: 100%;
+    padding: 11px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.12s, transform 0.1s;
+    letter-spacing: 0.01em;
+}
+.qop-occupy-btn:hover { background: #15803d; }
+.qop-occupy-btn:active { transform: scale(0.98); }
+
+.qop-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 8px;
+    color: #d1d5db;
+    font-size: 12px;
+    text-align: center;
+}
+.qop-divider::before, .qop-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+.qop-divider span { color: #9ca3af; font-size: 11px; }
