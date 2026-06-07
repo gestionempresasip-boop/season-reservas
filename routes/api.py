@@ -4,7 +4,7 @@ REST API for Season restaurant reservation system.
 import csv
 import io
 from flask import Blueprint, request, jsonify, current_app, Response
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from services import reservation as res_svc
 from services import client as cli_svc
 from services import reports as rpt_svc
@@ -166,6 +166,75 @@ def available_tables():
     target = date.fromisoformat(d)
     tables = res_svc.find_available_tables(target, shift, guests, time_str, duration, exclude_id)
     return jsonify([t.to_dict() for t in tables])
+
+
+@api.route('/tables/<int:tid>/quick-occupy', methods=['POST'])
+@handle_errors
+def quick_occupy(tid):
+    """Mark a table as occupied instantly — no client name needed.
+    Body: { guests: int, shift: str }
+    """
+    table = Table.query.get_or_404(tid)
+    data = request.json or {}
+    guests = max(1, int(data.get('guests', 2)))
+    shift = data.get('shift', 'comida')
+    now_str = datetime.now().strftime('%H:%M')
+    today = date.today()
+
+    # If a quick-occupy reservation already exists for this table today, update it
+    existing = Reservation.query.filter_by(
+        table_id=tid,
+        date=today,
+        shift=shift,
+        source='walk_in',
+    ).filter(Reservation.status.in_(['confirmed', 'seated'])).first()
+
+    if existing:
+        existing.guests = guests
+        existing.status = 'seated'
+        db.session.commit()
+        notify()
+        return jsonify({'ok': True, 'reservation_id': existing.id})
+
+    r = Reservation(
+        date=today,
+        shift=shift,
+        time=now_str,
+        guests=guests,
+        client_name='Walk-in',
+        client_phone='',
+        table_id=table.id,
+        status='seated',
+        source='walk_in',
+        notes='Ocupación directa desde plano',
+        duration_minutes=120,
+    )
+    db.session.add(r)
+    db.session.commit()
+    notify()
+    return jsonify({'ok': True, 'reservation_id': r.id}), 201
+
+
+@api.route('/tables/<int:tid>/quick-free', methods=['PUT'])
+@handle_errors
+def quick_free(tid):
+    """Free a table — marks the active seated reservation as completed."""
+    data = request.json or {}
+    shift = data.get('shift', 'comida')
+    today = date.today()
+
+    r = Reservation.query.filter_by(
+        table_id=tid,
+        date=today,
+        shift=shift,
+    ).filter(Reservation.status.in_(['confirmed', 'seated'])).first()
+
+    if r:
+        r.status = 'completed'
+        db.session.commit()
+        notify()
+
+    return jsonify({'ok': True})
 
 
 @api.route('/tables/check-conflict', methods=['POST'])

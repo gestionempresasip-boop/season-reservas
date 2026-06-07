@@ -146,7 +146,141 @@ function handleTableClick(tableNumber) {
         renderFloorPlan();
         updateGroupBar();
     } else {
-        openTableDetail(tableNumber);
+        // Free table → show quick-occupy popover
+        const td = tableDataMap[tableNumber];
+        if (td && td.status === 'free') {
+            showQuickOccupyPopover(tableNumber);
+        } else {
+            openTableDetail(tableNumber);
+        }
+    }
+}
+
+// ── Quick Occupy Popover ────────────────────────
+
+let _qoGuests = 2;
+let _qoTableNumber = null;
+
+function showQuickOccupyPopover(tableNumber) {
+    _qoTableNumber = tableNumber;
+    const td = tableDataMap[tableNumber];
+    if (!td) return;
+
+    _qoGuests = Math.min(2, td.capacity || 2);
+
+    // Position popover near the table in the SVG
+    const svg = document.getElementById('floorplanSVG');
+    const def = (typeof TABLE_DEFS !== 'undefined') ? TABLE_DEFS.find(d => d.n === tableNumber) : null;
+    let popX = 50, popY = 50; // defaults (%)
+
+    if (def && svg) {
+        const svgRect = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        // Convert SVG coords to page coords
+        const svgCenterX = def.x + def.w / 2;
+        const svgCenterY = def.y + def.h / 2;
+        const scaleX = svgRect.width / vb.width;
+        const scaleY = svgRect.height / vb.height;
+        const pageX = svgRect.left + svgCenterX * scaleX;
+        const pageY = svgRect.top + svgCenterY * scaleY + window.scrollY;
+
+        const pop = document.getElementById('quickOccupyPopover');
+        pop.style.left = (pageX - 90) + 'px';
+        pop.style.top = (pageY - 140) + 'px';
+        pop.style.right = 'auto';
+    }
+
+    renderQuickOccupyPopover(td);
+    const pop = document.getElementById('quickOccupyPopover');
+    pop.classList.remove('hidden');
+
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', _closeQoOnOutside, { once: false });
+    }, 10);
+}
+
+function _closeQoOnOutside(e) {
+    const pop = document.getElementById('quickOccupyPopover');
+    if (pop && !pop.contains(e.target)) {
+        closeQuickOccupy();
+        document.removeEventListener('click', _closeQoOnOutside);
+    }
+}
+
+function closeQuickOccupy() {
+    document.getElementById('quickOccupyPopover')?.classList.add('hidden');
+    document.removeEventListener('click', _closeQoOnOutside);
+    _qoTableNumber = null;
+}
+
+function renderQuickOccupyPopover(td) {
+    const cap = td.capacity || 4;
+    const pop = document.getElementById('quickOccupyPopover');
+    if (!pop) return;
+    pop.innerHTML = `
+        <div class="qo-header">
+            <span class="qo-title">Mesa ${td.number}</span>
+            <span class="qo-zone">${zoneName(td.zone)} · ${cap}p max</span>
+            <button class="qo-close" onclick="closeQuickOccupy()">✕</button>
+        </div>
+        <div class="qo-body">
+            <div class="qo-question">¿Cuántas personas?</div>
+            <div class="qo-counter">
+                <button class="qo-cnt-btn" onclick="qoChangeGuests(-1)">−</button>
+                <span class="qo-cnt-val" id="qoGuestsVal">${_qoGuests}</span>
+                <button class="qo-cnt-btn" onclick="qoChangeGuests(1)">+</button>
+            </div>
+            <button class="qo-occupy-btn" onclick="quickOccupyConfirm()">
+                🟢 Ocupar mesa
+            </button>
+            <button class="qo-details-link" onclick="closeQuickOccupy(); openTableDetail(${td.number})">
+                Ver detalles / Reservar →
+            </button>
+        </div>
+    `;
+}
+
+function qoChangeGuests(delta) {
+    const td = tableDataMap[_qoTableNumber];
+    const cap = td ? td.capacity : 14;
+    _qoGuests = Math.max(1, Math.min(cap, _qoGuests + delta));
+    const el = document.getElementById('qoGuestsVal');
+    if (el) el.textContent = _qoGuests;
+}
+
+async function quickOccupyConfirm() {
+    const td = tableDataMap[_qoTableNumber];
+    if (!td) return;
+
+    // Optimistic: mark occupied on map immediately
+    tableDataMap[_qoTableNumber] = {
+        ...td,
+        status: 'seated',
+        reservation: {
+            id: -1,
+            client_name: 'Walk-in',
+            guests: _qoGuests,
+            time: new Date().toTimeString().slice(0,5),
+            status: 'seated',
+            source: 'walk_in',
+            is_grouped: false,
+            table_numbers: [td.number],
+        }
+    };
+    closeQuickOccupy();
+    renderFloorPlan();
+
+    try {
+        await apiPost(`/api/tables/${td.id}/quick-occupy`, {
+            guests: _qoGuests,
+            shift: currentShift,
+        });
+        showToast(`Mesa ${td.number} ocupada · ${_qoGuests}p`, 'success');
+        await refreshAll();
+    } catch (e) {
+        showToast('Error al ocupar mesa', 'error');
+        await refreshAll(); // restore correct state
     }
 }
 
@@ -430,26 +564,61 @@ function openTableDetail(tableNumber) {
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
         `;
+        const isQuickOccupy = r.source === 'walk_in' && r.client_name === 'Walk-in';
+
         if (r.status === 'confirmed') {
             html += `<button class="btn-primary btn-sm" onclick="seatFromPlan(${r.id})">Sentar</button>`;
             html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
             html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">Cancelar</button>`;
         } else if (r.status === 'seated') {
-            html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">Completar</button>`;
-            html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
+            if (isQuickOccupy) {
+                // Quick-occupy: show big "Liberar mesa" button
+                html += `<button class="btn-free-table" onclick="quickFreeTable(${td.id}, ${tableNumber})">
+                    🔓 Liberar mesa
+                </button>`;
+            } else {
+                html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">Completar</button>`;
+                html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
+            }
         }
-        html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>`;
+        if (!isQuickOccupy || r.status !== 'seated') {
+            html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>`;
+        }
         html += `</div>`;
     } else {
         html += `
-            <div style="margin-top: 16px;">
-                <button class="btn-primary" onclick="newReservationForTable(${td.number}, ${td.id})">Reservar esta mesa</button>
+            <div style="margin-top: 16px; display:flex; flex-direction:column; gap:8px;">
+                <button class="btn-free-table" onclick="closeModal('modalTableDetail'); showQuickOccupyPopover(${td.number})">
+                    🟢 Ocupar mesa rápido
+                </button>
+                <button class="btn-secondary" onclick="newReservationForTable(${td.number}, ${td.id})">📋 Crear reserva</button>
             </div>
         `;
     }
 
     content.innerHTML = html;
     openModal('modalTableDetail');
+}
+
+// ── Quick Free Table ────────────────────────────
+
+async function quickFreeTable(tableId, tableNumber) {
+    closeModal('modalTableDetail');
+
+    // Optimistic: mark free immediately
+    if (tableDataMap[tableNumber]) {
+        tableDataMap[tableNumber] = { ...tableDataMap[tableNumber], status: 'free', reservation: null };
+    }
+    renderFloorPlan();
+
+    try {
+        await apiPut(`/api/tables/${tableId}/quick-free`, { shift: currentShift });
+        showToast(`Mesa ${tableNumber} liberada`, 'success');
+        await refreshAll();
+    } catch (e) {
+        showToast('Error al liberar mesa', 'error');
+        await refreshAll();
+    }
 }
 
 // ── Optimistic update: cambia la UI instantáneamente, la API confirma en segundo plano ──
