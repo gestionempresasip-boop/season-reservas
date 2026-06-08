@@ -161,30 +161,72 @@ async function loadUsersPanel() {
     }
 }
 
-function renderUsersPanel(users, container) {
+function renderUsersPanel(users, container, showInactive = false) {
+    const active = users.filter(u => u.active);
+    const inactive = users.filter(u => !u.active);
+    const visible = showInactive ? users : active;
+
     container.innerHTML = `
         <div class="users-panel-header">
-            <span style="font-size:14px;font-weight:700;color:#111827">👥 Usuarios (${users.length})</span>
+            <span style="font-size:14px;font-weight:700;color:#111827">👥 Usuarios (${active.length})</span>
             <button class="btn-primary btn-sm" onclick="openNewUserModal()">+ Nuevo usuario</button>
         </div>
         <div class="users-list">
-            ${users.map(u => `
+            ${visible.map(u => `
                 <div class="user-item ${!u.active ? 'user-inactive' : ''}">
-                    <div class="user-avatar" style="background:${u.role==='admin'?'#7c3aed':'#1a8a7d'}">
+                    <div class="user-avatar" style="background:${u.active ? (u.role==='admin'?'#7c3aed':'#1a8a7d') : '#9ca3af'}">
                         ${u.name.charAt(0).toUpperCase()}
                     </div>
                     <div class="user-info">
                         <div class="user-name">${u.name} ${u.role==='admin'?'<span class="badge-admin">Admin</span>':''}</div>
-                        <div class="user-meta">@${u.username} ${!u.active?'· <span style="color:#ef4444">Inactivo</span>':''}</div>
+                        <div class="user-meta">@${u.username}${!u.active?' · <span style="color:#9ca3af">Desactivado</span>':''}</div>
                     </div>
                     <div class="user-actions">
-                        <button class="btn-secondary btn-sm" onclick="openEditUserModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
-                        ${u.id !== _currentUser.id ? `<button class="btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">🗑</button>` : ''}
+                        ${u.active
+                            ? `<button class="btn-secondary btn-sm" onclick="openEditUserModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
+                               ${u.id !== _currentUser.id ? `<button class="btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">🗑</button>` : ''}`
+                            : `<button class="btn-reactivate btn-sm" onclick="reactivateUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">↩ Reactivar</button>`
+                        }
                     </div>
                 </div>
             `).join('')}
         </div>
+        ${inactive.length > 0 ? `
+            <div style="margin-top:12px;text-align:center">
+                <button class="btn-link-subtle" onclick="_toggleInactiveUsers(${showInactive})">
+                    ${showInactive
+                        ? '▲ Ocultar desactivados'
+                        : `▼ Mostrar desactivados (${inactive.length})`}
+                </button>
+            </div>
+        ` : ''}
     `;
+}
+
+function _toggleInactiveUsers(currentlyShowing) {
+    const container = document.getElementById('usersPanel');
+    fetch('/api/auth/users')
+        .then(r => r.json())
+        .then(users => renderUsersPanel(users, container, !currentlyShowing));
+}
+
+async function reactivateUser(uid, name) {
+    try {
+        const res = await fetch(`/api/auth/users/${uid}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: true }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            loadUsersPanel();
+            showToast(`Usuario ${name} reactivado ✓`, 'success');
+        } else {
+            showToast(data.error || 'Error al reactivar', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    }
 }
 
 function openNewUserModal() {

@@ -1788,6 +1788,31 @@
 }
 .btn-danger:hover { background: #fecaca; }
 
+.btn-reactivate {
+    background: #ecfdf5;
+    color: #15803d;
+    border: 1px solid #86efac;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-reactivate:hover { background: #dcfce7; }
+
+.btn-link-subtle {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s;
+}
+.btn-link-subtle:hover { color: #6b7280; }
+
 /* Role radio buttons */
 .role-radio {
     display: flex;
