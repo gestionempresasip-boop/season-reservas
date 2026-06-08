@@ -310,13 +310,15 @@ function closeQuickOccupy() {
 }
 
 function renderQuickOccupyPopover(td) {
-    const cap = td.capacity || 4;
+    const def = TABLE_DEFS.find(d => d.n === (td.number || _qoTableNumber));
+    const cap = td.capacity ?? (def ? def.cap : 4);
+    const zone = td.zone ?? (def ? def.zone : '');
     const pop = document.getElementById('quickOccupyPopover');
     if (!pop) return;
     pop.innerHTML = `
         <div class="qo-header">
-            <span class="qo-title">Mesa ${td.number}</span>
-            <span class="qo-zone">${zoneName(td.zone)} · ${cap}p max</span>
+            <span class="qo-title">Mesa ${td.number || _qoTableNumber}</span>
+            <span class="qo-zone">${zoneName(zone)} · ${cap}p max</span>
             <button class="qo-close" onclick="closeQuickOccupy()">✕</button>
         </div>
         <div class="qo-body">
@@ -680,15 +682,21 @@ function openTableDetail(tableNumber) {
     const td = tableDataMap[tableNumber];
     if (!td) return;
 
+    // TABLE_DEFS always has correct capacity/zone even if DB doesn't return them
+    const def = TABLE_DEFS.find(d => d.n === tableNumber);
+    const tdCap   = td.capacity  ?? (def ? def.cap  : 4);
+    const tdZone  = td.zone      ?? (def ? def.zone  : '');
+    const tdType  = td.table_type ?? (def ? def.type  : 'normal');
+
     const title = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
-    title.textContent = `Mesa ${td.number} · ${zoneName(td.zone)}`;
-    _qopGuests = Math.min(2, td.capacity || 4); // reset counter on each open
+    title.textContent = `Mesa ${tableNumber} · ${zoneName(tdZone)}`;
+    _qopGuests = Math.min(2, tdCap); // reset counter on each open
 
     let html = `
         <div class="detail-section">
-            <div class="detail-row"><span class="label">Capacidad</span><span class="value">${td.capacity} personas</span></div>
-            <div class="detail-row"><span class="label">Tipo</span><span class="value">${td.table_type === 'alta' ? 'Mesa Alta' : 'Normal'}</span></div>
+            <div class="detail-row"><span class="label">Capacidad</span><span class="value">${tdCap} personas</span></div>
+            <div class="detail-row"><span class="label">Tipo</span><span class="value">${tdType === 'alta' ? 'Mesa Alta' : 'Normal'}</span></div>
             <div class="detail-row"><span class="label">Estado</span>${td.status === 'free' ? '<span class="badge badge-green">Libre</span>' : statusBadge(td.status)}</div>
         </div>
     `;
@@ -732,7 +740,7 @@ function openTableDetail(tableNumber) {
         html += `</div>`;
     } else {
         // FREE TABLE — show quick occupy + create reservation options
-        const cap = td.capacity || 4;
+        const cap = tdCap;  // already resolved from TABLE_DEFS fallback above
         const defaultGuests = Math.min(2, cap);
         const hardMax = Math.min(cap + 4, 14);
         html += `
