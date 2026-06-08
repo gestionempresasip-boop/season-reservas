@@ -42,7 +42,7 @@ function updateUserBadge() {
     const badge = document.getElementById('userBadge');
     if (badge) {
         badge.textContent = _currentUser.name;
-        badge.title = `${_currentUser.role === 'admin' ? '👑 Admin' : '👤 Staff'} — ${_currentUser.username}`;
+        badge.title = _currentUser.role === 'admin' ? '👑 Administrador' : '👤 Personal';
     }
     // Show admin panel link if admin
     const adminLink = document.getElementById('adminUsersLink');

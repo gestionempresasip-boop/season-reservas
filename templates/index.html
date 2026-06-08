@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=35">
+    <link rel="stylesheet" href="/static/css/pro.css?v=36">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -92,9 +92,10 @@
                 <div id="globalSearchResults" class="global-search-results hidden"></div>
             </div>
             <input type="date" id="datePicker" class="date-picker">
-            <!-- User badge -->
+            <!-- User badge + logout -->
             <div class="user-badge-wrap">
-                <button class="user-badge" id="userBadge" onclick="logout()" title="Cerrar sesión">—</button>
+                <span class="user-badge-name" id="userBadge">—</span>
+                <button class="btn-logout" onclick="logout()" title="Cerrar sesión">↪ Salir</button>
             </div>
         </div>
     </header>
@@ -684,7 +685,7 @@
             });
         }
     </script>
-    <script src="/static/js/auth.js?v=2"></script>
+    <script src="/static/js/auth.js?v=3"></script>
     <script src="/static/js/app.js?v=31"></script>
     <script src="/static/js/floorplan.js?v=33"></script>
     <script src="/static/js/reservations.js?v=27"></script>

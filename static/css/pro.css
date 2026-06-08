@@ -1673,25 +1673,33 @@
 .user-badge-wrap {
     display: flex;
     align-items: center;
+    gap: 6px;
     margin-left: 8px;
 }
-.user-badge {
+.user-badge-name {
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.btn-logout {
     background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 16px;
     color: #fff;
     font-size: 12px;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 5px 11px;
     cursor: pointer;
     white-space: nowrap;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     transition: background 0.15s;
+    letter-spacing: 0.2px;
 }
-.user-badge:hover {
-    background: rgba(255,255,255,0.25);
+.btn-logout:hover {
+    background: rgba(255,255,255,0.28);
 }
 
 /* ═══════════════════════════════════════════════
