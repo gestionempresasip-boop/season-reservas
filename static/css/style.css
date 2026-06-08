@@ -271,14 +271,15 @@ body {
 
 .table-group.status-confirmed .table-rect,
 .table-group.status-confirmed .table-rect-round {
-    fill: var(--orange-light);
-    stroke: var(--orange);
+    fill: #f97316;
+    stroke: #c2410c;
+    stroke-width: 0.5;
 }
 .table-group.status-seated .table-rect,
 .table-group.status-seated .table-rect-round {
-    fill: var(--teal-light);
-    stroke: var(--teal);
-    fill: #d1fae5;
+    fill: #22c55e;
+    stroke: #15803d;
+    stroke-width: 0.5;
 }
 
 .table-number {
@@ -305,8 +306,17 @@ body {
     opacity: 0.5;
     transition: fill 0.2s, opacity 0.2s;
 }
-.table-group.status-confirmed .chair { fill: var(--orange); opacity: 0.6; }
-.table-group.status-seated .chair { fill: var(--teal); opacity: 0.8; }
+.table-group.status-confirmed .chair { fill: #fff; opacity: 0.6; }
+.table-group.status-confirmed .table-number { fill: #fff; }
+.table-group.status-confirmed .table-capacity { fill: rgba(255,255,255,0.8); }
+.table-group.status-confirmed .table-client-name { fill: rgba(255,255,255,0.9); }
+.table-group.status-confirmed .table-time-label { fill: rgba(255,255,255,0.8); }
+
+.table-group.status-seated .chair { fill: #fff; opacity: 0.7; }
+.table-group.status-seated .table-number { fill: #fff; }
+.table-group.status-seated .table-capacity { fill: rgba(255,255,255,0.8); }
+.table-group.status-seated .table-client-name { fill: rgba(255,255,255,0.9); }
+.table-group.status-seated .table-time-label { fill: rgba(255,255,255,0.8); }
 
 .table-client-name {
     font-size: 1.4px;

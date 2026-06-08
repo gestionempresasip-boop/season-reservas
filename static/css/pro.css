@@ -83,8 +83,8 @@
     border: 1px solid #d0d7de;
 }
 .lm-color.free { background: #fff; }
-.lm-color.confirmed { background: #bfdbfe; border-color: #3b82f6; }
-.lm-color.seated { background: #fcd34d; border-color: #f59e0b; }
+.lm-color.confirmed { background: #f97316; border-color: #c2410c; }
+.lm-color.seated { background: #22c55e; border-color: #15803d; }
 
 /* ───── GROUP ACTION BAR (floating below toolbar when tables selected) ───── */
 .group-action-bar {
@@ -1450,6 +1450,51 @@
     background: #e5e7eb;
 }
 .qop-divider span { color: #9ca3af; font-size: 11px; }
+
+/* ═══════════════════════════════════════════════
+   FLOOR PLAN EDIT MODE BAR
+   ═══════════════════════════════════════════════ */
+
+.edit-plan-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #fff3cd;
+    border-bottom: 2px solid #f59e0b;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 600;
+    flex-wrap: wrap;
+}
+.edit-plan-bar.hidden { display: none; }
+
+#btnEditPlan.active {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+}
+
+/* ═══════════════════════════════════════════════
+   MOVE TABLE PICKER
+   ═══════════════════════════════════════════════ */
+
+.move-table-btn {
+    padding: 10px 6px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.12s, transform 0.1s;
+}
+.move-table-btn:hover {
+    background: #dcfce7;
+    border-color: #22c55e;
+    transform: scale(1.04);
+}
+.move-table-btn:active { transform: scale(0.97); }
 
 /* ═══════════════════════════════════════════════
    EXPORT DROPDOWN

@@ -5,7 +5,7 @@
    - Mesas agrupadas se muestran del mismo color con línea uniéndolas
    ═══════════════════════════════════════════════ */
 
-const TABLE_DEFS = [
+let TABLE_DEFS = [
     // ZONA EXTERIOR
     { n: 50, cap: 2, type: 'normal', zone: 'ext', x: 33, y: 10, shape: 'rect', w: 7, h: 5 },
     { n: 52, cap: 2, type: 'normal', zone: 'ext', x: 43, y: 10, shape: 'rect', w: 7, h: 5 },
@@ -45,12 +45,111 @@ const TABLE_DEFS = [
     { n: 40, cap: 8, type: 'alta', zone: 'si', x: 66, y: 82, shape: 'rect', w: 16, h: 7 },
 ];
 
+// Apply saved positions/capacities from localStorage
+(function _applySavedTableDefs() {
+    try {
+        const saved = localStorage.getItem('season_table_defs');
+        if (saved) {
+            const patches = JSON.parse(saved);
+            TABLE_DEFS.forEach(def => {
+                if (patches[def.n]) Object.assign(def, patches[def.n]);
+            });
+        }
+    } catch (e) {}
+})();
+
 let tableDataMap = {};
 let groupMode = false;
 let groupSelectedTables = []; // table numbers
 
 // Color palette for group reservations (assigned by index)
 const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
+
+// ── Floor Plan Edit Mode ──────────────────────────
+let _editMode = false;
+let _editDrag = null; // { defIdx, offX, offY }
+let _editCapTableNumber = null;
+let _editCapValue = 4;
+
+function toggleEditMode() {
+    _editMode = !_editMode;
+    const btn = document.getElementById('btnEditPlan');
+    const bar = document.getElementById('editPlanBar');
+    if (btn) btn.classList.toggle('active', _editMode);
+    if (bar) bar.classList.toggle('hidden', !_editMode);
+    const svg = document.getElementById('floorplanSVG');
+    if (svg) svg.style.cursor = _editMode ? 'grab' : '';
+    if (!_editMode) _editDrag = null;
+    renderFloorPlan();
+}
+
+function saveEditPlan() {
+    const patches = {};
+    TABLE_DEFS.forEach(def => {
+        patches[def.n] = { x: def.x, y: def.y, w: def.w, h: def.h, cap: def.cap, type: def.type };
+    });
+    localStorage.setItem('season_table_defs', JSON.stringify(patches));
+    showToast('Plano guardado ✓', 'success');
+}
+
+function resetEditPlan() {
+    if (!confirm('¿Restaurar el plano original? Se perderán todos los cambios guardados.')) return;
+    localStorage.removeItem('season_table_defs');
+    location.reload();
+}
+
+function openCapacityEditor(tableNumber) {
+    const def = TABLE_DEFS.find(d => d.n === tableNumber);
+    if (!def) return;
+    _editCapTableNumber = tableNumber;
+    _editCapValue = def.cap;
+    const title = document.getElementById('tableDetailTitle');
+    const content = document.getElementById('tableDetailContent');
+    title.textContent = `✏️ Configurar Mesa ${tableNumber}`;
+    content.innerHTML = `
+        <div style="padding:8px 0 4px;color:#6b7280;font-size:12px">
+            Ajusta la capacidad y tipo de la mesa ${tableNumber}. Los cambios se aplicarán al guardar el plano.
+        </div>
+        <div class="detail-section" style="margin-top:12px">
+            <div class="detail-row"><span class="label">Capacidad</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <button class="qo-cnt-btn" onclick="editCapChange(-1)">−</button>
+                    <span style="font-size:18px;font-weight:800;min-width:28px;text-align:center" id="editCapVal">${def.cap}</span>
+                    <button class="qo-cnt-btn" onclick="editCapChange(1)">+</button>
+                    <span style="color:#6b7280;font-size:13px">personas</span>
+                </div>
+            </div>
+            <div class="detail-row" style="margin-top:12px"><span class="label">Tipo</span>
+                <select id="editTableType" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px">
+                    <option value="normal" ${def.type === 'normal' ? 'selected' : ''}>Normal</option>
+                    <option value="alta" ${def.type === 'alta' ? 'selected' : ''}>Mesa Alta</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+            <button class="btn-primary" style="flex:1" onclick="saveCapacityEdit(${tableNumber})">💾 Aplicar</button>
+            <button class="btn-secondary" style="flex:1" onclick="closeModal('modalTableDetail')">Cancelar</button>
+        </div>
+    `;
+    openModal('modalTableDetail');
+}
+
+function editCapChange(delta) {
+    _editCapValue = Math.max(1, Math.min(20, _editCapValue + delta));
+    const el = document.getElementById('editCapVal');
+    if (el) el.textContent = _editCapValue;
+}
+
+function saveCapacityEdit(tableNumber) {
+    const def = TABLE_DEFS.find(d => d.n === tableNumber);
+    if (!def) return;
+    def.cap = _editCapValue;
+    const typeEl = document.getElementById('editTableType');
+    if (typeEl) def.type = typeEl.value;
+    closeModal('modalTableDetail');
+    renderFloorPlan();
+    showToast(`Mesa ${tableNumber} · ${def.cap}p · listo`, 'success');
+}
 
 async function loadFloorPlan() {
     const data = await apiGet(`/api/tables/status?date=${currentDate}&shift=${currentShift}`);
@@ -136,7 +235,9 @@ function reserveGroup() {
 }
 
 function handleTableClick(tableNumber) {
-    if (groupMode) {
+    if (_editMode) {
+        if (!_editDrag) openCapacityEditor(tableNumber); // only open if not dragging
+    } else if (groupMode) {
         const idx = groupSelectedTables.indexOf(tableNumber);
         if (idx >= 0) {
             groupSelectedTables.splice(idx, 1);
@@ -300,9 +401,41 @@ function buildReservationGroupsMap() {
     return map;
 }
 
+function _svgCoords(e, svg) {
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    return {
+        x: (e.clientX - rect.left) / rect.width * vb.width,
+        y: (e.clientY - rect.top) / rect.height * vb.height,
+    };
+}
+
 function renderFloorPlan() {
     const svg = document.getElementById('floorplanSVG');
     svg.querySelectorAll('.table-group, .group-link-line, .unassigned-reservations-box').forEach(g => g.remove());
+
+    // Edit mode: wire up SVG-level drag listeners (once)
+    if (_editMode) {
+        svg.onmousemove = (e) => {
+            if (!_editDrag) return;
+            const pt = _svgCoords(e, svg);
+            const def = TABLE_DEFS[_editDrag.defIdx];
+            def.x = Math.max(0, Math.round((pt.x - _editDrag.offX) * 2) / 2);
+            def.y = Math.max(0, Math.round((pt.y - _editDrag.offY) * 2) / 2);
+            svg.querySelectorAll('.table-group').forEach(g => {
+                if (+g.dataset.tableNumber === def.n) {
+                    g.setAttribute('transform', `translate(${def.x - _editDrag.origX},${def.y - _editDrag.origY})`);
+                }
+            });
+        };
+        svg.onmouseup = () => { if (_editDrag) { _editDrag = null; renderFloorPlan(); } };
+        svg.onmouseleave = () => { if (_editDrag) { _editDrag = null; renderFloorPlan(); } };
+        svg.style.cursor = 'grab';
+    } else {
+        svg.onmousemove = null;
+        svg.onmouseup = null;
+        svg.onmouseleave = null;
+    }
 
     const groupsMap = buildReservationGroupsMap();
 
@@ -452,7 +585,23 @@ function renderFloorPlan() {
             g.appendChild(timeText);
         }
 
-        g.addEventListener('click', () => handleTableClick(def.n));
+        if (_editMode) {
+            g.style.cursor = 'grab';
+            g.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const pt = _svgCoords(e, svg);
+                _editDrag = {
+                    defIdx: TABLE_DEFS.indexOf(def),
+                    offX: pt.x - def.x,
+                    offY: pt.y - def.y,
+                    origX: def.x,
+                    origY: def.y,
+                };
+                svg.style.cursor = 'grabbing';
+            });
+        }
+        g.addEventListener('click', () => { if (!_editDrag) handleTableClick(def.n); });
 
         // Drag-drop receptor: accept a reservation card dropped on this table
         g.addEventListener('dragover', (e) => {
@@ -567,10 +716,11 @@ function openTableDetail(tableNumber) {
             html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">Cancelar</button>`;
         } else if (r.status === 'seated') {
             if (isQuickOccupy) {
-                // Quick-occupy: show big "Liberar mesa" button
-                html += `<button class="btn-free-table" onclick="quickFreeTable(${td.id}, ${tableNumber})">
-                    🔓 Liberar mesa
-                </button>`;
+                html += `<button class="btn-free-table" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar mesa</button>`;
+                html += `<div style="display:flex;gap:8px;margin-top:8px">`;
+                html += `<button class="btn-secondary btn-sm" style="flex:1" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Cambiar mesa</button>`;
+                html += `<button class="btn-danger btn-sm" style="flex:1" onclick="cancelWalkIn(${r.id}, ${tableNumber})">❌ Cancelar</button>`;
+                html += `</div>`;
             } else {
                 html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">Completar</button>`;
                 html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
@@ -584,15 +734,19 @@ function openTableDetail(tableNumber) {
         // FREE TABLE — show quick occupy + create reservation options
         const cap = td.capacity || 4;
         const defaultGuests = Math.min(2, cap);
+        const hardMax = Math.min(cap + 4, 14);
         html += `
             <div class="quick-occupy-panel" id="qoPanelInModal">
                 <div class="qop-title">⚡ Ocupar ahora</div>
                 <div class="qop-subtitle">Sin reserva — solo marcar mesa ocupada</div>
                 <div class="qop-counter">
                     <button class="qo-cnt-btn" onclick="qopChange(-1, ${cap})">−</button>
-                    <span class="qo-cnt-val" id="qopVal">2</span>
+                    <span class="qo-cnt-val" id="qopVal">${_qopGuests}</span>
                     <span class="qop-pax">personas</span>
                     <button class="qo-cnt-btn" onclick="qopChange(1, ${cap})">+</button>
+                </div>
+                <div id="qopOvercapNote" style="font-size:11px;color:#f97316;text-align:center;min-height:14px;margin-bottom:4px">
+                    ${_qopGuests > cap ? `⚠️ Supera aforo (${cap}p) — silla extra` : ''}
                 </div>
                 <button class="qop-occupy-btn" onclick="quickOccupyFromModal(${td.id}, ${td.number})">
                     🟢 Ocupar mesa
@@ -616,9 +770,16 @@ function openTableDetail(tableNumber) {
 let _qopGuests = 2;
 
 function qopChange(delta, maxCap) {
-    _qopGuests = Math.max(1, Math.min(maxCap, (_qopGuests || 2) + delta));
+    // Allow up to 4 extra seats above table capacity (silla añadida), max 14
+    const hardMax = Math.min(maxCap + 4, 14);
+    _qopGuests = Math.max(1, Math.min(hardMax, (_qopGuests || 2) + delta));
     const el = document.getElementById('qopVal');
-    if (el) el.textContent = _qopGuests;
+    if (el) {
+        el.textContent = _qopGuests;
+        el.style.color = _qopGuests > maxCap ? '#f97316' : '';
+    }
+    const note = document.getElementById('qopOvercapNote');
+    if (note) note.textContent = _qopGuests > maxCap ? `⚠️ Supera aforo (${maxCap}p) — silla extra` : '';
 }
 
 async function quickOccupyFromModal(tableId, tableNumber) {
@@ -647,6 +808,86 @@ async function quickOccupyFromModal(tableId, tableNumber) {
     } catch (e) {
         showToast('Error al ocupar mesa', 'error');
         refreshAll();
+    }
+}
+
+// ── Cancel Walk-in ─────────────────────────────
+
+async function cancelWalkIn(resId, tableNumber) {
+    closeModal('modalTableDetail');
+    if (tableDataMap[tableNumber]) {
+        tableDataMap[tableNumber] = { ...tableDataMap[tableNumber], status: 'free', reservation: null };
+    }
+    renderFloorPlan();
+    try {
+        await apiDelete(`/api/reservations/${resId}`);
+        showToast('Reserva walk-in cancelada', 'success');
+        await refreshAll();
+    } catch (e) {
+        showToast('Error al cancelar', 'error');
+        await refreshAll();
+    }
+}
+
+// ── Move Walk-in to Another Table ──────────────
+
+function showMoveTablePicker(resId, currentTableNumber) {
+    const content = document.getElementById('tableDetailContent');
+    const title = document.getElementById('tableDetailTitle');
+    title.textContent = '🔀 Cambiar mesa';
+
+    const freeTables = Object.values(tableDataMap)
+        .filter(t => t && t.id && t.status === 'free' && t.number !== currentTableNumber)
+        .sort((a, b) => a.number - b.number);
+
+    if (freeTables.length === 0) {
+        content.innerHTML = `
+            <div style="padding:20px;text-align:center;color:#6b7280">No hay mesas libres disponibles</div>
+            <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="openTableDetail(${currentTableNumber})">← Volver</button>
+        `;
+        return;
+    }
+
+    content.innerHTML = `
+        <p style="color:#6b7280;font-size:12px;margin-bottom:12px">
+            Selecciona la mesa destino. La reserva walk-in se moverá al instante.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:280px;overflow-y:auto">
+            ${freeTables.map(t => `
+                <button class="move-table-btn" onclick="moveWalkInToTable(${resId}, ${t.id}, ${t.number}, ${currentTableNumber})">
+                    <div style="font-size:18px;font-weight:800;color:#1a8a7d">${t.number}</div>
+                    <div style="font-size:11px;color:#6b7280">${t.capacity}p · ${zoneName(t.zone)}</div>
+                </button>
+            `).join('')}
+        </div>
+        <button class="btn-secondary" style="width:100%;margin-top:12px" onclick="openTableDetail(${currentTableNumber})">← Volver</button>
+    `;
+}
+
+async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumber) {
+    closeModal('modalTableDetail');
+
+    // Optimistic: free old, seat new
+    const oldRes = tableDataMap[oldTableNumber]?.reservation;
+    if (tableDataMap[oldTableNumber]) {
+        tableDataMap[oldTableNumber] = { ...tableDataMap[oldTableNumber], status: 'free', reservation: null };
+    }
+    if (tableDataMap[newTableNumber] && oldRes) {
+        tableDataMap[newTableNumber] = {
+            ...tableDataMap[newTableNumber],
+            status: 'seated',
+            reservation: { ...oldRes, table_numbers: [newTableNumber] },
+        };
+    }
+    renderFloorPlan();
+
+    try {
+        await apiPut(`/api/reservations/${resId}/assign-tables`, { table_id: newTableId });
+        showToast(`Mesa movida → Mesa ${newTableNumber} ✓`, 'success');
+        await refreshAll();
+    } catch (e) {
+        showToast('Error al mover mesa', 'error');
+        await refreshAll();
     }
 }
 

@@ -49,6 +49,7 @@ def source_report(from_date, to_date):
         func.sum(Reservation.guests).label('guests'),
     ).filter(
         Reservation.date.between(from_date, to_date),
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
     ).group_by(Reservation.source).all()
 
     return [{
@@ -85,9 +86,10 @@ def daily_summary(target_date):
             Reservation.shift == shift,
         ).all()
 
+        active = [r for r in reservations if r.status in ('confirmed', 'seated', 'completed')]
         summary[shift] = {
-            'total': len(reservations),
-            'guests': sum(r.guests for r in reservations),
+            'total': len(active),
+            'guests': sum(r.guests for r in active),
             'confirmed': sum(1 for r in reservations if r.status == 'confirmed'),
             'seated': sum(1 for r in reservations if r.status == 'seated'),
             'completed': sum(1 for r in reservations if r.status == 'completed'),
@@ -95,7 +97,7 @@ def daily_summary(target_date):
             'no_show': sum(1 for r in reservations if r.status == 'no_show'),
             'by_source': {},
         }
-        for r in reservations:
+        for r in active:
             src = r.source or 'phone'
             if src not in summary[shift]['by_source']:
                 summary[shift]['by_source'][src] = 0

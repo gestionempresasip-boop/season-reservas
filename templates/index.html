@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=32">
+    <link rel="stylesheet" href="/static/css/pro.css?v=33">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -70,6 +70,7 @@
                 <button class="btn-secondary btn-sm" id="btnGroupMode" onclick="toggleGroupMode()" title="Selecciona varias mesas para hacer una reserva combinada">🔗 Agrupar mesas</button>
                 <button class="btn-secondary btn-sm" onclick="openNewReservationModal()">+ Nueva reserva</button>
                 <button class="btn-walkin btn-sm" onclick="openWalkInModal()">🚶 Walk-in</button>
+                <button class="btn-secondary btn-sm" id="btnEditPlan" onclick="toggleEditMode()" title="Mueve las mesas y ajusta sus capacidades">✏️ Editar plano</button>
                 <div class="legend-mini">
                     <span class="lm-item"><span class="lm-color free"></span>Libre</span>
                     <span class="lm-item"><span class="lm-color confirmed"></span>Reservada</span>
@@ -78,6 +79,14 @@
                 </div>
             </div>
             <div class="group-action-bar hidden" id="groupActionBar"></div>
+            <div class="edit-plan-bar hidden" id="editPlanBar">
+                <span>✏️ Modo Edición — arrastra las mesas · haz clic para cambiar capacidad</span>
+                <div style="display:flex;gap:8px">
+                    <button class="btn-primary btn-sm" onclick="saveEditPlan()">💾 Guardar plano</button>
+                    <button class="btn-secondary btn-sm" onclick="resetEditPlan()">↺ Restaurar</button>
+                    <button class="btn-secondary btn-sm" onclick="toggleEditMode()">✕ Salir</button>
+                </div>
+            </div>
             <div class="floorplan-container">
                 <svg id="floorplanSVG" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
                     <!-- Zona Exterior -->
@@ -586,7 +595,7 @@
         }
     </script>
     <script src="/static/js/app.js?v=30"></script>
-    <script src="/static/js/floorplan.js?v=29"></script>
+    <script src="/static/js/floorplan.js?v=30"></script>
     <script src="/static/js/reservations.js?v=27"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
