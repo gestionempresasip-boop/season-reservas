@@ -1809,6 +1809,40 @@
 }
 .btn-reactivate:hover { background: #dcfce7; }
 
+/* ── Session bar in Ajustes ── */
+.session-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 16px 16px;
+}
+.session-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.session-bar-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+.btn-logout-big {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.btn-logout-big:hover { background: #b91c1c; }
+
 .btn-link-subtle {
     background: none;
     border: none;

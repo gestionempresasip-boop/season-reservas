@@ -44,6 +44,11 @@ function updateUserBadge() {
         badge.textContent = _currentUser.name;
         badge.title = _currentUser.role === 'admin' ? '👑 Administrador' : '👤 Personal';
     }
+    // Session bar in Ajustes
+    const sbName = document.getElementById('sessionBarName');
+    const sbRole = document.getElementById('sessionBarRole');
+    if (sbName) sbName.textContent = _currentUser.name;
+    if (sbRole) sbRole.textContent = _currentUser.role === 'admin' ? '👑 Administrador' : '👤 Personal';
     // Show admin panel link if admin
     const adminLink = document.getElementById('adminUsersLink');
     if (adminLink) adminLink.style.display = _currentUser.role === 'admin' ? '' : 'none';
