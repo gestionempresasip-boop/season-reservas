@@ -853,12 +853,16 @@ function showMoveTablePicker(resId, currentTableNumber) {
             Selecciona la mesa destino. La reserva walk-in se moverá al instante.
         </p>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:280px;overflow-y:auto">
-            ${freeTables.map(t => `
+            ${freeTables.map(t => {
+                const def = TABLE_DEFS.find(d => d.n === t.number);
+                const cap = t.capacity || (def ? def.cap : '?');
+                const zone = zoneName(t.zone || (def ? def.zone : ''));
+                return `
                 <button class="move-table-btn" onclick="moveWalkInToTable(${resId}, ${t.id}, ${t.number}, ${currentTableNumber})">
                     <div style="font-size:18px;font-weight:800;color:#1a8a7d">${t.number}</div>
-                    <div style="font-size:11px;color:#6b7280">${t.capacity}p · ${zoneName(t.zone)}</div>
-                </button>
-            `).join('')}
+                    <div style="font-size:11px;color:#6b7280">${cap}p · ${zone}</div>
+                </button>`;
+            }).join('')}
         </div>
         <button class="btn-secondary" style="width:100%;margin-top:12px" onclick="openTableDetail(${currentTableNumber})">← Volver</button>
     `;
