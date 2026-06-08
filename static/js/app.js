@@ -152,6 +152,7 @@ function initNavigation() {
             if (viewId === 'viewClientes') loadClientsList();
             if (viewId === 'viewAgenda') loadCalendar();
             if (viewId === 'viewInformes') initReportDates();
+            if (viewId === 'viewAjustes' && typeof loadUsersPanel === 'function') loadUsersPanel();
         });
     });
 }
@@ -331,9 +332,17 @@ async function withRetry(fn, retries = MAX_RETRIES) {
     }
 }
 
+function _handle401(res) {
+    if (res.status === 401 && typeof showLoginScreen === 'function') {
+        showLoginScreen();
+        throw new Error('Sesión caducada — vuelve a iniciar sesión');
+    }
+}
+
 async function apiGet(url) {
     return withRetry(async () => {
         const res = await fetch(API + url, { signal: createTimeout(API_TIMEOUT) });
+        _handle401(res);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     });
@@ -347,6 +356,7 @@ async function apiPost(url, data) {
             body: JSON.stringify(data),
             signal: createTimeout(API_TIMEOUT)
         });
+        _handle401(res);
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || `HTTP ${res.status}`);
@@ -363,6 +373,7 @@ async function apiPut(url, data) {
             body: JSON.stringify(data || {}),
             signal: createTimeout(API_TIMEOUT)
         });
+        _handle401(res);
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || `HTTP ${res.status}`);
@@ -377,6 +388,7 @@ async function apiDelete(url) {
             method: 'DELETE',
             signal: createTimeout(API_TIMEOUT)
         });
+        _handle401(res);
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || `HTTP ${res.status}`);

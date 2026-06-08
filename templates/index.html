@@ -5,11 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=24">
-    <link rel="stylesheet" href="/static/css/pro.css?v=33">
+    <link rel="stylesheet" href="/static/css/pro.css?v=34">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
+    <!-- ══════════════════════════════════════════════
+         LOGIN OVERLAY — shown until authenticated
+    ══════════════════════════════════════════════ -->
+    <div id="loginOverlay" style="display:none" class="login-overlay">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="/static/images/season-logo.png" alt="Season" class="login-logo-img">
+            </div>
+            <h2 class="login-title">Bienvenido</h2>
+            <p class="login-subtitle">Inicia sesión para continuar</p>
+
+            <div class="form-group" style="margin-bottom:12px">
+                <label class="form-label">Usuario</label>
+                <input class="form-input" id="loginUsername" type="text"
+                       autocomplete="username" placeholder="Ej: admin" autocapitalize="none">
+            </div>
+
+            <!-- PIN display (visible when using PIN pad) -->
+            <div class="form-group" style="margin-bottom:4px">
+                <label class="form-label">PIN / Contraseña</label>
+                <div style="position:relative">
+                    <input class="form-input" id="loginPin" type="password"
+                           inputmode="numeric" placeholder="••••"
+                           autocomplete="current-password"
+                           style="letter-spacing:6px;font-size:20px;text-align:center">
+                </div>
+            </div>
+
+            <!-- PIN dots display -->
+            <div id="pinDisplay" class="pin-display"></div>
+
+            <!-- PIN pad -->
+            <div class="pin-pad">
+                <button class="pin-key" onclick="pinPress(1)">1</button>
+                <button class="pin-key" onclick="pinPress(2)">2</button>
+                <button class="pin-key" onclick="pinPress(3)">3</button>
+                <button class="pin-key" onclick="pinPress(4)">4</button>
+                <button class="pin-key" onclick="pinPress(5)">5</button>
+                <button class="pin-key" onclick="pinPress(6)">6</button>
+                <button class="pin-key" onclick="pinPress(7)">7</button>
+                <button class="pin-key" onclick="pinPress(8)">8</button>
+                <button class="pin-key" onclick="pinPress(9)">9</button>
+                <button class="pin-key pin-key-clear" onclick="pinClear()">C</button>
+                <button class="pin-key" onclick="pinPress(0)">0</button>
+                <button class="pin-key pin-key-del" onclick="pinDelete()">⌫</button>
+            </div>
+
+            <div id="loginError" class="login-error" style="display:none"></div>
+
+            <button class="btn-primary" id="loginBtn" onclick="submitLogin()"
+                    style="width:100%;margin-top:12px;padding:14px;font-size:15px;font-weight:700;letter-spacing:0.5px">
+                → Entrar
+            </button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         APP ROOT — hidden until authenticated
+    ══════════════════════════════════════════════ -->
+    <div id="appRoot" style="display:none">
+
     <!-- HEADER -->
     <header class="header">
         <div class="header-left">
@@ -30,6 +92,10 @@
                 <div id="globalSearchResults" class="global-search-results hidden"></div>
             </div>
             <input type="date" id="datePicker" class="date-picker">
+            <!-- User badge -->
+            <div class="user-badge-wrap">
+                <button class="user-badge" id="userBadge" onclick="logout()" title="Cerrar sesión">—</button>
+            </div>
         </div>
     </header>
 
@@ -299,6 +365,15 @@
                         </div>
                     </div>
                 </div>
+                <!-- Users management (admin only) -->
+                <div class="settings-card" id="adminUsersLink" style="display:none">
+                    <h3>👥 Gestión de Usuarios</h3>
+                    <p class="settings-desc">Crea y gestiona los usuarios que tienen acceso a Season. Solo los administradores pueden ver esta sección.</p>
+                    <div id="usersPanel">
+                        <div style="color:#9ca3af;font-size:13px">Cargando usuarios…</div>
+                    </div>
+                </div>
+
                 <div class="settings-card">
                     <h3>Capacidad del Restaurante</h3>
                     <div class="setting-row"><label>Zona Exterior:</label><span>8 mesas &middot; 20 plazas</span></div>
@@ -569,6 +644,21 @@
     <!-- Toast notification -->
     <div class="toast hidden" id="toast"></div>
 
+    <!-- MODAL: User create / edit (admin) -->
+    <div class="modal-overlay hidden" id="userModal">
+        <div class="modal" style="max-width:440px">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Usuario</h3>
+                <button type="button" class="btn-close" onclick="closeModal('userModal')">×</button>
+            </div>
+            <div style="padding:20px" id="userModalContent">
+                <!-- Filled dynamically by auth.js -->
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /appRoot -->
+
     <script>
         // Load Socket.IO only on desktop (mobile uses polling only)
         if (!/iPhone|iPad|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -594,7 +684,8 @@
             });
         }
     </script>
-    <script src="/static/js/app.js?v=30"></script>
+    <script src="/static/js/auth.js?v=1"></script>
+    <script src="/static/js/app.js?v=31"></script>
     <script src="/static/js/floorplan.js?v=33"></script>
     <script src="/static/js/reservations.js?v=27"></script>
     <script src="/static/js/clients.js?v=24"></script>

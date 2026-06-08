@@ -56,6 +56,14 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
     # ──────────────────────────────────────────────────────────────────────
+    # SESSION CONFIGURATION
+    # ──────────────────────────────────────────────────────────────────────
+    from datetime import timedelta
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+
+    # ──────────────────────────────────────────────────────────────────────
     # LOGGING SETUP
     # ──────────────────────────────────────────────────────────────────────
 
@@ -154,8 +162,10 @@ def _initialize_app():
     # ─── Register blueprints (after app is created) ──────────────────────
     from routes.api import api
     from routes.whatsapp import whatsapp_bp
+    from routes.auth import auth_bp
     _app_instance.register_blueprint(api)
     _app_instance.register_blueprint(whatsapp_bp)
+    _app_instance.register_blueprint(auth_bp)
 
     # ─── Register main routes ────────────────────────────────────────────
     WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
@@ -217,6 +227,15 @@ def _initialize_app():
                     _logger_instance.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
                 else:
                     _logger_instance.info(f'⚠️  Tables already exist ({Table.query.count()})')
+
+                # Create default admin user if no users exist
+                from models import User
+                if User.query.count() == 0:
+                    admin = User(name='Administrador', username='admin', role='admin')
+                    admin.set_password('admin1234')
+                    db.session.add(admin)
+                    db.session.commit()
+                    _logger_instance.info('✅ Created default admin user (admin / admin1234)')
                 _db_initialized[0] = True
                 _db_init_error[0] = None
         except Exception as e:

@@ -3,7 +3,7 @@ REST API for Season restaurant reservation system.
 """
 import csv
 import io
-from flask import Blueprint, request, jsonify, current_app, Response
+from flask import Blueprint, request, jsonify, current_app, Response, session
 from datetime import date, timedelta, datetime
 from services import reservation as res_svc
 from services import client as cli_svc
@@ -14,6 +14,16 @@ from utils.decorators import validate_and_handle, handle_errors
 from utils.errors import error_response, success_response
 
 api = Blueprint('api', __name__, url_prefix='/api')
+
+
+@api.before_request
+def require_login():
+    """Require authenticated session for all API endpoints."""
+    # Allow health check unauthenticated
+    if request.endpoint in ('api.health',):
+        return None
+    if not session.get('user_id'):
+        return jsonify({'error': 'No autenticado', 'code': 'UNAUTHENTICATED'}), 401
 
 
 def notify():
