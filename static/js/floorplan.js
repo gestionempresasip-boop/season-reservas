@@ -68,6 +68,7 @@ const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#e
 // ── Floor Plan Edit Mode ──────────────────────────
 let _editMode = false;
 let _editDrag = null; // { defIdx, offX, offY }
+let _editDidDrag = false; // true if mouse moved during drag (prevents click-to-edit after drag)
 let _editCapTableNumber = null;
 let _editCapValue = 4;
 
@@ -101,33 +102,55 @@ function resetEditPlan() {
 function openCapacityEditor(tableNumber) {
     const def = TABLE_DEFS.find(d => d.n === tableNumber);
     if (!def) return;
+    // Use DB value if available, fallback to TABLE_DEFS
+    const td = tableDataMap[tableNumber];
+    const currentCap = (td?.capacity ?? def.cap) || def.cap;
+    const currentType = (td?.table_type ?? def.type) || def.type;
+
     _editCapTableNumber = tableNumber;
-    _editCapValue = def.cap;
+    _editCapValue = currentCap;
+
     const title = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
     title.textContent = `✏️ Configurar Mesa ${tableNumber}`;
     content.innerHTML = `
-        <div style="padding:8px 0 4px;color:#6b7280;font-size:12px">
-            Ajusta la capacidad y tipo de la mesa ${tableNumber}. Los cambios se aplicarán al guardar el plano.
+        <div style="background:#fff3cd;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:16px">
+            ✏️ Modo edición — cambia la capacidad y guarda
         </div>
-        <div class="detail-section" style="margin-top:12px">
-            <div class="detail-row"><span class="label">Capacidad</span>
-                <div style="display:flex;align-items:center;gap:8px">
-                    <button class="qo-cnt-btn" onclick="editCapChange(-1)">−</button>
-                    <span style="font-size:18px;font-weight:800;min-width:28px;text-align:center" id="editCapVal">${def.cap}</span>
-                    <button class="qo-cnt-btn" onclick="editCapChange(1)">+</button>
-                    <span style="color:#6b7280;font-size:13px">personas</span>
-                </div>
+
+        <div style="margin-bottom:16px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
+                Comensales (capacidad de la mesa)
+            </label>
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px" onclick="editCapChange(-1)">−</button>
+                <input type="number" id="editCapInput" value="${currentCap}" min="1" max="20"
+                    style="width:70px;text-align:center;font-size:24px;font-weight:800;border:2px solid #1a8a7d;border-radius:10px;padding:6px;color:#1a8a7d"
+                    oninput="_editCapValue=Math.max(1,Math.min(20,+this.value||1));document.getElementById('editCapVal').textContent=_editCapValue">
+                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px" onclick="editCapChange(1)">+</button>
+                <span style="color:#6b7280;font-size:13px">personas</span>
             </div>
-            <div class="detail-row" style="margin-top:12px"><span class="label">Tipo</span>
-                <select id="editTableType" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px">
-                    <option value="normal" ${def.type === 'normal' ? 'selected' : ''}>Normal</option>
-                    <option value="alta" ${def.type === 'alta' ? 'selected' : ''}>Mesa Alta</option>
-                </select>
+            <span style="font-size:11px;color:#9ca3af" id="editCapVal" style="display:none">${currentCap}</span>
+        </div>
+
+        <div style="margin-bottom:20px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Tipo de mesa</label>
+            <div style="display:flex;gap:8px">
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid ${currentType==='normal'?'#1a8a7d':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${currentType==='normal'?'#f0fdf9':'#fff'}">
+                    <input type="radio" name="editType" value="normal" ${currentType==='normal'?'checked':''} onchange="document.querySelectorAll('[name=editType]').forEach((r,i)=>{r.parentElement.style.borderColor=r.checked?'#1a8a7d':'#e5e7eb';r.parentElement.style.background=r.checked?'#f0fdf9':'#fff'})">
+                    🪑 Normal
+                </label>
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid ${currentType==='alta'?'#1a8a7d':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${currentType==='alta'?'#f0fdf9':'#fff'}">
+                    <input type="radio" name="editType" value="alta" ${currentType==='alta'?'checked':''} onchange="document.querySelectorAll('[name=editType]').forEach((r,i)=>{r.parentElement.style.borderColor=r.checked?'#1a8a7d':'#e5e7eb';r.parentElement.style.background=r.checked?'#f0fdf9':'#fff'})">
+                    🍽️ Alta
+                </label>
             </div>
         </div>
-        <div style="margin-top:16px;display:flex;gap:8px">
-            <button class="btn-primary" style="flex:1" onclick="saveCapacityEdit(${tableNumber})">💾 Aplicar</button>
+
+        <div style="display:flex;gap:8px">
+            <button class="btn-primary" style="flex:1;padding:13px" onclick="saveCapacityEdit(${tableNumber})">
+                💾 Guardar cambios
+            </button>
             <button class="btn-secondary" style="flex:1" onclick="closeModal('modalTableDetail')">Cancelar</button>
         </div>
     `;
@@ -136,19 +159,48 @@ function openCapacityEditor(tableNumber) {
 
 function editCapChange(delta) {
     _editCapValue = Math.max(1, Math.min(20, _editCapValue + delta));
+    const inp = document.getElementById('editCapInput');
+    if (inp) inp.value = _editCapValue;
     const el = document.getElementById('editCapVal');
     if (el) el.textContent = _editCapValue;
 }
 
-function saveCapacityEdit(tableNumber) {
+async function saveCapacityEdit(tableNumber) {
     const def = TABLE_DEFS.find(d => d.n === tableNumber);
     if (!def) return;
-    def.cap = _editCapValue;
-    const typeEl = document.getElementById('editTableType');
-    if (typeEl) def.type = typeEl.value;
+    // Read from typed input first (user may have typed a number directly)
+    const inp = document.getElementById('editCapInput');
+    if (inp) _editCapValue = Math.max(1, Math.min(20, parseInt(inp.value) || _editCapValue));
+    const newCap = _editCapValue;
+    const typeRadio = document.querySelector('input[name="editType"]:checked');
+    const newType = typeRadio ? typeRadio.value : def.type;
+
+    // Update in-memory TABLE_DEFS immediately
+    def.cap = newCap;
+    def.type = newType;
+
+    // Also update tableDataMap so the modal reflects the new value right away
+    if (tableDataMap[tableNumber]) {
+        tableDataMap[tableNumber] = { ...tableDataMap[tableNumber], capacity: newCap, table_type: newType };
+    }
+
     closeModal('modalTableDetail');
     renderFloorPlan();
-    showToast(`Mesa ${tableNumber} · ${def.cap}p · listo`, 'success');
+    showToast(`Mesa ${tableNumber} · ${newCap}p guardando…`, 'success');
+
+    // Persist to DB via API
+    const td = tableDataMap[tableNumber];
+    const tableId = td?.id;
+    if (tableId) {
+        try {
+            await apiPut(`/api/tables/${tableId}`, { capacity: newCap, table_type: newType });
+            showToast(`Mesa ${tableNumber} · ${newCap}p actualizada ✓`, 'success');
+        } catch (e) {
+            showToast(`Mesa ${tableNumber} guardada localmente (error API)`, 'error');
+        }
+    } else {
+        showToast(`Mesa ${tableNumber} · ${newCap}p (guarda el plano para persistir)`, 'success');
+    }
 }
 
 async function loadFloorPlan() {
@@ -235,9 +287,7 @@ function reserveGroup() {
 }
 
 function handleTableClick(tableNumber) {
-    if (_editMode) {
-        if (!_editDrag) openCapacityEditor(tableNumber); // only open if not dragging
-    } else if (groupMode) {
+    if (groupMode) {
         const idx = groupSelectedTables.indexOf(tableNumber);
         if (idx >= 0) {
             groupSelectedTables.splice(idx, 1);
@@ -422,8 +472,14 @@ function renderFloorPlan() {
             if (!_editDrag) return;
             const pt = _svgCoords(e, svg);
             const def = TABLE_DEFS[_editDrag.defIdx];
-            def.x = Math.max(0, Math.round((pt.x - _editDrag.offX) * 2) / 2);
-            def.y = Math.max(0, Math.round((pt.y - _editDrag.offY) * 2) / 2);
+            const newX = Math.max(0, Math.round((pt.x - _editDrag.offX) * 2) / 2);
+            const newY = Math.max(0, Math.round((pt.y - _editDrag.offY) * 2) / 2);
+            // Mark as actual drag only if moved > 0.5 SVG units
+            if (Math.abs(newX - _editDrag.origX) > 0.5 || Math.abs(newY - _editDrag.origY) > 0.5) {
+                _editDidDrag = true;
+            }
+            def.x = newX;
+            def.y = newY;
             svg.querySelectorAll('.table-group').forEach(g => {
                 if (+g.dataset.tableNumber === def.n) {
                     g.setAttribute('transform', `translate(${def.x - _editDrag.origX},${def.y - _editDrag.origY})`);
@@ -592,6 +648,7 @@ function renderFloorPlan() {
             g.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                _editDidDrag = false; // reset on each new press
                 const pt = _svgCoords(e, svg);
                 _editDrag = {
                     defIdx: TABLE_DEFS.indexOf(def),
@@ -603,7 +660,14 @@ function renderFloorPlan() {
                 svg.style.cursor = 'grabbing';
             });
         }
-        g.addEventListener('click', () => { if (!_editDrag) handleTableClick(def.n); });
+        g.addEventListener('click', () => {
+            if (_editMode) {
+                if (!_editDidDrag) openCapacityEditor(def.n); // only open editor if not dragging
+                _editDidDrag = false; // always reset after click
+            } else {
+                handleTableClick(def.n);
+            }
+        });
 
         // Drag-drop receptor: accept a reservation card dropped on this table
         g.addEventListener('dragover', (e) => {

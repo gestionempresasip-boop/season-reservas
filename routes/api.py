@@ -155,6 +155,30 @@ def table_status():
     return jsonify(result)
 
 
+@api.route('/tables/<int:tid>', methods=['PUT'])
+@handle_errors
+def update_table(tid):
+    """Update table capacity, type and/or position.
+    Body: { capacity?: int, table_type?: str, pos_x?: float, pos_y?: float }
+    """
+    t = Table.query.get_or_404(tid)
+    data = request.json or {}
+    if 'capacity' in data:
+        cap = int(data['capacity'])
+        if cap < 1 or cap > 30:
+            return error_response('Capacidad debe estar entre 1 y 30', 400)
+        t.capacity = cap
+    if 'table_type' in data and data['table_type'] in ('normal', 'alta'):
+        t.table_type = data['table_type']
+    if 'pos_x' in data:
+        t.pos_x = float(data['pos_x'])
+    if 'pos_y' in data:
+        t.pos_y = float(data['pos_y'])
+    db.session.commit()
+    notify()
+    return jsonify(t.to_dict())
+
+
 @api.route('/tables/available', methods=['GET'])
 def available_tables():
     d = request.args.get('date', date.today().isoformat())
