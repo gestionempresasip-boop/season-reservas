@@ -781,6 +781,8 @@ function openTableDetail(tableNumber) {
     const tdType  = td.table_type ?? (def ? def.type  : 'normal');
 
     const isBlocked = td.blocked === true;
+    // Initialise inline-edit guests counter from current reservation (if any)
+    _ieGuests = td.reservation ? td.reservation.guests : Math.min(2, tdCap ?? 2);
 
     const title = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
@@ -814,35 +816,66 @@ function openTableDetail(tableNumber) {
 
     if (td.reservation) {
         const r = td.reservation;
+        const isQuickOccupy = r.source === 'walk_in' && r.client_name === 'Walk-in';
+        const safeName  = r.client_name.replace(/"/g, '&quot;');
+        const safePhone = (r.client_phone || '').replace(/"/g, '&quot;');
+        const safeNotes = (r.notes || '').replace(/"/g, '&quot;');
+
         html += `
             <div class="detail-section">
-                <h4>Reserva Activa ${r.is_grouped ? '<span class="badge badge-group">GRUPO ' + r.table_numbers.join('+') + '</span>' : ''}</h4>
-                <div class="detail-row"><span class="label">Cliente</span><span class="value">${r.client_name}</span></div>
-                <div class="detail-row"><span class="label">Teléfono</span><span class="value">${r.client_phone || '—'}</span></div>
-                <div class="detail-row"><span class="label">Hora</span><span class="value">${r.time}</span></div>
-                <div class="detail-row"><span class="label">Comensales</span><span class="value">${r.guests}</span></div>
-                <div class="detail-row"><span class="label">Duración</span><span class="value">${r.duration_minutes || 120} min</span></div>
-                <div class="detail-row"><span class="label">Origen</span>${sourceBadge(r.source)}</div>
-                ${r.notes ? `<div class="detail-row"><span class="label">Notas</span><span class="value">${r.notes}</span></div>` : ''}
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <h4 style="margin:0">Reserva activa ${r.is_grouped ? '<span class="badge badge-group">GRUPO ' + r.table_numbers.join('+') + '</span>' : ''}</h4>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <span style="font-size:11px;color:#6b7280">${r.time} · ${sourceBadge(r.source)}</span>
+                    </div>
+                </div>
+
+                <!-- Inline editable fields -->
+                <div class="inline-edit-form">
+                    <div class="ie-row">
+                        <label class="ie-label">Nombre</label>
+                        <input class="ie-input" id="ieResName" value="${safeName}" placeholder="Nombre del cliente">
+                    </div>
+                    <div class="ie-row">
+                        <label class="ie-label">Teléfono</label>
+                        <input class="ie-input" id="ieResPhone" value="${safePhone}" type="tel" placeholder="—">
+                    </div>
+                    <div class="ie-row">
+                        <label class="ie-label">Comensales</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px" onclick="ieGuestsChange(-1,${Math.min(tdCap+4,14)})">−</button>
+                            <span id="ieGuestsVal" style="font-size:18px;font-weight:800;color:#1a8a7d;min-width:24px;text-align:center">${r.guests}</span>
+                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px" onclick="ieGuestsChange(1,${Math.min(tdCap+4,14)})">+</button>
+                            <span style="font-size:12px;color:#9ca3af">/ ${tdCap}p aforo</span>
+                        </div>
+                    </div>
+                    <div class="ie-row">
+                        <label class="ie-label">Notas</label>
+                        <input class="ie-input" id="ieResNotes" value="${safeNotes}" placeholder="Alergias, preferencias…">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <button class="btn-primary" style="flex:1;padding:10px" onclick="saveInlineReservation(${r.id}, ${tableNumber})">
+                        💾 Guardar cambios
+                    </button>
+                </div>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+
+            <!-- Status actions -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         `;
-        const isQuickOccupy = r.source === 'walk_in' && r.client_name === 'Walk-in';
 
         if (r.status === 'confirmed') {
-            html += `<button class="btn-primary btn-sm" onclick="seatFromPlan(${r.id})">Sentar</button>`;
-            html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
+            html += `<button class="btn-primary btn-sm" onclick="seatFromPlan(${r.id})">✓ Sentar</button>`;
             html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">Cancelar</button>`;
         } else if (r.status === 'seated') {
             if (isQuickOccupy) {
-                html += `<button class="btn-free-table" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar mesa</button>`;
-                html += `<div style="display:flex;gap:8px;margin-top:8px">`;
-                html += `<button class="btn-secondary btn-sm" style="flex:1" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Cambiar mesa</button>`;
-                html += `<button class="btn-danger btn-sm" style="flex:1" onclick="cancelWalkIn(${r.id}, ${tableNumber})">❌ Cancelar</button>`;
-                html += `</div>`;
+                html += `<button class="btn-free-table" style="flex:1" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar mesa</button>`;
+                html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Cambiar</button>`;
+                html += `<button class="btn-danger btn-sm" onclick="cancelWalkIn(${r.id}, ${tableNumber})">❌ Cancelar</button>`;
             } else {
-                html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">Completar</button>`;
-                html += `<button class="btn-secondary btn-sm" onclick="editReservationFromPlan(${r.id})">Editar</button>`;
+                html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">✓ Completar</button>`;
             }
         }
         if (!isQuickOccupy || r.status !== 'seated') {
@@ -1121,6 +1154,38 @@ function editReservationFromPlan(resId) {
 function newReservationForTable(tableNumber, tableId) {
     closeModal('modalTableDetail');
     openNewReservationModal([tableId]);
+}
+
+// ── Inline reservation editing ────────────────────
+
+let _ieGuests = 1;
+
+function ieGuestsChange(delta, hardMax) {
+    _ieGuests = Math.max(1, Math.min(hardMax, _ieGuests + delta));
+    const el = document.getElementById('ieGuestsVal');
+    if (el) el.textContent = _ieGuests;
+}
+
+async function saveInlineReservation(resId, tableNumber) {
+    const name   = document.getElementById('ieResName')?.value.trim();
+    const phone  = document.getElementById('ieResPhone')?.value.trim();
+    const guests = _ieGuests;
+    const notes  = document.getElementById('ieResNotes')?.value.trim();
+
+    if (!name) { showToast('El nombre no puede estar vacío', 'error'); return; }
+
+    const btn = document.querySelector(`[onclick="saveInlineReservation(${resId}, ${tableNumber})"]`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+    try {
+        await apiPut(`/api/reservations/${resId}`, { client_name: name, client_phone: phone, guests, notes });
+        showToast(`Mesa ${tableNumber} · reserva actualizada ✓`, 'success');
+        closeModal('modalTableDetail');
+        loadFloorPlan();
+    } catch (e) {
+        showToast(e.message || 'Error al guardar', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
+    }
 }
 
 async function toggleTableBlocked(tableId, tableNumber, currentlyBlocked) {

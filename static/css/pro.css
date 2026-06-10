@@ -1797,6 +1797,46 @@
 }
 .btn-danger:hover { background: #fecaca; }
 
+/* ── Inline reservation edit form (table detail modal) ── */
+.inline-edit-form {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ie-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ie-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: 72px;
+    flex-shrink: 0;
+}
+.ie-input {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-size: 14px;
+    color: #111827;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ie-input:focus {
+    outline: none;
+    border-color: #1a8a7d;
+    box-shadow: 0 0 0 3px rgba(26,138,125,0.1);
+}
+
 /* Freeze / unfreeze table buttons */
 .btn-block {
     background: #f3f4f6;
