@@ -318,6 +318,19 @@ body {
 .table-group.status-seated .table-client-name { fill: rgba(255,255,255,0.9); }
 .table-group.status-seated .table-time-label { fill: rgba(255,255,255,0.8); }
 
+/* ── Blocked (frozen) table ── */
+.table-group.status-blocked .table-rect,
+.table-group.status-blocked .table-rect-round {
+    fill: #e5e7eb;
+    stroke: #9ca3af;
+    stroke-width: 0.4;
+    stroke-dasharray: 1.2, 0.6;
+}
+.table-group.status-blocked .chair       { fill: #d1d5db; opacity: 0.5; }
+.table-group.status-blocked .table-number { fill: #9ca3af; }
+.table-group.status-blocked .table-capacity { fill: #9ca3af; }
+.table-group.status-blocked { opacity: 0.75; }
+
 .table-client-name {
     font-size: 1.4px;
     fill: var(--gray-600);

@@ -357,11 +357,13 @@ def get_table_status(target_date, shift):
     result = []
     for t in tables:
         r = table_to_res.get(t.id)
-        status = 'free'
-        reservation_data = None
-        if r:
+        if t.blocked and not r:
+            status = 'blocked'
+        elif r:
             status = r.status
-            reservation_data = r.to_dict()
+        else:
+            status = 'free'
+        reservation_data = r.to_dict() if r else None
 
         result.append({
             **t.to_dict(),
@@ -381,7 +383,7 @@ def get_table_status(target_date, shift):
 
 def find_available_tables(target_date, shift, guests=1, time_str=None, duration_minutes=120, exclude_reservation_id=None):
     """Find tables that have no conflicting reservation at the given time."""
-    all_tables = Table.query.filter(Table.active == True).order_by(Table.capacity, Table.zone).all()
+    all_tables = Table.query.filter(Table.active == True, Table.blocked == False).order_by(Table.capacity, Table.zone).all()
 
     if not time_str:
         # Simple mode: only filter by date+shift

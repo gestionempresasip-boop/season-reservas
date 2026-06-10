@@ -211,6 +211,7 @@ def _initialize_app():
                 # ─── Migrations (safe ALTER TABLE for PostgreSQL) ───
                 migrations = [
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
+                    'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
                 ]
                 for sql in migrations:
                     try:

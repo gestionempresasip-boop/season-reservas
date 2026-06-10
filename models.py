@@ -76,6 +76,7 @@ class Table(db.Model):
 
     # Status
     active = db.Column(db.Boolean, default=True, index=True)
+    blocked = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
     reservations = db.relationship('Reservation', backref='table', lazy='dynamic')
@@ -91,6 +92,7 @@ class Table(db.Model):
             'pos_x': self.pos_x,
             'pos_y': self.pos_y,
             'active': self.active,
+            'blocked': self.blocked,
         }
 
     def __repr__(self):

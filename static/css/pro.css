@@ -85,6 +85,7 @@
 .lm-color.free { background: #fff; }
 .lm-color.confirmed { background: #f97316; border-color: #c2410c; }
 .lm-color.seated { background: #22c55e; border-color: #15803d; }
+.lm-color.blocked { background: #e5e7eb; border-color: #9ca3af; border-style: dashed; }
 
 /* ───── GROUP ACTION BAR (floating below toolbar when tables selected) ───── */
 .group-action-bar {
@@ -1795,6 +1796,33 @@
     transition: background 0.15s;
 }
 .btn-danger:hover { background: #fecaca; }
+
+/* Freeze / unfreeze table buttons */
+.btn-block {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-block:hover { background: #e5e7eb; }
+
+.btn-unblock {
+    background: #ecfdf5;
+    color: #15803d;
+    border: 1px solid #86efac;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-unblock:hover { background: #dcfce7; }
 
 .btn-reactivate {
     background: #ecfdf5;

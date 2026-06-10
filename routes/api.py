@@ -184,6 +184,8 @@ def update_table(tid):
         t.pos_x = float(data['pos_x'])
     if 'pos_y' in data:
         t.pos_y = float(data['pos_y'])
+    if 'blocked' in data:
+        t.blocked = bool(data['blocked'])
     db.session.commit()
     notify()
     return jsonify(t.to_dict())
@@ -209,6 +211,8 @@ def quick_occupy(tid):
     Body: { guests: int, shift: str }
     """
     table = Table.query.get_or_404(tid)
+    if table.blocked:
+        return error_response('Mesa congelada — desbloquéala primero', 400)
     data = request.json or {}
     guests = max(1, int(data.get('guests', 2)))
     shift = data.get('shift', 'comida')

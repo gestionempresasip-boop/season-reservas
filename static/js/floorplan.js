@@ -456,9 +456,13 @@ function buildReservationGroupsMap() {
 function _svgCoords(e, svg) {
     const rect = svg.getBoundingClientRect();
     const vb = svg.viewBox.baseVal;
+    // Support both mouse and touch events
+    const src = (e.touches && e.touches.length) ? e.touches[0]
+              : (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0]
+              : e;
     return {
-        x: (e.clientX - rect.left) / rect.width * vb.width,
-        y: (e.clientY - rect.top) / rect.height * vb.height,
+        x: (src.clientX - rect.left) / rect.width * vb.width,
+        y: (src.clientY - rect.top) / rect.height * vb.height,
     };
 }
 
@@ -466,15 +470,15 @@ function renderFloorPlan() {
     const svg = document.getElementById('floorplanSVG');
     svg.querySelectorAll('.table-group, .group-link-line, .unassigned-reservations-box').forEach(g => g.remove());
 
-    // Edit mode: wire up SVG-level drag listeners (once)
+    // Edit mode: wire up SVG-level drag listeners (mouse + touch)
     if (_editMode) {
-        svg.onmousemove = (e) => {
+        const onMove = (e) => {
             if (!_editDrag) return;
+            if (e.cancelable) e.preventDefault();
             const pt = _svgCoords(e, svg);
             const def = TABLE_DEFS[_editDrag.defIdx];
             const newX = Math.max(0, Math.round((pt.x - _editDrag.offX) * 2) / 2);
             const newY = Math.max(0, Math.round((pt.y - _editDrag.offY) * 2) / 2);
-            // Mark as actual drag only if moved > 0.5 SVG units
             if (Math.abs(newX - _editDrag.origX) > 0.5 || Math.abs(newY - _editDrag.origY) > 0.5) {
                 _editDidDrag = true;
             }
@@ -486,13 +490,30 @@ function renderFloorPlan() {
                 }
             });
         };
-        svg.onmouseup = () => { if (_editDrag) { _editDrag = null; renderFloorPlan(); } };
-        svg.onmouseleave = () => { if (_editDrag) { _editDrag = null; renderFloorPlan(); } };
-        svg.style.cursor = 'grab';
+        const onUp = () => {
+            if (!_editDrag) return;
+            const wasDrag = _editDidDrag;
+            const tableNum = TABLE_DEFS[_editDrag.defIdx]?.n;
+            _editDrag = null;
+            svg.style.cursor = 'grab';
+            if (wasDrag) {
+                renderFloorPlan(); // redraw after reposition
+            } else if (tableNum != null) {
+                openCapacityEditor(tableNum); // simple tap/click → edit capacity
+            }
+        };
+        svg.onmousemove   = onMove;
+        svg.onmouseup     = onUp;
+        svg.onmouseleave  = () => { if (_editDrag) { _editDrag = null; renderFloorPlan(); } };
+        svg.ontouchmove   = onMove;
+        svg.ontouchend    = onUp;
+        svg.style.cursor  = 'grab';
     } else {
-        svg.onmousemove = null;
-        svg.onmouseup = null;
+        svg.onmousemove  = null;
+        svg.onmouseup    = null;
         svg.onmouseleave = null;
+        svg.ontouchmove  = null;
+        svg.ontouchend   = null;
     }
 
     const groupsMap = buildReservationGroupsMap();
@@ -615,6 +636,17 @@ function renderFloorPlan() {
         capLabel.textContent = def.cap + 'p';
         g.appendChild(capLabel);
 
+        // Blocked overlay: lock icon + diagonal stripes
+        if (td.blocked) {
+            const lockText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            lockText.setAttribute('x', cx);
+            lockText.setAttribute('y', def.y + def.h - 1.2);
+            lockText.setAttribute('text-anchor', 'middle');
+            lockText.setAttribute('font-size', '3');
+            lockText.textContent = '🔒';
+            g.appendChild(lockText);
+        }
+
         if (def.type === 'alta') {
             const altaLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             altaLabel.setAttribute('x', cx);
@@ -645,10 +677,10 @@ function renderFloorPlan() {
 
         if (_editMode) {
             g.style.cursor = 'grab';
-            g.addEventListener('mousedown', (e) => {
+            const onDragStart = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                _editDidDrag = false; // reset on each new press
+                _editDidDrag = false;
                 const pt = _svgCoords(e, svg);
                 _editDrag = {
                     defIdx: TABLE_DEFS.indexOf(def),
@@ -658,16 +690,12 @@ function renderFloorPlan() {
                     origY: def.y,
                 };
                 svg.style.cursor = 'grabbing';
-            });
+            };
+            g.addEventListener('mousedown', onDragStart);
+            g.addEventListener('touchstart', onDragStart, { passive: false });
+        } else {
+            g.addEventListener('click', () => handleTableClick(def.n));
         }
-        g.addEventListener('click', () => {
-            if (_editMode) {
-                if (!_editDidDrag) openCapacityEditor(def.n); // only open editor if not dragging
-                _editDidDrag = false; // always reset after click
-            } else {
-                handleTableClick(def.n);
-            }
-        });
 
         // Drag-drop receptor: accept a reservation card dropped on this table
         g.addEventListener('dragover', (e) => {
@@ -752,6 +780,8 @@ function openTableDetail(tableNumber) {
     const tdZone  = td.zone      ?? (def ? def.zone  : '');
     const tdType  = td.table_type ?? (def ? def.type  : 'normal');
 
+    const isBlocked = td.blocked === true;
+
     const title = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
     title.textContent = `Mesa ${tableNumber} · ${zoneName(tdZone)}`;
@@ -761,7 +791,24 @@ function openTableDetail(tableNumber) {
         <div class="detail-section">
             <div class="detail-row"><span class="label">Capacidad</span><span class="value">${tdCap} personas</span></div>
             <div class="detail-row"><span class="label">Tipo</span><span class="value">${tdType === 'alta' ? 'Mesa Alta' : 'Normal'}</span></div>
-            <div class="detail-row"><span class="label">Estado</span>${td.status === 'free' ? '<span class="badge badge-green">Libre</span>' : statusBadge(td.status)}</div>
+            <div class="detail-row"><span class="label">Estado</span>${
+                isBlocked
+                    ? '<span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db">🔒 Congelada</span>'
+                    : td.status === 'free'
+                        ? '<span class="badge badge-green">Libre</span>'
+                        : statusBadge(td.status)
+            }</div>
+        </div>
+
+        <!-- Acciones de configuración -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="btn-secondary btn-sm" style="flex:1" onclick="closeModal('modalTableDetail');openCapacityEditor(${tableNumber})">
+                ✏️ Cambiar capacidad
+            </button>
+            <button class="${isBlocked ? 'btn-unblock' : 'btn-block'} btn-sm" style="flex:1"
+                onclick="toggleTableBlocked(${td.id}, ${tableNumber}, ${isBlocked})">
+                ${isBlocked ? '🔓 Descongelar' : '🔒 Congelar mesa'}
+            </button>
         </div>
     `;
 
@@ -802,6 +849,15 @@ function openTableDetail(tableNumber) {
             html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>`;
         }
         html += `</div>`;
+    } else if (isBlocked) {
+        // BLOCKED TABLE — no reservations allowed
+        html += `
+            <div style="background:#f3f4f6;border-radius:10px;padding:16px;text-align:center;color:#6b7280">
+                <div style="font-size:24px;margin-bottom:6px">🔒</div>
+                <div style="font-weight:600;color:#374151;margin-bottom:4px">Mesa congelada</div>
+                <div style="font-size:12px">No acepta reservas ni ocupación directa.<br>Pulsa <strong>Descongelar</strong> para habilitarla.</div>
+            </div>
+        `;
     } else {
         // FREE TABLE — show quick occupy + create reservation options
         const cap = tdCap;  // already resolved from TABLE_DEFS fallback above
@@ -1065,4 +1121,17 @@ function editReservationFromPlan(resId) {
 function newReservationForTable(tableNumber, tableId) {
     closeModal('modalTableDetail');
     openNewReservationModal([tableId]);
+}
+
+async function toggleTableBlocked(tableId, tableNumber, currentlyBlocked) {
+    const newBlocked = !currentlyBlocked;
+    const label = newBlocked ? 'congelada 🔒' : 'descongelada 🔓';
+    try {
+        await apiPut(`/api/tables/${tableId}`, { blocked: newBlocked });
+        showToast(`Mesa ${tableNumber} ${label}`, 'success');
+        closeModal('modalTableDetail');
+        loadFloorPlan();
+    } catch (e) {
+        showToast('Error al cambiar estado de la mesa', 'error');
+    }
 }
