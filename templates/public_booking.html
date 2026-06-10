@@ -77,20 +77,28 @@
 
         .floorplan-pub {
             border: 2px solid var(--gray-200); border-radius: 12px; padding: 16px;
-            background: var(--gray-100); overflow: auto;
+            background: var(--gray-100); overflow: hidden;
+            /* prevent page scroll fighting with table tap on mobile */
+            touch-action: manipulation;
         }
-        #pubFloorplan { width: 100%; height: auto; max-height: 500px; }
+        #pubFloorplan {
+            width: 100%; height: auto; max-height: 500px;
+            /* prevent iOS long-press callout and text selection while tapping */
+            -webkit-user-select: none; user-select: none;
+            touch-action: manipulation;
+        }
 
-        .pub-table { cursor: pointer; transition: transform 0.15s; }
-        .pub-table:hover { transform: scale(1.1); }
+        /* No scale transform — causes trembling on mobile SVG */
+        .pub-table { cursor: pointer; }
         .pub-table.disabled { cursor: not-allowed; opacity: 0.5; }
-        .pub-table.disabled:hover { transform: none; }
 
-        .pub-table-rect { rx: 1; transition: fill 0.2s, stroke 0.2s; }
-        .pub-table-rect.free { fill: #d1fae5; stroke: #16a34a; stroke-width: 0.4; }
+        .pub-table-rect { rx: 1; transition: fill 0.15s, stroke 0.15s, stroke-width 0.15s; }
+        .pub-table-rect.free     { fill: #d1fae5; stroke: #16a34a; stroke-width: 0.4; }
+        .pub-table-rect.free:hover                { fill: #a7f3d0; stroke: #059669; stroke-width: 0.7; }
         .pub-table-rect.occupied { fill: #fee2e2; stroke: #ef4444; stroke-width: 0.4; }
-        .pub-table-rect.selected { fill: #dbeafe; stroke: #2563eb; stroke-width: 0.6; }
-        .pub-table-rect.too-small { fill: #fef3c7; stroke: #d97706; stroke-width: 0.3; }
+        .pub-table-rect.selected { fill: #bfdbfe; stroke: #2563eb; stroke-width: 0.8; }
+        .pub-table-rect.too-small{ fill: #fef3c7; stroke: #d97706; stroke-width: 0.3; }
+        .pub-table-rect.too-small:hover           { fill: #fde68a; stroke: #b45309; stroke-width: 0.6; }
 
         .pub-table-num { font-size: 2.8px; font-weight: 700; text-anchor: middle; dominant-baseline: central; fill: #374151; }
         .pub-table-cap { font-size: 1.5px; text-anchor: middle; fill: #6b7280; }
