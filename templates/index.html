@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=26">
+    <link rel="stylesheet" href="/static/css/style.css?v=27">
     <link rel="stylesheet" href="/static/css/pro.css?v=40">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -472,7 +472,11 @@
                     </div>
                     <div class="form-group">
                         <label>Comensales *</label>
-                        <input type="number" id="resGuests" min="1" max="20" required class="form-input" value="2">
+                        <div class="guests-counter">
+                            <button type="button" class="guests-btn" onclick="changeGuests(-1)">&#8722;</button>
+                            <input type="number" id="resGuests" min="1" max="20" required class="guests-input" value="2">
+                            <button type="button" class="guests-btn" onclick="changeGuests(1)">&#43;</button>
+                        </div>
                     </div>
                 </div>
                 <div class="form-row">
@@ -702,7 +706,7 @@
     <script src="/static/js/auth.js?v=4"></script>
     <script src="/static/js/app.js?v=31"></script>
     <script src="/static/js/floorplan.js?v=36"></script>
-    <script src="/static/js/reservations.js?v=27"></script>
+    <script src="/static/js/reservations.js?v=28"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=24"></script>

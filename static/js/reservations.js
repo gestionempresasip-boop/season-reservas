@@ -303,7 +303,10 @@ function fillEditForm(r) {
     document.getElementById('resEditId').value = r.id;
     document.getElementById('resName').value = r.client_name;
     document.getElementById('resPhone').value = r.client_phone || '';
-    document.getElementById('resDate').value = r.date;
+    // Remove min constraint so past-dated reservations can be edited
+    const dateInput = document.getElementById('resDate');
+    dateInput.removeAttribute('min');
+    dateInput.value = r.date;
     document.getElementById('resShift').value = r.shift;
     document.getElementById('resTime').value = r.time;
     document.getElementById('resGuests').value = r.guests;
@@ -569,6 +572,16 @@ function clearSelectedTables() {
     loadAvailableTables(false);
 }
 
+// ── Guests counter +/- ──────────────────────────
+function changeGuests(delta) {
+    const input = document.getElementById('resGuests');
+    if (!input) return;
+    const current = parseInt(input.value) || 2;
+    const next = Math.min(20, Math.max(1, current + delta));
+    input.value = next;
+    loadAvailableTables(false);
+}
+
 // Reload table picker when guests/time/shift/date changes (PRESERVES selection)
 // Only date/time/shift/duration trigger API refetch. Guests just re-render warning.
 document.getElementById('resGuests')?.addEventListener('input', () => loadAvailableTables(false));
@@ -580,8 +593,9 @@ document.getElementById('resDuration')?.addEventListener('change', () => loadAva
 function validateReservationDateTime(resDate, resTime, isEdit) {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    if (resDate < today) {
-        showToast('No se pueden hacer reservas en fechas pasadas', 'error');
+    // Allow editing reservations on past dates
+    if (!isEdit && resDate < today) {
+        showToast('No se pueden crear reservas en fechas pasadas', 'error');
         return false;
     }
     if (resDate === today && resTime) {

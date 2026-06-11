@@ -517,6 +517,53 @@ body {
     display: flex;
     gap: 14px;
 }
+/* Guests counter */
+.guests-counter {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--white);
+    transition: var(--transition);
+}
+.guests-counter:focus-within {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 4px rgba(15,118,110,0.08);
+}
+.guests-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    color: var(--teal);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    touch-action: manipulation;
+}
+.guests-btn:hover { background: #f0fdfa; }
+.guests-btn:active { background: #ccfbf1; }
+.guests-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    background: transparent;
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    -moz-appearance: textfield;
+}
+.guests-input::-webkit-outer-spin-button,
+.guests-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .form-actions {
     display: flex;
     justify-content: flex-end;
