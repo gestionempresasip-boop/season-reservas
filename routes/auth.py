@@ -2,10 +2,51 @@
 Authentication routes for Season.
 Handles login, logout, session management and user administration.
 """
+import os
 from flask import Blueprint, request, jsonify, session
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+
+# ── One-time setup / emergency reset ─────────────
+
+@auth_bp.route('/setup', methods=['POST'])
+def setup():
+    """Create or reset admin user.
+    - If NO users exist: creates admin freely (no key needed).
+    - If users exist: requires SETUP_KEY env var to match body {"setup_key":"..."}.
+    Remove or disable after first use.
+    """
+    user_count = User.query.count()
+    data = request.json or {}
+    new_password = data.get('password', 'admin1234')
+
+    if user_count > 0:
+        # Require setup key from env to protect existing installations
+        setup_key = os.getenv('SETUP_KEY', '')
+        if not setup_key or data.get('setup_key') != setup_key:
+            return jsonify({
+                'error': 'Hay usuarios existentes. Proporciona setup_key.',
+                'user_count': user_count,
+            }), 403
+
+    u = User.query.filter_by(username='admin').first()
+    created = u is None
+    if not u:
+        u = User(name='Administrador', username='admin', role='admin')
+        db.session.add(u)
+    u.set_password(new_password)
+    u.active = True
+    u.role = 'admin'
+    db.session.commit()
+    return jsonify({
+        'ok': True,
+        'action': 'created' if created else 'password_reset',
+        'username': 'admin',
+        'password': new_password,
+        'user_count_before': user_count,
+    })
 
 
 def _current_user():
