@@ -354,21 +354,28 @@ def get_table_status(target_date, shift):
             if tid not in table_to_res:
                 table_to_res[tid] = r
 
+    # Build full list: table_id → all reservations
+    table_to_all_res = {}
+    for r in active:
+        for tid in r.all_table_ids():
+            table_to_all_res.setdefault(tid, []).append(r)
+
     result = []
     for t in tables:
-        r = table_to_res.get(t.id)
+        all_res = table_to_all_res.get(t.id, [])
+        r = all_res[0] if all_res else None  # primary reservation (for status)
         if t.blocked and not r:
             status = 'blocked'
         elif r:
             status = r.status
         else:
             status = 'free'
-        reservation_data = r.to_dict() if r else None
 
         result.append({
             **t.to_dict(),
             'status': status,
-            'reservation': reservation_data,
+            'reservation': r.to_dict() if r else None,
+            'reservations': [rx.to_dict() for rx in all_res],  # all sittings
         })
 
     # Append special _unassigned entry for floor plan

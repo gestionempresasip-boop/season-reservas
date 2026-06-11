@@ -814,74 +814,85 @@ function openTableDetail(tableNumber) {
         </div>
     `;
 
-    if (td.reservation) {
-        const r = td.reservation;
-        const isQuickOccupy = r.source === 'walk_in' && r.client_name === 'Walk-in';
-        const safeName  = r.client_name.replace(/"/g, '&quot;');
-        const safePhone = (r.client_phone || '').replace(/"/g, '&quot;');
-        const safeNotes = (r.notes || '').replace(/"/g, '&quot;');
+    const allRes = td.reservations || (td.reservation ? [td.reservation] : []);
 
-        html += `
-            <div class="detail-section">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                    <h4 style="margin:0">Reserva activa ${r.is_grouped ? '<span class="badge badge-group">GRUPO ' + r.table_numbers.join('+') + '</span>' : ''}</h4>
-                    <div style="display:flex;gap:6px;align-items:center">
-                        <span style="font-size:11px;color:#6b7280">${r.time} · ${sourceBadge(r.source)}</span>
-                    </div>
+    if (allRes.length > 0) {
+        // ── Show ALL sittings for this table in this shift ──
+        allRes.forEach((r, idx) => {
+            const isQuickOccupy = r.source === 'walk_in' && r.client_name === 'Walk-in';
+            const safeName  = r.client_name.replace(/"/g, '&quot;');
+            const safePhone = (r.client_phone || '').replace(/"/g, '&quot;');
+            const safeNotes = (r.notes || '').replace(/"/g, '&quot;');
+            const isFirst   = idx === 0;
+
+            html += `
+            <div class="detail-section" style="${idx > 0 ? 'margin-top:12px;border-top:1px solid #f3f4f6;padding-top:12px' : ''}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <h4 style="margin:0;font-size:13px">
+                        ${allRes.length > 1 ? `<span style="background:#e0f2fe;color:#0369a1;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:4px">${idx+1}º turno</span>` : 'Reserva activa'}
+                        ${r.is_grouped ? '<span class="badge badge-group">GRUPO ' + r.table_numbers.join('+') + '</span>' : ''}
+                    </h4>
+                    <span style="font-size:11px;color:#6b7280">${r.time} · ${r.duration_minutes||120}min · ${sourceBadge(r.source)}</span>
                 </div>
 
-                <!-- Inline editable fields -->
                 <div class="inline-edit-form">
                     <div class="ie-row">
                         <label class="ie-label">Nombre</label>
-                        <input class="ie-input" id="ieResName" value="${safeName}" placeholder="Nombre del cliente">
+                        <input class="ie-input" id="ieResName_${r.id}" value="${safeName}" placeholder="Nombre del cliente">
                     </div>
                     <div class="ie-row">
                         <label class="ie-label">Teléfono</label>
-                        <input class="ie-input" id="ieResPhone" value="${safePhone}" type="tel" placeholder="—">
+                        <input class="ie-input" id="ieResPhone_${r.id}" value="${safePhone}" type="tel" placeholder="—">
                     </div>
                     <div class="ie-row">
                         <label class="ie-label">Comensales</label>
                         <div style="display:flex;align-items:center;gap:8px">
-                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px" onclick="ieGuestsChange(-1,${Math.min(tdCap+4,14)})">−</button>
-                            <span id="ieGuestsVal" style="font-size:18px;font-weight:800;color:#1a8a7d;min-width:24px;text-align:center">${r.guests}</span>
-                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px" onclick="ieGuestsChange(1,${Math.min(tdCap+4,14)})">+</button>
+                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px"
+                                onclick="document.getElementById('ieGuestsVal_${r.id}').dataset.v=Math.max(1,+(document.getElementById('ieGuestsVal_${r.id}').dataset.v||${r.guests})-1);document.getElementById('ieGuestsVal_${r.id}').textContent=document.getElementById('ieGuestsVal_${r.id}').dataset.v">−</button>
+                            <span id="ieGuestsVal_${r.id}" data-v="${r.guests}"
+                                style="font-size:18px;font-weight:800;color:#1a8a7d;min-width:24px;text-align:center">${r.guests}</span>
+                            <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px"
+                                onclick="document.getElementById('ieGuestsVal_${r.id}').dataset.v=Math.min(${Math.min(tdCap+4,14)},+(document.getElementById('ieGuestsVal_${r.id}').dataset.v||${r.guests})+1);document.getElementById('ieGuestsVal_${r.id}').textContent=document.getElementById('ieGuestsVal_${r.id}').dataset.v">+</button>
                             <span style="font-size:12px;color:#9ca3af">/ ${tdCap}p aforo</span>
                         </div>
                     </div>
                     <div class="ie-row">
                         <label class="ie-label">Notas</label>
-                        <input class="ie-input" id="ieResNotes" value="${safeNotes}" placeholder="Alergias, preferencias…">
+                        <input class="ie-input" id="ieResNotes_${r.id}" value="${safeNotes}" placeholder="Alergias, preferencias…">
                     </div>
                 </div>
 
-                <div style="display:flex;gap:8px;margin-top:12px">
-                    <button class="btn-primary" style="flex:1;padding:10px" onclick="saveInlineReservation(${r.id}, ${tableNumber})">
-                        💾 Guardar cambios
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                    <button class="btn-primary btn-sm" style="flex:1" onclick="saveInlineReservationV2(${r.id}, ${tableNumber})">
+                        💾 Guardar
                     </button>
-                </div>
-            </div>
-
-            <!-- Status actions -->
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        `;
-
-        if (r.status === 'confirmed') {
-            html += `<button class="btn-primary btn-sm" onclick="seatFromPlan(${r.id})">✓ Sentar</button>`;
-            html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">Cancelar</button>`;
-        } else if (r.status === 'seated') {
-            if (isQuickOccupy) {
-                html += `<button class="btn-free-table" style="flex:1" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar mesa</button>`;
-                html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Cambiar</button>`;
-                html += `<button class="btn-danger btn-sm" onclick="cancelWalkIn(${r.id}, ${tableNumber})">❌ Cancelar</button>`;
-            } else {
-                html += `<button class="btn-primary btn-sm" onclick="completeFromPlan(${r.id})">✓ Completar</button>`;
+            `;
+            if (r.status === 'confirmed') {
+                html += `<button class="btn-secondary btn-sm" onclick="seatFromPlan(${r.id})">✓ Sentar</button>`;
+                html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">✕ Cancelar</button>`;
+            } else if (r.status === 'seated') {
+                if (isQuickOccupy) {
+                    html += `<button class="btn-free-table btn-sm" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar</button>`;
+                    html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀</button>`;
+                    html += `<button class="btn-danger btn-sm" onclick="cancelWalkIn(${r.id}, ${tableNumber})">✕</button>`;
+                } else {
+                    html += `<button class="btn-secondary btn-sm" onclick="completeFromPlan(${r.id})">✓ Completar</button>`;
+                }
             }
-        }
-        if (!isQuickOccupy || r.status !== 'seated') {
-            html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id}, '${r.client_name.replace(/'/g, "\\'")}')">Eliminar</button>`;
-        }
-        html += `</div>`;
+            if (!isQuickOccupy || r.status !== 'seated') {
+                html += `<button class="btn-danger btn-sm" onclick="deleteFromPlan(${r.id},'${r.client_name.replace(/'/g,"\\'")}')">🗑</button>`;
+            }
+            html += `</div></div>`;
+        });
+
+        // ── Button to add another sitting ──
+        html += `
+            <div style="margin-top:12px">
+                <button class="btn-add-sitting" onclick="newReservationForTable(${td.number}, ${td.id})">
+                    ➕ Añadir otro turno en esta mesa
+                </button>
+            </div>
+        `;
     } else if (isBlocked) {
         // BLOCKED TABLE — no reservations allowed
         html += `
@@ -1167,24 +1178,31 @@ function ieGuestsChange(delta, hardMax) {
 }
 
 async function saveInlineReservation(resId, tableNumber) {
-    const name   = document.getElementById('ieResName')?.value.trim();
-    const phone  = document.getElementById('ieResPhone')?.value.trim();
-    const guests = _ieGuests;
-    const notes  = document.getElementById('ieResNotes')?.value.trim();
+    return saveInlineReservationV2(resId, tableNumber);
+}
+
+async function saveInlineReservationV2(resId, tableNumber) {
+    const name   = document.getElementById(`ieResName_${resId}`)?.value.trim();
+    const phone  = document.getElementById(`ieResPhone_${resId}`)?.value.trim();
+    const gEl    = document.getElementById(`ieGuestsVal_${resId}`);
+    const guests = gEl ? (parseInt(gEl.dataset.v) || parseInt(gEl.textContent)) : null;
+    const notes  = document.getElementById(`ieResNotes_${resId}`)?.value.trim();
 
     if (!name) { showToast('El nombre no puede estar vacío', 'error'); return; }
 
-    const btn = document.querySelector(`[onclick="saveInlineReservation(${resId}, ${tableNumber})"]`);
+    const btn = document.querySelector(`[onclick="saveInlineReservationV2(${resId}, ${tableNumber})"]`);
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
 
     try {
-        await apiPut(`/api/reservations/${resId}`, { client_name: name, client_phone: phone, guests, notes });
-        showToast(`Mesa ${tableNumber} · reserva actualizada ✓`, 'success');
+        const payload = { client_name: name, client_phone: phone, notes };
+        if (guests) payload.guests = guests;
+        await apiPut(`/api/reservations/${resId}`, payload);
+        showToast(`Mesa ${tableNumber} · turno actualizado ✓`, 'success');
         closeModal('modalTableDetail');
         loadFloorPlan();
     } catch (e) {
         showToast(e.message || 'Error al guardar', 'error');
-        if (btn) { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
+        if (btn) { btn.disabled = false; btn.textContent = '💾 Guardar'; }
     }
 }
 

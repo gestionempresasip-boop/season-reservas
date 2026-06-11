@@ -1797,6 +1797,24 @@
 }
 .btn-danger:hover { background: #fecaca; }
 
+/* ── Add another sitting button ── */
+.btn-add-sitting {
+    width: 100%;
+    padding: 11px;
+    background: #f0fdf4;
+    border: 2px dashed #86efac;
+    border-radius: 10px;
+    color: #15803d;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.btn-add-sitting:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+}
+
 /* ── Inline reservation edit form (table detail modal) ── */
 .inline-edit-form {
     background: #f9fafb;
