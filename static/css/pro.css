@@ -2014,3 +2014,148 @@
         border-bottom: 2px solid #1a8a7d;
     }
 }
+
+/* ───── BULK SELECT MODE ───── */
+
+/* "Seleccionar" button active state */
+#btnSelectMode.active {
+    background: #1a8a7d;
+    color: #fff;
+    border-color: #1a8a7d;
+}
+
+/* Card checkbox overlay */
+.reservation-card.rc-day {
+    position: relative;
+}
+.rc-checkbox {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+    z-index: 2;
+}
+.select-mode .rc-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.select-mode .reservation-card.rc-day {
+    padding-left: 46px;
+    cursor: pointer;
+    user-select: none;
+}
+.select-mode .reservation-card.rc-day:hover {
+    background: #f0fdfa;
+}
+.reservation-card.rc-selected {
+    background: #f0fdfa !important;
+    border-left: 3px solid #1a8a7d !important;
+}
+.reservation-card.rc-selected .rc-checkbox {
+    background: #1a8a7d;
+    border-color: #1a8a7d;
+}
+.reservation-card.rc-selected .rc-checkbox::after {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 11px;
+    border: 2.5px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+/* Hide action buttons in select mode */
+.select-mode .rc-actions {
+    display: none;
+}
+
+/* Bulk action bar */
+.bulk-bar {
+    position: fixed;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    left: 0; right: 0;
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    z-index: 300;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+    gap: 12px;
+    animation: slideUp 0.2s ease;
+}
+.bulk-bar.hidden { display: none; }
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.bulk-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+.bulk-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.bulk-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+.bulk-btn-all {
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+}
+.bulk-btn-all:hover { background: rgba(255,255,255,0.1); }
+.bulk-btn-delete {
+    background: #ef4444;
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    touch-action: manipulation;
+}
+.bulk-btn-delete:hover:not(:disabled) { background: #dc2626; }
+.bulk-btn-delete:disabled { opacity: 0.45; cursor: not-allowed; }
+.bulk-btn-cancel {
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    touch-action: manipulation;
+}
+.bulk-btn-cancel:hover { background: rgba(255,255,255,0.1); }

@@ -14,6 +14,10 @@ let _wiCachedTables = [];
 let _wiLastFetchKey = '';
 let _wiGuests = 2;
 
+// ── Bulk select state ────────────────────────────
+let _selectMode = false;
+let _selectedResIds = new Set();
+
 // Resolve table capacity from multiple possible sources
 function getTableCapacity(tableId) {
     tableId = Number(tableId);
@@ -121,6 +125,8 @@ function applyDayFilters() {
 }
 
 function renderDayTimeline(comida, cena) {
+    // Exit select mode on re-render (date/shift change)
+    if (_selectMode) toggleSelectMode();
     const container = document.getElementById('reservationsList');
     if (!comida.length && !cena.length) {
         container.innerHTML = `
@@ -157,8 +163,17 @@ function renderDayTimeline(comida, cena) {
 
     // Attach event listeners
     container.querySelectorAll('.reservation-card').forEach(card => {
-        card.addEventListener('click', () => openEditReservation(parseInt(card.dataset.id)));
+        const id = parseInt(card.dataset.id);
+        card.addEventListener('click', (e) => {
+            if (_selectMode) {
+                e.stopPropagation();
+                _toggleResSelection(id, card);
+            } else {
+                openEditReservation(id);
+            }
+        });
         card.addEventListener('dragstart', (e) => {
+            if (_selectMode) { e.preventDefault(); return; }
             e.dataTransfer.setData('text/reservation-id', card.dataset.id);
             e.dataTransfer.effectAllowed = 'move';
             card.classList.add('dragging');
@@ -184,6 +199,7 @@ function renderResCard(r) {
 
     return `
     <div class="reservation-card rc-day ${accent} ${r.is_grouped ? 'is-grouped' : ''}" data-id="${r.id}" draggable="true">
+        <div class="rc-checkbox" aria-hidden="true"></div>
         <div class="rc-time-col">
             <div class="rc-time">${r.time}</div>
             <div class="rc-duration">${r.duration_minutes || 120}′</div>
@@ -682,6 +698,104 @@ async function quickDelete(resId, name) {
     } catch (error) {
         showToast('Error al eliminar reserva', 'error');
     }
+    if (typeof loadFloorPlan === 'function') loadFloorPlan();
+    refreshAll();
+}
+
+// ── Bulk Select ─────────────────────────────────
+
+function toggleSelectMode() {
+    _selectMode = !_selectMode;
+    _selectedResIds.clear();
+
+    const btn = document.getElementById('btnSelectMode');
+    const bar = document.getElementById('bulkBar');
+    const list = document.getElementById('reservationsList');
+
+    if (_selectMode) {
+        btn.classList.add('active');
+        btn.textContent = '✕ Cancelar';
+        bar.classList.remove('hidden');
+        list.classList.add('select-mode');
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = '☑ Seleccionar';
+        bar.classList.add('hidden');
+        list.classList.remove('select-mode');
+        // Clear selected state on cards
+        list.querySelectorAll('.reservation-card.rc-selected').forEach(c => c.classList.remove('rc-selected'));
+    }
+    _updateBulkBar();
+}
+
+function _toggleResSelection(id, card) {
+    if (_selectedResIds.has(id)) {
+        _selectedResIds.delete(id);
+        card.classList.remove('rc-selected');
+    } else {
+        _selectedResIds.add(id);
+        card.classList.add('rc-selected');
+    }
+    _updateBulkBar();
+}
+
+function _updateBulkBar() {
+    const n = _selectedResIds.size;
+    const countEl = document.getElementById('bulkCount');
+    const deleteBtn = document.getElementById('btnBulkDelete');
+    const selectAllBtn = document.getElementById('btnSelectAll');
+    if (countEl) countEl.textContent = n === 1 ? '1 seleccionada' : `${n} seleccionadas`;
+    if (deleteBtn) deleteBtn.disabled = n === 0;
+
+    // Toggle "Seleccionar todo" / "Deseleccionar todo"
+    const total = document.getElementById('reservationsList')
+        ?.querySelectorAll('.reservation-card').length || 0;
+    if (selectAllBtn) selectAllBtn.textContent = n === total && total > 0 ? 'Deseleccionar todo' : 'Seleccionar todo';
+}
+
+function bulkSelectAll() {
+    const cards = document.getElementById('reservationsList')
+        ?.querySelectorAll('.reservation-card') || [];
+    const total = cards.length;
+    const allSelected = _selectedResIds.size === total && total > 0;
+
+    _selectedResIds.clear();
+    cards.forEach(card => {
+        card.classList.remove('rc-selected');
+        if (!allSelected) {
+            const id = parseInt(card.dataset.id);
+            _selectedResIds.add(id);
+            card.classList.add('rc-selected');
+        }
+    });
+    _updateBulkBar();
+}
+
+async function bulkDelete() {
+    const ids = [..._selectedResIds];
+    if (ids.length === 0) return;
+    if (!confirm(`¿Eliminar definitivamente ${ids.length} reserva${ids.length > 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return;
+
+    const deleteBtn = document.getElementById('btnBulkDelete');
+    if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = 'Eliminando…'; }
+
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+        try {
+            await apiDelete(`/api/reservations/${id}/delete`);
+            ok++;
+        } catch (e) {
+            fail++;
+        }
+    }
+
+    if (fail === 0) {
+        showToast(`${ok} reserva${ok > 1 ? 's' : ''} eliminada${ok > 1 ? 's' : ''} ✓`, 'success');
+    } else {
+        showToast(`${ok} eliminadas, ${fail} con error`, 'error');
+    }
+
+    toggleSelectMode(); // exit select mode
     if (typeof loadFloorPlan === 'function') loadFloorPlan();
     refreshAll();
 }
