@@ -1010,6 +1010,12 @@ function showMoveTablePicker(resId, currentTableNumber) {
     const title = document.getElementById('tableDetailTitle');
     title.textContent = '🔀 Cambiar mesa';
 
+    // Find the reservation being moved to know the guests count
+    const td = tableDataMap[currentTableNumber];
+    const allRes = td?.reservations || (td?.reservation ? [td.reservation] : []);
+    const movingRes = allRes.find(r => r.id === resId) || td?.reservation;
+    const guests = movingRes?.guests || 1;
+
     const freeTables = Object.values(tableDataMap)
         .filter(t => t && t.id && t.status === 'free' && t.number !== currentTableNumber)
         .sort((a, b) => a.number - b.number);
@@ -1024,38 +1030,54 @@ function showMoveTablePicker(resId, currentTableNumber) {
 
     content.innerHTML = `
         <p style="color:#6b7280;font-size:12px;margin-bottom:12px">
-            Selecciona la mesa destino. La reserva se moverá al instante.
+            Selecciona la mesa destino (${guests} comensales). La reserva se moverá al instante.
         </p>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:280px;overflow-y:auto">
             ${freeTables.map(t => {
                 const def = TABLE_DEFS.find(d => d.n === t.number);
-                const cap = t.capacity || (def ? def.cap : '?');
+                const cap = t.capacity || (def ? def.cap : 0);
                 const zone = zoneName(t.zone || (def ? def.zone : ''));
-                return `
-                <button class="move-table-btn" onclick="moveWalkInToTable(${resId}, ${t.id}, ${t.number}, ${currentTableNumber})">
-                    <div style="font-size:18px;font-weight:800;color:#1a8a7d">${t.number}</div>
-                    <div style="font-size:11px;color:#6b7280">${cap}p · ${zone}</div>
-                </button>`;
+                const tooSmall = cap > 0 && cap < guests;
+                return tooSmall
+                    ? `<button class="move-table-btn" disabled style="opacity:0.4;cursor:not-allowed" title="Aforo insuficiente (${cap}p)">
+                        <div style="font-size:18px;font-weight:800;color:#9ca3af">${t.number}</div>
+                        <div style="font-size:11px;color:#9ca3af">${cap}p · ${zone}</div>
+                       </button>`
+                    : `<button class="move-table-btn" onclick="moveReservationToTable(${resId}, ${t.id}, ${t.number}, ${currentTableNumber})">
+                        <div style="font-size:18px;font-weight:800;color:#1a8a7d">${t.number}</div>
+                        <div style="font-size:11px;color:#6b7280">${cap}p · ${zone}</div>
+                       </button>`;
             }).join('')}
         </div>
         <button class="btn-secondary" style="width:100%;margin-top:12px" onclick="openTableDetail(${currentTableNumber})">← Volver</button>
     `;
 }
 
-async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumber) {
+async function moveReservationToTable(resId, newTableId, newTableNumber, oldTableNumber) {
     closeModal('modalTableDetail');
 
-    // Optimistic: free old table, move reservation to new (preserve original status)
-    const oldRes = tableDataMap[oldTableNumber]?.reservation;
+    // Find the correct reservation from the reservations array (not just primary)
+    const td = tableDataMap[oldTableNumber];
+    const allRes = td?.reservations || (td?.reservation ? [td.reservation] : []);
+    const oldRes = allRes.find(r => r.id === resId) || td?.reservation;
     const originalStatus = oldRes?.status || 'confirmed';
+
+    // Optimistic UI: free old table, mark new table occupied
     if (tableDataMap[oldTableNumber]) {
-        tableDataMap[oldTableNumber] = { ...tableDataMap[oldTableNumber], status: 'free', reservation: null };
+        const remaining = (tableDataMap[oldTableNumber].reservations || []).filter(r => r.id !== resId);
+        tableDataMap[oldTableNumber] = {
+            ...tableDataMap[oldTableNumber],
+            status: remaining.length > 0 ? tableDataMap[oldTableNumber].status : 'free',
+            reservation: remaining[0] || null,
+            reservations: remaining,
+        };
     }
     if (tableDataMap[newTableNumber] && oldRes) {
         tableDataMap[newTableNumber] = {
             ...tableDataMap[newTableNumber],
             status: originalStatus,
             reservation: { ...oldRes, table_numbers: [newTableNumber] },
+            reservations: [{ ...oldRes, table_numbers: [newTableNumber] }],
         };
     }
     renderFloorPlan();
@@ -1065,9 +1087,14 @@ async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumb
         showToast(`Mesa movida → Mesa ${newTableNumber} ✓`, 'success');
         await refreshAll();
     } catch (e) {
-        showToast('Error al mover mesa', 'error');
+        showToast(e.message || 'Error al mover mesa', 'error');
         await refreshAll();
     }
+}
+
+// Keep old name as alias for backward compatibility with any remaining calls
+async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumber) {
+    return moveReservationToTable(resId, newTableId, newTableNumber, oldTableNumber);
 }
 
 // ── Quick Free Table ────────────────────────────

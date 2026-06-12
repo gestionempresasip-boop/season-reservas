@@ -885,17 +885,33 @@ def export_report_xlsx():
 @api.route('/reservations/<int:rid>/assign-tables', methods=['PUT'])
 @handle_errors
 def assign_tables(rid):
-    """Quickly assign one or more tables to a reservation (drag-drop).
+    """Directly assign table(s) to a reservation (floor plan drag-drop / move).
 
+    Bypasses conflict and capacity checks — used by staff from the floor plan
+    where free-table filtering is already handled in the UI.
     Body: {table_ids: [1,2]} or {table_id: 1}
     """
     data = request.json or {}
-    r = res_svc.update_reservation(rid, {
-        'table_ids': data.get('table_ids') if 'table_ids' in data else None,
-        'table_id': data.get('table_id') if 'table_id' in data else None,
-    })
+    reservation = Reservation.query.get_or_404(rid)
+
+    if data.get('table_id'):
+        new_table_id = int(data['table_id'])
+        new_table = Table.query.get_or_404(new_table_id)
+        reservation.table_id = new_table_id
+        reservation.extra_tables = [new_table]
+    elif 'table_ids' in data:
+        table_ids = [int(x) for x in (data['table_ids'] or []) if x]
+        if table_ids:
+            tables = Table.query.filter(Table.id.in_(table_ids)).all()
+            reservation.table_id = table_ids[0]
+            reservation.extra_tables = tables
+        else:
+            reservation.table_id = None
+            reservation.extra_tables = []
+
+    db.session.commit()
     notify()
-    return jsonify(r.to_dict())
+    return jsonify(reservation.to_dict())
 
 
 @api.route('/reservations/<int:rid>/unassign', methods=['PUT'])
