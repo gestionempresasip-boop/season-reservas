@@ -47,6 +47,49 @@ def list_reservations():
     return jsonify([r.to_dict() for r in items])
 
 
+@api.route('/reservations/import', methods=['POST'])
+@handle_errors
+def import_reservation():
+    """Admin-only: import reservation bypassing date validation.
+    Used to enter past reservations from paper books.
+    """
+    data = request.json or {}
+    from models import Reservation as Res
+    from datetime import date as dt
+    res_date = dt.fromisoformat(data['date'])
+    shift = data['shift']
+    time_str = data['time']
+    guests = int(data['guests'])
+    client_name = data['client_name'].strip()
+    client_phone = data.get('client_phone', '').strip()
+    notes = data.get('notes', '')
+    source = data.get('source', 'phone')
+    duration = int(data.get('duration_minutes', 120))
+
+    # Find or create client
+    from services import client as cli_svc
+    client = None
+    if client_phone:
+        client = cli_svc.find_client_by_phone(client_phone)
+    if not client and len(client_name) >= 2:
+        try:
+            client = cli_svc.create_client({'name': client_name, 'phone': client_phone})
+        except Exception:
+            pass
+
+    r = Res(
+        date=res_date, shift=shift, time=time_str,
+        guests=guests, client_name=client_name, client_phone=client_phone,
+        notes=notes, source=source, status='confirmed',
+        duration_minutes=duration,
+        client_id=client.id if client else None,
+    )
+    db.session.add(r)
+    db.session.commit()
+    notify()
+    return jsonify(r.to_dict()), 201
+
+
 @api.route('/reservations', methods=['POST'])
 @validate_and_handle(ReservationCreate)
 def create_reservation(data: ReservationCreate):
