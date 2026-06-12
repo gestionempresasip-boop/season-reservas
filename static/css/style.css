@@ -1205,14 +1205,12 @@ body {
     .stat-value { font-size: 20px; }
     .stat-sub { font-size: 9px; }
 
-    /* Floor plan — fill available height so no gray gap below SVG */
-    .main-content { display: flex; flex-direction: column; }
+    /* Floor plan — altura explícita para eliminar el espacio gris (flex propagation no fiable) */
     #viewPlano.active {
         display: flex !important;
         flex-direction: column;
-        flex: 1;
-        min-height: 0;
         padding: 0;
+        height: calc(100dvh - 56px - 56px - 72px - env(safe-area-inset-bottom, 0px));
         overflow: hidden;
     }
     #viewPlano .floorplan-toolbar { flex-shrink: 0; flex-wrap: wrap; gap: 6px; padding: 8px; }
@@ -1225,6 +1223,9 @@ body {
         min-height: 0;
         padding: 8px;
         border-radius: 0;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
         display: flex;
         align-items: center;
         justify-content: center;
