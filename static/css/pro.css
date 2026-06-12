@@ -539,6 +539,40 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Day navigation buttons (◀ date ▶) ── */
+.day-nav-btn {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    color: #6b7280;
+    flex-shrink: 0;
+    touch-action: manipulation;
+}
+.day-nav-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+.day-nav-btn:active { transform: scale(0.92); }
+
+/* Toolbar date nav — hidden on desktop (use header date picker) */
+.toolbar-date-nav {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    letter-spacing: 0.02em;
 }
 .day-view-actions {
     display: flex;

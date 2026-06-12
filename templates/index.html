@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=32">
-    <link rel="stylesheet" href="/static/css/pro.css?v=43">
+    <link rel="stylesheet" href="/static/css/style.css?v=33">
+    <link rel="stylesheet" href="/static/css/pro.css?v=44">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -145,6 +145,11 @@
                     <span class="lm-item"><span class="lm-color blocked"></span>Congelada</span>
                     <span class="lm-item">🔗 Grupo</span>
                 </div>
+                <div class="toolbar-date-nav">
+                    <button class="day-nav-btn" onclick="changeDay(-1)" title="Día anterior">&#9664;</button>
+                    <span id="toolbarDateLabel">HOY</span>
+                    <button class="day-nav-btn" onclick="changeDay(1)" title="Día siguiente">&#9654;</button>
+                </div>
             </div>
             <div class="group-action-bar hidden" id="groupActionBar"></div>
             <div class="edit-plan-bar hidden" id="editPlanBar">
@@ -195,7 +200,10 @@
             <!-- Day summary header -->
             <div class="day-view-header">
                 <div class="day-view-title">
+                    <button class="day-nav-btn" onclick="changeDay(-1)" title="Día anterior">&#9664;</button>
                     <span id="dayViewDateLabel">HOY</span>
+                    <span id="reservasDateLabel" style="display:none"></span>
+                    <button class="day-nav-btn" onclick="changeDay(1)" title="Día siguiente">&#9654;</button>
                 </div>
                 <div class="day-stats-row" id="dayStatsRow">
                     <div class="day-stat-pill day-stat-comida">
@@ -730,7 +738,7 @@
         }
     </script>
     <script src="/static/js/auth.js?v=4"></script>
-    <script src="/static/js/app.js?v=31"></script>
+    <script src="/static/js/app.js?v=32"></script>
     <script src="/static/js/floorplan.js?v=37"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>

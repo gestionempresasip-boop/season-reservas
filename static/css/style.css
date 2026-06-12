@@ -1205,6 +1205,10 @@ body {
     .stat-value { font-size: 20px; }
     .stat-sub { font-size: 9px; }
 
+    /* Floor plan — ocultar leyenda (ahorra una fila) + mostrar nav de fecha en su lugar */
+    #viewPlano .legend-mini { display: none; }
+    .toolbar-date-nav { display: flex !important; }
+
     /* Floor plan — altura explícita para eliminar el espacio gris (flex propagation no fiable) */
     #viewPlano.active {
         display: flex !important;

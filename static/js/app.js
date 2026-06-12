@@ -114,12 +114,27 @@ function updateDateDisplay() {
     const isToday = target.getTime() === today.getTime();
 
     const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const shortLabel = isToday
+        ? `HOY · ${d.getDate()} ${months[d.getMonth()]}`
+        : `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
     const display = document.getElementById('dateDisplay');
-    if (isToday) {
-        display.textContent = `HOY · ${d.getDate()} ${months[d.getMonth()]}`;
-    } else {
-        display.textContent = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-    }
+    if (display) display.textContent = shortLabel;
+
+    // Keep any in-view date labels in sync
+    ['toolbarDateLabel', 'reservasDateLabel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = shortLabel;
+    });
+}
+
+function changeDay(delta) {
+    const d = new Date(currentDate + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    currentDate = d.toISOString().split('T')[0];
+    document.getElementById('datePicker').value = currentDate;
+    updateDateDisplay();
+    refreshAll();
 }
 
 // ── Shift ───────────────────────────────────────
