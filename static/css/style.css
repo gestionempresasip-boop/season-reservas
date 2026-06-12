@@ -1176,17 +1176,21 @@ body {
 }
 
 /* ── Mobile (≤ 640px) ── */
+/* ── Hide search/picker on phones & narrow tablets ── */
+@media (max-width: 768px) {
+    .global-search-wrapper { display: none; }
+    .date-picker { display: none; }
+    .user-badge-name { display: none; }
+}
+
 @media (max-width: 640px) {
     /* Header: single compact row */
     .header { padding: 8px 12px; gap: 6px; }
     .logo-image { height: 34px; }
-    .global-search-wrapper { display: none; }
-    .date-picker { display: none; }
     .header-center { gap: 6px; }
     .btn-sync { padding: 5px 10px; font-size: 11px; }
     .date-display { font-size: 12px; padding: 4px 8px; }
     .shift-btn { padding: 5px 10px; font-size: 11px; }
-    .user-badge-name { display: none; }
 
     /* Stats bar */
     .stats-bar {
@@ -1201,12 +1205,31 @@ body {
     .stat-value { font-size: 20px; }
     .stat-sub { font-size: 9px; }
 
-    /* Floor plan */
-    .floorplan-toolbar { flex-wrap: wrap; gap: 6px; padding: 8px; }
-    .floorplan-toolbar .btn-secondary,
-    .floorplan-toolbar .btn-walkin { font-size: 12px; padding: 6px 10px; }
-    .floorplan-container { padding: 8px; border-radius: 8px; }
-    #floorplanSVG { max-height: calc(100dvh - 56px - 56px - 48px - 72px - 16px); }
+    /* Floor plan — fill available height so no gray gap below SVG */
+    .main-content { display: flex; flex-direction: column; }
+    #viewPlano.active {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    #viewPlano .floorplan-toolbar { flex-shrink: 0; flex-wrap: wrap; gap: 6px; padding: 8px; }
+    #viewPlano .floorplan-toolbar .btn-secondary,
+    #viewPlano .floorplan-toolbar .btn-walkin { font-size: 12px; padding: 6px 10px; }
+    #viewPlano .group-action-bar { flex-shrink: 0; }
+    #viewPlano .edit-plan-bar { flex-shrink: 0; }
+    #viewPlano .floorplan-container {
+        flex: 1;
+        min-height: 0;
+        padding: 8px;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #floorplanSVG { max-height: none; height: 100%; width: 100%; }
 
     /* Bottom nav */
     .nav-btn { min-width: 44px; padding: 4px 6px; }
@@ -1231,7 +1254,6 @@ body {
     .shift-btn { padding: 4px 7px; font-size: 10px; }
     .nav-btn { min-width: 38px; }
     .nav-label { display: none; }
-    #floorplanSVG { max-height: calc(100dvh - 50px - 52px - 44px - 60px - 12px); }
 }
 
 /* Selector visual de mesas */
