@@ -405,6 +405,7 @@
 
 /* ───── MOBILE RESPONSIVE ───── */
 @media (max-width: 768px) {
+    .global-search-wrapper { display: none; }
     .global-search-input { width: 140px; }
     .global-search-results { width: 280px; right: -40px; }
     .legend-mini { width: 100%; margin-left: 0; flex-wrap: wrap; gap: 8px; }
