@@ -153,8 +153,9 @@
             </div>
             <div class="group-action-bar hidden" id="groupActionBar"></div>
             <div class="edit-plan-bar hidden" id="editPlanBar">
-                <span>✏️ Modo Edición — arrastra las mesas · haz clic para cambiar capacidad</span>
-                <div style="display:flex;gap:8px">
+                <span>✏️ Arrastra mesas · toca para editar · ✕ rojo para eliminar</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn-secondary btn-sm" style="background:#f0fdf9;border-color:#1a8a7d;color:#1a8a7d;font-weight:600" onclick="showAddTableModal()">➕ Nueva mesa</button>
                     <button class="btn-primary btn-sm" onclick="saveEditPlan()">💾 Guardar plano</button>
                     <button class="btn-secondary btn-sm" onclick="resetEditPlan()">↺ Restaurar</button>
                     <button class="btn-secondary btn-sm" onclick="toggleEditMode()">✕ Salir</button>
@@ -739,7 +740,7 @@
     </script>
     <script src="/static/js/auth.js?v=4"></script>
     <script src="/static/js/app.js?v=32"></script>
-    <script src="/static/js/floorplan.js?v=38"></script>
+    <script src="/static/js/floorplan.js?v=39"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>

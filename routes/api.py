@@ -165,6 +165,53 @@ def table_status():
     return jsonify(result)
 
 
+@api.route('/tables', methods=['POST'])
+@handle_errors
+def create_table():
+    """Create a new table. Body: { number, capacity, zone, table_type?, pos_x?, pos_y?, width?, height? }"""
+    data = request.json or {}
+    number = data.get('number')
+    if not number:
+        return error_response('Número de mesa requerido', 400)
+    number = int(number)
+    if Table.query.filter_by(number=number).first():
+        return error_response(f'La mesa {number} ya existe', 400)
+    capacity = int(data.get('capacity', 4))
+    if capacity < 1 or capacity > 30:
+        return error_response('Capacidad debe estar entre 1 y 30', 400)
+    zone = data.get('zone', 'sp')
+    table_type = data.get('table_type', 'normal')
+    pos_x = float(data.get('pos_x', 50))
+    pos_y = float(data.get('pos_y', 50))
+    t = Table(
+        number=number, capacity=capacity, zone=zone,
+        table_type=table_type, pos_x=pos_x, pos_y=pos_y,
+        active=True, blocked=False,
+    )
+    db.session.add(t)
+    db.session.commit()
+    notify()
+    return jsonify(t.to_dict()), 201
+
+
+@api.route('/tables/<int:tid>', methods=['DELETE'])
+@handle_errors
+def delete_table(tid):
+    """Soft-delete a table (active=False). Blocked if it has upcoming active reservations."""
+    t = Table.query.get_or_404(tid)
+    future_res = Reservation.query.filter(
+        Reservation.table_id == tid,
+        Reservation.date >= date.today(),
+        Reservation.status.in_(['confirmed', 'seated'])
+    ).count()
+    if future_res > 0:
+        return error_response(f'La mesa tiene {future_res} reserva(s) activa(s) — cancélalas primero', 400)
+    t.active = False
+    db.session.commit()
+    notify()
+    return jsonify({'ok': True, 'id': tid})
+
+
 @api.route('/tables/<int:tid>', methods=['PUT'])
 @handle_errors
 def update_table(tid):

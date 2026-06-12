@@ -84,19 +84,188 @@ function toggleEditMode() {
     renderFloorPlan();
 }
 
-function saveEditPlan() {
+async function saveEditPlan() {
+    // Save to localStorage (fast cache)
     const patches = {};
     TABLE_DEFS.forEach(def => {
         patches[def.n] = { x: def.x, y: def.y, w: def.w, h: def.h, cap: def.cap, type: def.type };
     });
     localStorage.setItem('season_table_defs', JSON.stringify(patches));
+    showToast('Guardando plano…', 'success');
+
+    // Persist positions and capacity to DB in parallel
+    const saves = TABLE_DEFS
+        .filter(def => tableDataMap[def.n]?.id)
+        .map(def => {
+            const id = tableDataMap[def.n].id;
+            return apiPut(`/api/tables/${id}`, {
+                pos_x: def.x, pos_y: def.y,
+                capacity: def.cap, table_type: def.type,
+            }).catch(() => {});
+        });
+    await Promise.all(saves);
     showToast('Plano guardado ✓', 'success');
 }
 
 function resetEditPlan() {
     if (!confirm('¿Restaurar el plano original? Se perderán todos los cambios guardados.')) return;
     localStorage.removeItem('season_table_defs');
+    localStorage.removeItem('season_user_tables');
     location.reload();
+}
+
+// ── Add / Delete tables ──────────────────────────
+
+function showAddTableModal() {
+    const usedNums = new Set(TABLE_DEFS.map(d => d.n));
+    let suggest = 1;
+    while (usedNums.has(suggest)) suggest++;
+
+    let _newCap = 4;
+
+    const title = document.getElementById('tableDetailTitle');
+    const content = document.getElementById('tableDetailContent');
+    title.textContent = '➕ Nueva Mesa';
+    content.innerHTML = `
+        <div style="margin-bottom:16px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Número de mesa</label>
+            <input type="number" id="newTableNum" value="${suggest}" min="1" max="999"
+                style="width:100%;padding:10px 12px;border:2px solid #1a8a7d;border-radius:10px;font-size:20px;font-weight:800;color:#1a8a7d;text-align:center">
+        </div>
+
+        <div style="margin-bottom:16px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Comensales (aforo)</label>
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px"
+                    onclick="_newTableCapChange(-1)">−</button>
+                <input type="number" id="newTableCap" value="4" min="1" max="20"
+                    style="width:70px;text-align:center;font-size:24px;font-weight:800;border:2px solid #1a8a7d;border-radius:10px;padding:6px;color:#1a8a7d"
+                    oninput="_newTableCapVal=Math.max(1,Math.min(20,+this.value||1))">
+                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px"
+                    onclick="_newTableCapChange(1)">+</button>
+                <span style="font-size:13px;color:#6b7280">personas</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Zona</label>
+            <select id="newTableZone" style="width:100%;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;background:#fff">
+                <option value="sp">Salón Principal</option>
+                <option value="si">Salón Interior</option>
+                <option value="ext">Zona Exterior</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:20px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Tipo de mesa</label>
+            <div style="display:flex;gap:8px">
+                <label id="newTypeLblNormal" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #1a8a7d;border-radius:10px;cursor:pointer;background:#f0fdf9">
+                    <input type="radio" name="newTableType" value="normal" checked
+                        onchange="_newTypeChanged(this)"> 🪑 Normal
+                </label>
+                <label id="newTypeLblAlta" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;background:#fff">
+                    <input type="radio" name="newTableType" value="alta"
+                        onchange="_newTypeChanged(this)"> 🍽️ Alta
+                </label>
+            </div>
+        </div>
+
+        <p style="font-size:11px;color:#9ca3af;margin-bottom:12px">
+            La mesa aparecerá en el centro del plano. Arrástrala a su posición y guarda el plano.
+        </p>
+
+        <div style="display:flex;gap:8px">
+            <button class="btn-primary" style="flex:1;padding:13px" onclick="confirmCreateTable()">
+                ➕ Crear Mesa
+            </button>
+            <button class="btn-secondary" style="flex:1" onclick="closeModal('modalTableDetail')">Cancelar</button>
+        </div>
+    `;
+    window._newTableCapVal = 4;
+    openModal('modalTableDetail');
+}
+
+window._newTableCapVal = 4;
+function _newTableCapChange(delta) {
+    window._newTableCapVal = Math.max(1, Math.min(20, (window._newTableCapVal || 4) + delta));
+    const inp = document.getElementById('newTableCap');
+    if (inp) inp.value = window._newTableCapVal;
+}
+function _newTypeChanged(radio) {
+    document.querySelectorAll('[name=newTableType]').forEach(r => {
+        r.parentElement.style.borderColor = r.checked ? '#1a8a7d' : '#e5e7eb';
+        r.parentElement.style.background = r.checked ? '#f0fdf9' : '#fff';
+    });
+}
+
+async function confirmCreateTable() {
+    const numEl = document.getElementById('newTableNum');
+    const capEl = document.getElementById('newTableCap');
+    const zoneEl = document.getElementById('newTableZone');
+    const typeRadio = document.querySelector('input[name="newTableType"]:checked');
+
+    const number = parseInt(numEl?.value);
+    const capacity = parseInt(capEl?.value) || window._newTableCapVal || 4;
+    const zone = zoneEl?.value || 'sp';
+    const table_type = typeRadio?.value || 'normal';
+
+    if (!number || number < 1) { showToast('Número de mesa inválido', 'error'); return; }
+    if (TABLE_DEFS.find(d => d.n === number)) {
+        showToast(`La mesa ${number} ya existe en el plano`, 'error'); return;
+    }
+
+    // Default position: center of SVG viewport
+    const pos_x = 45, pos_y = 48;
+    const sz = _tableSizeFromCap(capacity);
+
+    closeModal('modalTableDetail');
+
+    try {
+        const created = await apiPost('/api/tables', { number, capacity, zone, table_type, pos_x, pos_y });
+
+        // Add to TABLE_DEFS so it renders immediately
+        TABLE_DEFS.push({ n: number, cap: capacity, type: table_type, zone, x: pos_x, y: pos_y, shape: 'rect', w: sz.w, h: sz.h });
+
+        // Track user-created tables in localStorage (for cleanup on delete)
+        const userTables = JSON.parse(localStorage.getItem('season_user_tables') || '[]');
+        if (!userTables.includes(number)) userTables.push(number);
+        localStorage.setItem('season_user_tables', JSON.stringify(userTables));
+
+        showToast(`Mesa ${number} creada ✓ — arrástrala a su posición`, 'success');
+        await loadFloorPlan();
+    } catch (e) {
+        showToast(e.message || 'Error al crear la mesa', 'error');
+    }
+}
+
+async function confirmDeleteTable(tableNumber) {
+    const td = tableDataMap[tableNumber];
+    if (!td?.id) { showToast('Mesa no encontrada en BD', 'error'); return; }
+
+    if (!confirm(`¿Eliminar la mesa ${tableNumber} del plano?\n\nSi tiene reservas futuras no se podrá eliminar.`)) return;
+
+    try {
+        await apiDelete(`/api/tables/${td.id}`);
+
+        // Remove from TABLE_DEFS
+        const idx = TABLE_DEFS.findIndex(d => d.n === tableNumber);
+        if (idx >= 0) TABLE_DEFS.splice(idx, 1);
+
+        // Remove from user-created list
+        const userTables = JSON.parse(localStorage.getItem('season_user_tables') || '[]');
+        const filtered = userTables.filter(n => n !== tableNumber);
+        localStorage.setItem('season_user_tables', JSON.stringify(filtered));
+
+        // Update localStorage patches
+        const patches = JSON.parse(localStorage.getItem('season_table_defs') || '{}');
+        delete patches[tableNumber];
+        localStorage.setItem('season_table_defs', JSON.stringify(patches));
+
+        showToast(`Mesa ${tableNumber} eliminada ✓`, 'success');
+        await loadFloorPlan();
+    } catch (e) {
+        showToast(e.message || 'Error al eliminar la mesa', 'error');
+    }
 }
 
 function openCapacityEditor(tableNumber) {
@@ -203,17 +372,48 @@ async function saveCapacityEdit(tableNumber) {
     }
 }
 
+function _tableSizeFromCap(cap) {
+    if (cap <= 2) return { w: 7, h: 5 };
+    if (cap <= 4) return { w: 8, h: 7 };
+    if (cap <= 6) return { w: 10, h: 7 };
+    return { w: 16, h: 7 };
+}
+
 async function loadFloorPlan() {
     const data = await apiGet(`/api/tables/status?date=${currentDate}&shift=${currentShift}`);
     tableDataMap = {};
+    const dbNumbers = new Set();
     let unassigned = null;
     data.forEach(t => {
-        if (t._unassigned) {
-            unassigned = t;
+        if (t._unassigned) { unassigned = t; return; }
+        dbNumbers.add(t.number);
+        tableDataMap[t.number] = t;
+        const def = TABLE_DEFS.find(d => d.n === t.number);
+        if (def) {
+            // Sync positions & capacity from DB (non-zero values override hardcoded defaults)
+            if (t.pos_x) def.x = t.pos_x;
+            if (t.pos_y) def.y = t.pos_y;
+            if (t.capacity) def.cap = t.capacity;
+            if (t.table_type) def.type = t.table_type;
+            if (t.zone) def.zone = t.zone;
         } else {
-            tableDataMap[t.number] = t;
+            // Table exists in DB but not in TABLE_DEFS (created via UI) → add it
+            const sz = _tableSizeFromCap(t.capacity || 4);
+            TABLE_DEFS.push({
+                n: t.number, cap: t.capacity || 4,
+                type: t.table_type || 'normal', zone: t.zone || 'sp',
+                x: t.pos_x || 50, y: t.pos_y || 50,
+                shape: 'rect', w: sz.w, h: sz.h,
+            });
         }
     });
+    // Remove from TABLE_DEFS user-created tables that are no longer in DB (deleted)
+    const userCreated = JSON.parse(localStorage.getItem('season_user_tables') || '[]');
+    for (let i = TABLE_DEFS.length - 1; i >= 0; i--) {
+        if (userCreated.includes(TABLE_DEFS[i].n) && !dbNumbers.has(TABLE_DEFS[i].n)) {
+            TABLE_DEFS.splice(i, 1);
+        }
+    }
     if (unassigned) tableDataMap._unassigned = unassigned;
     renderFloorPlan();
 }
@@ -693,6 +893,34 @@ function renderFloorPlan() {
             };
             g.addEventListener('mousedown', onDragStart);
             g.addEventListener('touchstart', onDragStart, { passive: false });
+
+            // Delete button (red X) in top-right corner of each table
+            const delCx = def.x + def.w - 1.6;
+            const delCy = def.y + 1.6;
+            const delCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            delCircle.setAttribute('cx', delCx);
+            delCircle.setAttribute('cy', delCy);
+            delCircle.setAttribute('r', '2');
+            delCircle.setAttribute('fill', '#ef4444');
+            delCircle.setAttribute('stroke', 'white');
+            delCircle.setAttribute('stroke-width', '0.4');
+            delCircle.style.cursor = 'pointer';
+            const delTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            delTxt.setAttribute('x', delCx);
+            delTxt.setAttribute('y', delCy + 0.85);
+            delTxt.setAttribute('text-anchor', 'middle');
+            delTxt.setAttribute('font-size', '2.8');
+            delTxt.setAttribute('fill', 'white');
+            delTxt.setAttribute('font-weight', 'bold');
+            delTxt.style.cursor = 'pointer';
+            delTxt.style.pointerEvents = 'none';
+            delTxt.textContent = '×';
+            const stopAndDelete = (e) => { e.stopPropagation(); e.preventDefault(); confirmDeleteTable(def.n); };
+            delCircle.addEventListener('click', stopAndDelete);
+            delCircle.addEventListener('mousedown', e => e.stopPropagation());
+            delCircle.addEventListener('touchend', stopAndDelete, { passive: false });
+            g.appendChild(delCircle);
+            g.appendChild(delTxt);
         } else {
             g.addEventListener('click', () => handleTableClick(def.n));
         }
