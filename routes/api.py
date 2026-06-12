@@ -64,6 +64,10 @@ def create_reservation(data: ReservationCreate):
     """
     # Convert Pydantic model to dict for service (mode='json' ensures date → ISO string)
     reservation_data = data.model_dump(mode='json')
+    # Allow admins to import past reservations
+    raw = request.json or {}
+    if raw.get('force_past') and session.get('user_role') == 'admin':
+        reservation_data['force_past'] = True
     r = res_svc.create_reservation(reservation_data)
     notify()
     return jsonify(r.to_dict()), 201

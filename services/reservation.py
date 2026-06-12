@@ -147,10 +147,10 @@ def create_reservation(data):
     Raises:
         ValueError: validation errors, conflicts, capacity issues
     """
-    # Validate date is not in the past
+    # Validate date is not in the past (skip if force_past=True, for admin imports)
     res_date = date.fromisoformat(data['date'])
     today = date.today()
-    if res_date < today:
+    if res_date < today and not data.get('force_past'):
         raise ValueError('No se pueden crear reservas en fechas pasadas')
 
     # Validate time is not past (today only, 15-min buffer)
