@@ -106,9 +106,9 @@ def daily_summary(target_date):
     return summary
 
 
-def weekly_trend(from_date):
-    days = []
-    for i in range(7):
+def weekly_trend(from_date, days=7):
+    result = []
+    for i in range(days):
         d = from_date + timedelta(days=i)
         reservations = Reservation.query.filter(
             Reservation.date == d,
@@ -130,7 +130,7 @@ def weekly_trend(from_date):
                 'notes': r.notes or '',
             } for r in items]
 
-        days.append({
+        result.append({
             'date': d.isoformat(),
             'day_name': d.strftime('%A'),
             'reservations': len(reservations),
@@ -138,7 +138,7 @@ def weekly_trend(from_date):
             'comida': {'count': len(comida), 'guests': sum(r.guests for r in comida), 'items': res_list(comida)},
             'cena': {'count': len(cena), 'guests': sum(r.guests for r in cena), 'items': res_list(cena)},
         })
-    return days
+    return result
 
 
 def client_frequency_report(from_date, to_date, limit=30):
