@@ -869,14 +869,16 @@ function openTableDetail(tableNumber) {
             `;
             if (r.status === 'confirmed') {
                 html += `<button class="btn-secondary btn-sm" onclick="seatFromPlan(${r.id})">✓ Sentar</button>`;
+                html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Mesa</button>`;
                 html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">✕ Cancelar</button>`;
             } else if (r.status === 'seated') {
                 if (isQuickOccupy) {
                     html += `<button class="btn-free-table btn-sm" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar</button>`;
-                    html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀</button>`;
+                    html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Mesa</button>`;
                     html += `<button class="btn-danger btn-sm" onclick="cancelWalkIn(${r.id}, ${tableNumber})">✕</button>`;
                 } else {
                     html += `<button class="btn-secondary btn-sm" onclick="completeFromPlan(${r.id})">✓ Completar</button>`;
+                    html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Mesa</button>`;
                 }
             }
             if (!isQuickOccupy || r.status !== 'seated') {
@@ -1022,7 +1024,7 @@ function showMoveTablePicker(resId, currentTableNumber) {
 
     content.innerHTML = `
         <p style="color:#6b7280;font-size:12px;margin-bottom:12px">
-            Selecciona la mesa destino. La reserva walk-in se moverá al instante.
+            Selecciona la mesa destino. La reserva se moverá al instante.
         </p>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:280px;overflow-y:auto">
             ${freeTables.map(t => {
@@ -1043,15 +1045,16 @@ function showMoveTablePicker(resId, currentTableNumber) {
 async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumber) {
     closeModal('modalTableDetail');
 
-    // Optimistic: free old, seat new
+    // Optimistic: free old table, move reservation to new (preserve original status)
     const oldRes = tableDataMap[oldTableNumber]?.reservation;
+    const originalStatus = oldRes?.status || 'confirmed';
     if (tableDataMap[oldTableNumber]) {
         tableDataMap[oldTableNumber] = { ...tableDataMap[oldTableNumber], status: 'free', reservation: null };
     }
     if (tableDataMap[newTableNumber] && oldRes) {
         tableDataMap[newTableNumber] = {
             ...tableDataMap[newTableNumber],
-            status: 'seated',
+            status: originalStatus,
             reservation: { ...oldRes, table_numbers: [newTableNumber] },
         };
     }
