@@ -89,7 +89,7 @@ class ReservationCreate(BaseModel):
 class ReservationUpdate(BaseModel):
     """Validator for updating reservations."""
 
-    date: Optional[date] = None
+    date: Optional[str] = None  # accepts YYYY-MM-DD string; service converts to date
     shift: Optional[str] = None
     time: Optional[str] = None
     guests: Optional[int] = Field(None, ge=MIN_GUESTS, le=MAX_GUESTS_PER_RESERVATION)

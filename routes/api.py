@@ -47,7 +47,7 @@ def list_reservations():
     return jsonify([r.to_dict() for r in items])
 
 
-@api.route('/reservations/import', methods=['POST'])
+@api.route('/reservations/bulk-add', methods=['POST'])
 @handle_errors
 def import_reservation():
     """Admin-only: import reservation bypassing date validation.
