@@ -48,16 +48,25 @@
             animation: hFade 1s ease both;
         }
         .hero-logo-wrap svg { width: 100%; height: auto; color: var(--sage); }
-        .hero-eyebrow {
-            font-family: 'Jost', sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 7px;
-            text-transform: uppercase;
+        .hero-reserve-btn {
+            display: inline-block;
+            margin-top: 28px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 400;
+            font-style: italic;
+            letter-spacing: 1px;
             color: var(--sage);
-            margin-top: 14px;
-            margin-bottom: 0;
-            animation: hFade 1s ease 0.2s both;
+            text-decoration: none;
+            border: 1px solid var(--sage);
+            padding: 13px 48px;
+            cursor: pointer;
+            transition: background 0.25s, color 0.25s;
+            animation: hFade 1s ease 0.4s both;
+        }
+        .hero-reserve-btn:hover {
+            background: var(--sage);
+            color: white;
         }
         .hero-sub {
             font-size: 11px;
@@ -584,7 +593,7 @@
 
     <p class="hero-sub">Grupo Conbrassa</p>
     <p class="hero-sub">Benidorm</p>
-    <p class="hero-eyebrow">Reservas</p>
+    <a class="hero-reserve-btn" href="#booking" onclick="event.preventDefault(); document.querySelector('.s-booking').scrollIntoView({behavior:'smooth'})">Reservas</a>
 
     <div class="hero-cta" onclick="document.querySelector('.s-lang').scrollIntoView({behavior:'smooth'})">
         <div class="hero-cta-line"></div>
