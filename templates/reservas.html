@@ -155,6 +155,31 @@
         .counter-btn:hover { background: var(--gray-200); }
         .counter-val { flex: 1; text-align: center; font-size: 16px; font-weight: 600; color: var(--dark); }
 
+        /* ── Time slot chips ── */
+        .time-slots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .time-chip {
+            padding: 9px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: 2px;
+            background: white;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--dark);
+            cursor: pointer;
+            transition: border-color 0.12s, background 0.12s, color 0.12s;
+            font-weight: 500;
+        }
+        .time-chip:hover { border-color: var(--teal); color: var(--teal); }
+        .time-chip.selected { background: var(--dark); color: white; border-color: var(--dark); }
+        .time-chip.custom-chip { border-style: dashed; color: var(--gray-500); }
+        .time-chip.custom-chip:hover { border-color: var(--teal); color: var(--teal); border-style: solid; }
+        .custom-time-wrap { display: none; margin-top: 10px; }
+        .custom-time-wrap.show { display: block; }
+
         .btn-book { padding: 13px 32px; background: var(--dark); color: white; border: none; border-radius: 2px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; font-family: inherit; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
         .btn-book:hover { background: var(--teal); }
         .btn-book:disabled { opacity: 0.45; cursor: not-allowed; background: var(--gray-400); }
@@ -332,7 +357,7 @@
             <div class="shift-card">
                 <div class="shift-head">
                     <span class="shift-name">Cena</span>
-                    <span class="shift-time">20:00 – 23:30</span>
+                    <span class="shift-time">19:00 – 23:00</span>
                 </div>
                 <div class="shift-body">
                     <div class="shift-cta" id="ctaCena">
@@ -354,7 +379,7 @@
 
 <script>
 const T_COM = ['13:00','13:30','14:00','14:30','15:00','15:30'];
-const T_CEN = ['20:00','20:30','21:00','21:30','22:00','22:30'];
+const T_CEN = ['19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'];
 let selDate = '';
 let guests  = { comida: 2, cena: 2 };
 
@@ -434,21 +459,34 @@ function renderCal() {
 }
 
 function buildForm(shift) {
-    const times = (shift === 'comida' ? T_COM : T_CEN).map(t => `<option>${t}</option>`).join('');
+    const times = shift === 'comida' ? T_COM : T_CEN;
+    const chips = times.map(t =>
+        `<button type="button" class="time-chip" onclick="selectTime('${shift}','${t}',this)">${t}</button>`
+    ).join('');
     return `
-        <div class="irow">
-            <div class="igroup" style="max-width:160px">
-                <label>Comensales</label>
-                <div class="counter">
-                    <button class="counter-btn" onclick="chg('${shift}',-1)">&#8722;</button>
-                    <span class="counter-val" id="gn_${shift}">${guests[shift]}</span>
-                    <button class="counter-btn" onclick="chg('${shift}',1)">+</button>
-                </div>
+        <div class="igroup" style="max-width:160px">
+            <label>Comensales</label>
+            <div class="counter">
+                <button class="counter-btn" onclick="chg('${shift}',-1)">&#8722;</button>
+                <span class="counter-val" id="gn_${shift}">${guests[shift]}</span>
+                <button class="counter-btn" onclick="chg('${shift}',1)">+</button>
             </div>
-            <div class="igroup">
-                <label>Hora</label>
-                <select class="iinput" id="t_${shift}">${times}</select>
+        </div>
+        <div class="igroup">
+            <label>Hora</label>
+            <div class="time-slots" id="slots_${shift}">
+                ${chips}
+                <button type="button" class="time-chip custom-chip" onclick="toggleCustom('${shift}',this)">
+                    &#43; Personalizada
+                </button>
             </div>
+            <div class="custom-time-wrap" id="customWrap_${shift}">
+                <input type="time" class="iinput" id="customTime_${shift}"
+                       min="${shift === 'comida' ? '13:00' : '19:00'}"
+                       max="${shift === 'comida' ? '16:00' : '23:00'}"
+                       oninput="selectCustomTime('${shift}')">
+            </div>
+            <input type="hidden" id="t_${shift}" value="">
         </div>
         <div class="irow">
             <div class="igroup">
@@ -502,13 +540,35 @@ function resetAll() {
     });
 }
 
+function selectTime(shift, time, btn) {
+    document.querySelectorAll(`#slots_${shift} .time-chip`).forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById(`t_${shift}`).value = time;
+    document.getElementById(`customWrap_${shift}`).classList.remove('show');
+}
+
+function toggleCustom(shift, btn) {
+    document.querySelectorAll(`#slots_${shift} .time-chip`).forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById(`t_${shift}`).value = '';
+    const wrap = document.getElementById(`customWrap_${shift}`);
+    wrap.classList.add('show');
+    wrap.querySelector('input').focus();
+}
+
+function selectCustomTime(shift) {
+    const val = document.getElementById(`customTime_${shift}`).value;
+    document.getElementById(`t_${shift}`).value = val;
+}
+
 async function doSubmit(shift) {
     const name  = document.getElementById('n_'  + shift).value.trim();
     const phone = document.getElementById('p_'  + shift).value.trim();
     const time  = document.getElementById('t_'  + shift).value;
     const notes = document.getElementById('no_' + shift).value.trim();
-    if (!name)  { alert('Introduce tu nombre');    return; }
-    if (!phone) { alert('Introduce tu teléfono'); return; }
+    if (!time)  { alert('Selecciona una hora');      return; }
+    if (!name)  { alert('Introduce tu nombre');      return; }
+    if (!phone) { alert('Introduce tu teléfono');    return; }
 
     const btn = document.getElementById('sb_' + shift);
     btn.disabled = true;
