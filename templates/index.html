@@ -723,7 +723,10 @@
     </div>
 
     <!-- Toast notification -->
-    <div class="toast hidden" id="toast"></div>
+    <div class="toast hidden" id="toast">
+        <span class="toast-icon" id="toastIcon"></span>
+        <span class="toast-msg"  id="toastMsg"></span>
+    </div>
 
     <!-- Popup modal (replaces native alert) -->
     <div id="adminPopupOverlay" onclick="closeAdminPopup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;align-items:center;justify-content:center;">

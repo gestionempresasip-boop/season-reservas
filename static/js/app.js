@@ -313,11 +313,20 @@ function closeModal(id) {
 
 // ── Toast ────────────────────────────────────────
 
+let _toastTimer = null;
 function showToast(msg, type = '') {
+    // Errors go to the blocking popup
+    if (type === 'error' && typeof showAdminPopup === 'function') {
+        showAdminPopup(msg, '❌');
+        return;
+    }
+    const icons = { success: '✓', warning: '⚠️', '': 'ℹ️' };
     const toast = document.getElementById('toast');
-    toast.textContent = msg;
+    document.getElementById('toastIcon').textContent = icons[type] || 'ℹ️';
+    document.getElementById('toastMsg').textContent  = msg;
     toast.className = 'toast ' + type;
-    setTimeout(() => toast.classList.add('hidden'), 2500);
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
 // ── API Helpers ──────────────────────────────────
