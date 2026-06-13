@@ -1069,4 +1069,19 @@ def public_reserve():
         'client_id': client.id if client else None,
     })
     notify()
+
+    try:
+        from services.whatsapp import send_confirmation_whatsapp
+        send_confirmation_whatsapp(
+            to_phone=data['client_phone'],
+            name=data['client_name'].strip(),
+            date_str=data['date'],
+            shift=data['shift'],
+            time_str=data['time'],
+            guests=guests,
+            notes=data.get('notes', ''),
+        )
+    except Exception:
+        pass
+
     return jsonify(r.to_dict()), 201

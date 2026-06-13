@@ -249,3 +249,54 @@ def process_message(phone, message):
 
     reset_session(phone)
     return "Escribe *RESERVAR* para hacer una nueva reserva."
+
+
+def send_confirmation_whatsapp(to_phone, name, date_str, shift, time_str, guests, notes=''):
+    """Send proactive WhatsApp confirmation after a web booking. Silent fail if Twilio not set up."""
+    account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+    auth_token  = os.getenv('TWILIO_AUTH_TOKEN')
+    from_number = os.getenv('TWILIO_WHATSAPP_NUMBER')
+    if not (account_sid and auth_token and from_number):
+        return False
+    try:
+        from twilio.rest import Client
+        # Normalize phone to E.164
+        digits = ''.join(c for c in to_phone if c.isdigit())
+        if len(digits) == 9 and digits[0] in ('6', '7', '9'):
+            to = f'whatsapp:+34{digits}'
+        elif len(digits) == 11 and digits.startswith('34'):
+            to = f'whatsapp:+{digits}'
+        elif to_phone.strip().startswith('+'):
+            to = f'whatsapp:{to_phone.strip()}'
+        else:
+            to = f'whatsapp:+{digits}'
+
+        from datetime import date as _date
+        d = _date.fromisoformat(date_str)
+        days_es = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo']
+        fecha = f"{days_es[d.weekday()].capitalize()}, {d.strftime('%d/%m/%Y')}"
+        turno_label = '🌞 Comida' if shift == 'comida' else '🌙 Cena'
+        g = int(guests)
+        personas = f'{g} persona{"s" if g != 1 else ""}'
+
+        body = (
+            f'✅ *Reserva confirmada — Season*\n\n'
+            f'👤 {name}\n'
+            f'📅 {fecha} · {time_str}\n'
+            f'🍽 {turno_label} · {personas}\n'
+        )
+        if notes:
+            body += f'📝 {notes}\n'
+        body += (
+            '\nTe esperamos en *Season Benidorm* 🌿\n\n'
+            'Para cancelar o modificar, escríbenos por WhatsApp o llámanos directamente.'
+        )
+
+        Client(account_sid, auth_token).messages.create(
+            body=body, from_=from_number, to=to
+        )
+        return True
+    except Exception as e:
+        import sys
+        print(f'[WhatsApp] Error sending confirmation: {e}', file=sys.stderr)
+        return False

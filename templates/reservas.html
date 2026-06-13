@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Reservas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --teal: #1a8a7d;
@@ -12,6 +12,7 @@
             --teal-light: #e8f5f2;
             --gold: #c5a55a;
             --cream: #faf8f3;
+            --cream-warm: #f0ebe0;
             --dark: #111827;
             --gray-100: #f3f4f6;
             --gray-200: #e5e7eb;
@@ -24,324 +25,90 @@
 
         /* ── HERO ── */
         .hero {
-            position: relative;
-            height: 100dvh;
-            min-height: 500px;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            background: var(--cream-warm);
             text-align: center;
-            background: white;
-            overflow: hidden;
+            padding: 60px 20px 90px;
+            position: relative;
         }
-        .hero-utensils {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 260px;
-            opacity: 0.055;
-            pointer-events: none;
-        }
-        .hero-sub {
-            font-size: 11px;
-            letter-spacing: 6px;
-            color: var(--gray-400);
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-        .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(64px, 13vw, 130px);
-            font-weight: 400;
-            letter-spacing: -3px;
-            color: var(--dark);
-            line-height: 0.9;
-        }
+        .hero-logo { width: min(260px, 65vw); margin: 0 auto 10px; }
+        .season-logo-svg { width: 100%; height: auto; color: var(--teal); }
+        .hero-reservas { font-size: 11px; letter-spacing: 7px; color: var(--teal); text-transform: uppercase; font-weight: 600; margin-top: 4px; }
+        .hero-sub { font-size: 11px; letter-spacing: 3px; color: var(--gray-400); text-transform: uppercase; margin-top: 8px; }
         .hero-scroll {
-            position: absolute;
-            bottom: 36px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            color: var(--gray-400);
-            font-size: 10px;
-            letter-spacing: 2.5px;
-            text-transform: uppercase;
-            cursor: pointer;
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            color: var(--gray-400); font-size: 10px; letter-spacing: 2.5px;
+            text-transform: uppercase; cursor: pointer;
         }
-        .hero-scroll-bar {
-            width: 1px;
-            height: 44px;
-            background: linear-gradient(to bottom, var(--gray-400), transparent);
-        }
+        .hero-scroll-bar { width: 1px; height: 44px; background: linear-gradient(to bottom, var(--gray-400), transparent); }
 
         /* ── INFO ── */
-        .info-block {
-            background: var(--dark);
-            color: white;
-        }
-        .info-inner {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 48px 28px;
-        }
-        .info-inner p {
-            font-size: 14px;
-            line-height: 1.9;
-            color: rgba(255,255,255,0.75);
-            margin-bottom: 14px;
-        }
+        .info-block { background: var(--dark); color: white; }
+        .info-inner { max-width: 760px; margin: 0 auto; padding: 48px 28px; }
+        .info-inner p { font-size: 14px; line-height: 1.9; color: rgba(255,255,255,0.75); margin-bottom: 14px; }
         .info-inner p:last-child { margin-bottom: 0; }
         .info-inner strong { color: white; font-weight: 600; }
         .info-inner a { color: var(--gold); text-decoration: none; }
         .info-inner a:hover { text-decoration: underline; }
 
         /* ── BOOKING ── */
-        .booking-section {
-            background: var(--cream);
-            padding: 56px 24px 72px;
-        }
+        .booking-section { background: var(--cream); padding: 56px 24px 72px; }
         .booking-inner { max-width: 720px; margin: 0 auto; }
 
-        /* Date strip */
-        .date-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 40px;
-        }
-        .date-strip {
-            display: flex;
-            gap: 4px;
-            overflow-x: auto;
-            flex: 1;
-            padding: 4px 0 8px;
-            scrollbar-width: none;
-        }
+        .date-row { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+        .date-strip { display: flex; gap: 4px; overflow-x: auto; flex: 1; padding: 4px 0 8px; scrollbar-width: none; }
         .date-strip::-webkit-scrollbar { display: none; }
-        .dp {
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            width: 44px;
-            height: 56px;
-            border-radius: 28px;
-            cursor: pointer;
-            transition: background 0.15s;
-            justify-content: center;
-        }
+        .dp { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 44px; height: 56px; border-radius: 28px; cursor: pointer; transition: background 0.15s; justify-content: center; }
         .dp:hover { background: var(--gray-200); }
         .dp.selected { background: var(--dark); }
-        .dp-num {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            line-height: 1;
-        }
-        .dp-day {
-            font-size: 10px;
-            color: var(--gray-400);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .dp.selected .dp-num,
-        .dp.selected .dp-day { color: white; }
+        .dp-num { font-size: 16px; font-weight: 600; color: var(--dark); line-height: 1; }
+        .dp-day { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.3px; }
+        .dp.selected .dp-num, .dp.selected .dp-day { color: white; }
         .dp.today .dp-num { color: var(--teal); }
         .dp.today.selected .dp-num { color: white; }
-
-        .cal-icon-btn {
-            flex-shrink: 0;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid var(--gray-200);
-            background: white;
-            cursor: pointer;
-            font-size: 17px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.15s;
-        }
+        .cal-icon-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gray-200); background: white; cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
         .cal-icon-btn:hover { border-color: var(--teal); }
-        #calInput {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-            width: 1px;
-            height: 1px;
-        }
+        #calInput { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
 
-        /* Shift blocks */
         .shift-list { display: flex; flex-direction: column; gap: 16px; }
-        .shift-card {
-            background: white;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        .shift-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 24px 28px 20px;
-            border-bottom: 1px solid var(--gray-200);
-        }
-        .shift-name {
-            font-size: 13px;
-            letter-spacing: 4px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--dark);
-        }
-        .shift-time {
-            font-size: 13px;
-            color: var(--gray-400);
-        }
+        .shift-card { background: white; border-radius: 2px; }
+        .shift-head { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px 20px; border-bottom: 1px solid var(--gray-200); }
+        .shift-name { font-size: 13px; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; color: var(--dark); }
+        .shift-time { font-size: 13px; color: var(--gray-400); }
         .shift-body { padding: 20px 28px 24px; }
-
-        /* CTA row */
         .shift-cta { display: flex; align-items: center; gap: 16px; }
-
-        /* Inline form */
         .inline-form { display: none; flex-direction: column; gap: 16px; }
         .inline-form.open { display: flex; }
 
         .irow { display: flex; gap: 12px; }
         .igroup { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .igroup label {
-            font-size: 10px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--gray-400);
-            font-weight: 600;
-        }
-        .iinput {
-            padding: 11px 14px;
-            border: 1px solid var(--gray-200);
-            border-radius: 2px;
-            font-size: 14px;
-            font-family: inherit;
-            background: white;
-            transition: border-color 0.15s;
-            width: 100%;
-        }
+        .igroup label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); font-weight: 600; }
+        .iinput { padding: 11px 14px; border: 1px solid var(--gray-200); border-radius: 2px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.15s; width: 100%; }
         .iinput:focus { outline: none; border-color: var(--teal); }
 
-        .counter {
-            display: flex;
-            align-items: center;
-            border: 1px solid var(--gray-200);
-            border-radius: 2px;
-            overflow: hidden;
-            height: 44px;
-        }
-        .counter-btn {
-            width: 40px;
-            height: 100%;
-            border: none;
-            background: var(--gray-100);
-            font-size: 18px;
-            cursor: pointer;
-            color: var(--dark);
-            transition: background 0.15s;
-            flex-shrink: 0;
-        }
+        .counter { display: flex; align-items: center; border: 1px solid var(--gray-200); border-radius: 2px; overflow: hidden; height: 44px; }
+        .counter-btn { width: 40px; height: 100%; border: none; background: var(--gray-100); font-size: 18px; cursor: pointer; color: var(--dark); transition: background 0.15s; flex-shrink: 0; }
         .counter-btn:hover { background: var(--gray-200); }
-        .counter-val {
-            flex: 1;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-        }
+        .counter-val { flex: 1; text-align: center; font-size: 16px; font-weight: 600; color: var(--dark); }
 
-        /* Buttons */
-        .btn-book {
-            padding: 13px 32px;
-            background: var(--dark);
-            color: white;
-            border: none;
-            border-radius: 2px;
-            font-size: 12px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
+        .btn-book { padding: 13px 32px; background: var(--dark); color: white; border: none; border-radius: 2px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; font-family: inherit; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
         .btn-book:hover { background: var(--teal); }
         .btn-book:disabled { opacity: 0.45; cursor: not-allowed; background: var(--gray-400); }
-        .btn-cancel-link {
-            background: none;
-            border: none;
-            font-family: inherit;
-            font-size: 13px;
-            color: var(--gray-400);
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 0;
-        }
+        .btn-cancel-link { background: none; border: none; font-family: inherit; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: underline; padding: 0; }
         .btn-cancel-link:hover { color: var(--dark); }
 
-        /* List de espera button */
-        .btn-espera {
-            padding: 12px 28px;
-            background: white;
-            color: var(--dark);
-            border: 1px solid var(--dark);
-            border-radius: 2px;
-            font-size: 12px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .btn-espera:hover { background: var(--dark); color: white; }
-
-        /* Full message */
-        .full-msg {
-            font-size: 13px;
-            color: var(--gray-400);
-            font-style: italic;
-        }
-
-        /* Success */
-        .success-box {
-            display: none;
-            padding: 20px 24px;
-            background: var(--teal-light);
-            border-left: 3px solid var(--teal);
-        }
+        .success-box { display: none; padding: 20px 24px; background: var(--teal-light); border-left: 3px solid var(--teal); }
         .success-box.show { display: block; }
-        .success-box h4 {
-            font-size: 15px;
-            color: var(--teal-dark);
-            margin-bottom: 6px;
-        }
+        .success-box h4 { font-size: 15px; color: var(--teal-dark); margin-bottom: 6px; }
         .success-box p { font-size: 13px; color: var(--gray-500); }
+        .success-box .wa-hint { font-size: 12px; color: var(--gray-400); margin-top: 10px; }
 
-        /* Footer */
-        .site-footer {
-            text-align: center;
-            padding: 28px;
-            font-size: 11px;
-            color: var(--gray-400);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            border-top: 1px solid var(--gray-200);
-        }
+        .site-footer { text-align: center; padding: 28px; font-size: 11px; color: var(--gray-400); letter-spacing: 1.5px; text-transform: uppercase; border-top: 1px solid var(--gray-200); }
 
         @media (max-width: 600px) {
             .info-inner { padding: 36px 20px; }
@@ -356,23 +123,77 @@
 
 <!-- ══ HERO ══ -->
 <section class="hero">
-    <svg class="hero-utensils" viewBox="0 0 160 320" xmlns="http://www.w3.org/2000/svg">
-        <!-- Fork -->
-        <line x1="40" y1="10" x2="40" y2="310" stroke="black" stroke-width="5" stroke-linecap="round"/>
-        <line x1="26" y1="10" x2="26" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
-        <line x1="40" y1="10" x2="40" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
-        <line x1="54" y1="10" x2="54" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
-        <path d="M26 70 Q40 88 54 70" stroke="black" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <!-- Knife -->
-        <line x1="120" y1="10" x2="120" y2="310" stroke="black" stroke-width="5" stroke-linecap="round"/>
-        <path d="M120 10 Q148 30 142 76 L120 84 Z" fill="black"/>
-    </svg>
 
-    <p class="hero-sub">Season · Restaurante</p>
-    <h1 class="hero-title">RESERVAS</h1>
+    <div class="hero-logo">
+        <!-- Recreation of the Season brand logo in SVG: 4 Mediterranean icons + "sea/son" wordmark -->
+        <svg class="season-logo-svg" viewBox="0 0 240 375" xmlns="http://www.w3.org/2000/svg">
+
+            <!-- Icon 1: Tropical plant / palm frond (top-left) -->
+            <!-- 7 organic leaf-ellipses fanning from a common stem base -->
+            <g transform="translate(55,60)" fill="currentColor">
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-54)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-36)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-18)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(0)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(18)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(36)"/>
+                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(54)"/>
+                <rect x="-3.5" y="2" width="7" height="16" rx="3.5"/>
+            </g>
+
+            <!-- Icon 2: Mediterranean sea waves (top-right) -->
+            <g transform="translate(185,57)" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                <path d="M-36,-18 C-22,-31 -12,-5 0,-18 C12,-31 22,-5 36,-18"/>
+                <path d="M-36,0 C-22,-13 -12,13 0,0 C12,-13 22,13 36,0"/>
+                <path d="M-36,18 C-22,5 -12,31 0,18 C12,5 22,31 36,18"/>
+            </g>
+
+            <!-- Icon 3: Benidorm sunset / horizon arcs (bottom-left) -->
+            <!-- Concentric quarter-circle arcs, all centered at (-34,34) in local space -->
+            <g transform="translate(55,162)" stroke="currentColor" stroke-width="7" stroke-linecap="round" fill="none">
+                <path d="M-14,34 A20,20 0 0,0 -34,14"/>
+                <path d="M0,34 A34,34 0 0,0 -34,0"/>
+                <path d="M14,34 A48,48 0 0,0 -34,-14"/>
+                <path d="M28,34 A62,62 0 0,0 -34,-28"/>
+            </g>
+
+            <!-- Icon 4: Mediterranean sun / starburst (bottom-right) -->
+            <g transform="translate(185,162)">
+                <circle r="14" fill="currentColor"/>
+                <g stroke="currentColor" stroke-width="5" stroke-linecap="round">
+                    <line x1="0" y1="-19" x2="0" y2="-32"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(30)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(60)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(90)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(120)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(150)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(180)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(210)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(240)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(270)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(300)"/>
+                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(330)"/>
+                </g>
+            </g>
+
+            <!-- Wordmark -->
+            <text x="120" y="268"
+                  font-family="'Playfair Display', Georgia, serif"
+                  font-size="92" font-weight="400"
+                  fill="currentColor" text-anchor="middle">sea</text>
+            <text x="120" y="358"
+                  font-family="'Playfair Display', Georgia, serif"
+                  font-size="92" font-weight="400"
+                  fill="currentColor" text-anchor="middle">son</text>
+
+        </svg>
+    </div>
+
+    <p class="hero-reservas">RESERVAS</p>
+    <p class="hero-sub">Benidorm &middot; Grupo Conbrassa</p>
 
     <div class="hero-scroll" onclick="document.querySelector('.info-block').scrollIntoView({behavior:'smooth'})">
-        <span>Ver más</span>
+        <span>Reservar</span>
         <div class="hero-scroll-bar"></div>
     </div>
 </section>
@@ -381,7 +202,7 @@
 <div class="info-block">
     <div class="info-inner">
         <p>
-            Todas las reservas deben realizarse a través de nuestra página web.
+            Todas las reservas deben realizarse a través de esta página.
             Indica la fecha, el turno y el número de comensales para confirmar tu mesa.
         </p>
         <p>
@@ -390,11 +211,11 @@
             asistencia, podrá aplicarse un cargo.
         </p>
         <p>
-            <strong>Grupos grandes (más de 10 personas):</strong> Por favor, contacta directamente
-            con nosotros antes de reservar para que podamos preparar el espacio adecuado.
+            <strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros
+            antes de reservar para que podamos preparar el espacio adecuado.
         </p>
         <p>
-            ¿Tienes alguna duda? Escríbenos por
+            ¿Necesitas ayuda? Escríbenos por
             <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a>
             o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.
         </p>
@@ -405,16 +226,13 @@
 <div class="booking-section">
     <div class="booking-inner">
 
-        <!-- Date selector -->
         <div class="date-row">
             <div class="date-strip" id="dateStrip"></div>
             <button class="cal-icon-btn" title="Elegir fecha" onclick="openCal()">📅</button>
             <input type="date" id="calInput">
         </div>
 
-        <!-- Shift cards -->
         <div class="shift-list">
-
             <!-- COMIDA -->
             <div class="shift-card">
                 <div class="shift-head">
@@ -429,6 +247,7 @@
                     <div class="success-box" id="okComida">
                         <h4>✓ Reserva confirmada</h4>
                         <p id="okComidaText"></p>
+                        <p class="wa-hint">📱 Si tienes WhatsApp en ese número recibirás una confirmación.</p>
                     </div>
                 </div>
             </div>
@@ -447,15 +266,15 @@
                     <div class="success-box" id="okCena">
                         <h4>✓ Reserva confirmada</h4>
                         <p id="okCenaText"></p>
+                        <p class="wa-hint">📱 Si tienes WhatsApp en ese número recibirás una confirmación.</p>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
-<footer class="site-footer">Season &middot; Sistema de Reservas</footer>
+<footer class="site-footer">Season &middot; Benidorm &middot; Grupo Conbrassa</footer>
 
 <script>
 const DAYS  = ['D','L','M','Mi','J','V','S'];
@@ -464,7 +283,6 @@ const T_CEN = ['20:00','20:30','21:00','21:30','22:00','22:30'];
 let selDate = '';
 let guests  = { comida: 2, cena: 2 };
 
-/* ── Date strip ── */
 function buildStrip(startDate) {
     const strip = document.getElementById('dateStrip');
     strip.innerHTML = '';
@@ -484,9 +302,7 @@ function buildStrip(startDate) {
 
 function pickDate(iso) {
     selDate = iso;
-    document.querySelectorAll('.dp').forEach(el => {
-        el.classList.toggle('selected', el.dataset.date === iso);
-    });
+    document.querySelectorAll('.dp').forEach(el => el.classList.toggle('selected', el.dataset.date === iso));
     resetAll();
 }
 
@@ -498,27 +314,20 @@ function openCal() {
         const v = inp.value;
         if (!v) return;
         const pill = document.querySelector(`.dp[data-date="${v}"]`);
-        if (pill) {
-            pickDate(v);
-            pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        } else {
-            buildStrip(v);
-            pickDate(v);
-        }
+        if (pill) { pickDate(v); pill.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }); }
+        else { buildStrip(v); pickDate(v); }
     };
     try { inp.showPicker(); } catch { inp.click(); }
 }
 
-/* ── Form ── */
 function buildForm(shift) {
-    const times = (shift === 'comida' ? T_COM : T_CEN)
-        .map(t => `<option>${t}</option>`).join('');
+    const times = (shift === 'comida' ? T_COM : T_CEN).map(t => `<option>${t}</option>`).join('');
     return `
         <div class="irow">
             <div class="igroup" style="max-width:160px">
                 <label>Comensales</label>
                 <div class="counter">
-                    <button class="counter-btn" onclick="chg('${shift}',-1)">−</button>
+                    <button class="counter-btn" onclick="chg('${shift}',-1)">&#8722;</button>
                     <span class="counter-val" id="gn_${shift}">${guests[shift]}</span>
                     <button class="counter-btn" onclick="chg('${shift}',1)">+</button>
                 </div>
@@ -534,16 +343,16 @@ function buildForm(shift) {
                 <input type="text" class="iinput" id="n_${shift}" placeholder="Tu nombre">
             </div>
             <div class="igroup">
-                <label>Teléfono *</label>
+                <label>Tel&eacute;fono *</label>
                 <input type="tel" class="iinput" id="p_${shift}" placeholder="+34 612 345 678">
             </div>
         </div>
         <div class="igroup">
             <label>Notas (opcional)</label>
-            <input type="text" class="iinput" id="no_${shift}" placeholder="Alergias, celebraciones...">
+            <input type="text" class="iinput" id="no_${shift}" placeholder="Alergias, celebraciones&hellip;">
         </div>
         <div class="shift-cta">
-            <button class="btn-book" id="sb_${shift}" onclick="submit('${shift}')">Confirmar reserva</button>
+            <button class="btn-book" id="sb_${shift}" onclick="doSubmit('${shift}')">Confirmar reserva</button>
             <button class="btn-cancel-link" onclick="closeForm('${shift}')">Cancelar</button>
         </div>`;
 }
@@ -554,10 +363,11 @@ function chg(shift, d) {
     if (el) el.textContent = guests[shift];
 }
 
+function cap(s) { return s[0].toUpperCase() + s.slice(1); }
+
 function openForm(shift) {
     if (!selDate) { alert('Selecciona una fecha primero'); return; }
-    const other = shift === 'comida' ? 'cena' : 'comida';
-    closeForm(other);
+    closeForm(shift === 'comida' ? 'cena' : 'comida');
     document.getElementById('cta' + cap(shift)).style.display = 'none';
     const f = document.getElementById('form' + cap(shift));
     f.innerHTML = buildForm(shift);
@@ -579,10 +389,7 @@ function resetAll() {
     });
 }
 
-function cap(s) { return s[0].toUpperCase() + s.slice(1); }
-
-/* ── Submit ── */
-async function submit(shift) {
+async function doSubmit(shift) {
     const name  = document.getElementById('n_'  + shift).value.trim();
     const phone = document.getElementById('p_'  + shift).value.trim();
     const time  = document.getElementById('t_'  + shift).value;
@@ -592,23 +399,19 @@ async function submit(shift) {
 
     const btn = document.getElementById('sb_' + shift);
     btn.disabled = true;
-    btn.textContent = 'Reservando...';
+    btn.textContent = 'Reservando…';
 
     try {
         const res = await fetch('/api/public/reserve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                client_name: name, client_phone: phone,
-                date: selDate, shift, time,
-                guests: guests[shift], notes, source: 'web',
-            }),
+            body: JSON.stringify({ client_name: name, client_phone: phone, date: selDate, shift, time, guests: guests[shift], notes, source: 'web' }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Error al reservar');
 
         closeForm(shift);
-        const d = new Date(selDate + 'T12:00:00');
+        const d  = new Date(selDate + 'T12:00:00');
         const ds = d.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
         document.getElementById('ok' + cap(shift) + 'Text').textContent =
             `${name} · ${ds} a las ${time} · ${guests[shift]} persona${guests[shift] > 1 ? 's' : ''}`;
@@ -621,7 +424,6 @@ async function submit(shift) {
     }
 }
 
-/* ── Init ── */
 const todayIso = new Date().toISOString().split('T')[0];
 buildStrip(todayIso);
 pickDate(todayIso);
