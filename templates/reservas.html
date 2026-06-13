@@ -39,119 +39,57 @@
             justify-content: center;
             background: var(--cream);
             position: relative;
-            padding: 80px 24px 100px;
+            padding: 60px 24px 96px;
             text-align: center;
-            overflow: hidden;
-        }
-        .s-hero::before {
-            content: '';
-            position: absolute;
-            width: min(680px, 115vw);
-            height: min(680px, 115vw);
-            border-radius: 50%;
-            border: 1px solid var(--blush);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        .s-hero::after {
-            content: '';
-            position: absolute;
-            width: min(420px, 90vw);
-            height: min(420px, 90vw);
-            border-radius: 50%;
-            border: 1px solid var(--blush);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        .hero-glow {
-            position: absolute;
-            width: min(500px, 100vw);
-            height: min(500px, 100vw);
-            border-radius: 50%;
-            background: radial-gradient(ellipse at center, rgba(236,221,212,0.55) 0%, transparent 70%);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
         .hero-logo-wrap {
-            width: min(160px, 42vw);
-            margin-bottom: 32px;
+            width: min(260px, 65vw);
+            margin: 0 auto 18px;
             animation: hFade 1s ease both;
         }
         .hero-logo-wrap svg { width: 100%; height: auto; color: var(--sage); }
-
         .hero-eyebrow {
             font-family: 'Jost', sans-serif;
-            font-size: 10px;
-            font-weight: 500;
-            letter-spacing: 6px;
-            padding-left: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 7px;
+            padding-left: 7px;
             text-transform: uppercase;
-            color: var(--gold);
-            margin-bottom: 18px;
+            color: var(--sage);
+            margin-bottom: 10px;
             animation: hFade 1s ease 0.2s both;
-        }
-        .hero-title {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: clamp(32px, 7vw, 56px);
-            font-weight: 300;
-            font-style: italic;
-            line-height: 0.9;
-            color: var(--char);
-            letter-spacing: -0.02em;
-            margin-bottom: 28px;
-            animation: hFade 1s ease 0.3s both;
-        }
-        .hero-divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            animation: hFade 1s ease 0.45s both;
-        }
-        .hero-divider-line { width: 44px; height: 1px; background: var(--lt-gray); }
-        .hero-divider-gem {
-            width: 6px; height: 6px;
-            background: var(--gold);
-            transform: rotate(45deg);
         }
         .hero-sub {
             font-size: 11px;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
+            padding-left: 3px;
             text-transform: uppercase;
             color: var(--mid-gray);
             font-weight: 300;
-            animation: hFade 1s ease 0.52s both;
+            line-height: 1.9;
+            animation: hFade 1s ease 0.35s both;
         }
         .hero-cta {
             position: absolute;
-            bottom: 36px; left: 50%;
+            bottom: 32px; left: 50%;
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            animation: hFade 1.2s ease 0.7s both;
+            animation: hFade 1.2s ease 0.55s both;
         }
         .hero-cta-label {
             font-size: 9px;
-            letter-spacing: 4.5px;
+            letter-spacing: 4px;
+            padding-left: 4px;
             text-transform: uppercase;
             color: var(--mid-gray);
             font-weight: 400;
         }
         .hero-cta-line {
-            width: 1px; height: 52px;
+            width: 1px; height: 48px;
             background: var(--lt-gray);
             position: relative;
             overflow: hidden;
@@ -161,15 +99,15 @@
             position: absolute;
             top: -10px; left: 0;
             width: 1px; height: 10px;
-            background: var(--gold);
+            background: var(--sage);
             animation: scrollDot 1.8s ease-in-out infinite;
         }
         @keyframes scrollDot {
             0%   { top: -10px; opacity: 1; }
-            100% { top: 52px;  opacity: 0; }
+            100% { top: 48px;  opacity: 0; }
         }
         @keyframes hFade {
-            from { opacity: 0; transform: translateY(18px); }
+            from { opacity: 0; transform: translateY(14px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
@@ -589,84 +527,65 @@
 
 <!-- ══════════════════════ HERO ══════════════════════ -->
 <section class="s-hero">
-    <div class="hero-glow"></div>
 
-    <div class="hero-content">
-
-        <!-- Season logo -->
-        <div class="hero-logo-wrap">
-            <svg viewBox="0 0 240 375" xmlns="http://www.w3.org/2000/svg">
-                <!-- Top-left: coral/seaweed organic blob -->
-                <g transform="translate(52,65)" fill="currentColor">
-                    <circle cx="8"   cy="6"   r="22"/>
-                    <circle cx="-14" cy="-12" r="17"/>
-                    <circle cx="22"  cy="-10" r="15"/>
-                    <circle cx="-4"  cy="-32" r="14"/>
-                    <circle cx="18"  cy="-30" r="11"/>
-                    <circle cx="-1"  cy="-48" r="9"/>
+    <div class="hero-logo-wrap">
+        <svg viewBox="0 0 240 375" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(52,65)" fill="currentColor">
+                <circle cx="8"   cy="6"   r="22"/>
+                <circle cx="-14" cy="-12" r="17"/>
+                <circle cx="22"  cy="-10" r="15"/>
+                <circle cx="-4"  cy="-32" r="14"/>
+                <circle cx="18"  cy="-30" r="11"/>
+                <circle cx="-1"  cy="-48" r="9"/>
+            </g>
+            <g transform="translate(185,57)" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none">
+                <path d="M-34,-16 C-22,-30 -10,-2 2,-16 C14,-30 26,-2 38,-16"/>
+                <path d="M-34,2 C-22,-12 -10,16 2,2 C14,-12 26,16 38,2"/>
+                <path d="M-34,20 C-22,6 -10,34 2,20 C14,6 26,34 38,20"/>
+            </g>
+            <g transform="translate(55,162)" stroke="currentColor" stroke-width="7" stroke-linecap="round" fill="none">
+                <path d="M-18,34 A16,16 0 0,0 -34,18"/>
+                <path d="M-6,34 A28,28 0 0,0 -34,6"/>
+                <path d="M8,34 A42,42 0 0,0 -34,-8"/>
+                <path d="M22,34 A56,56 0 0,0 -34,-22"/>
+                <path d="M34,30 A68,68 0 0,0 -34,-34"/>
+                <path d="M42,20 A80,80 0 0,0 -34,-46"/>
+            </g>
+            <g transform="translate(185,162)">
+                <circle r="18" fill="currentColor"/>
+                <g stroke="currentColor" stroke-width="7" stroke-linecap="round">
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(0)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(22.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(45)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(67.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(90)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(112.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(135)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(157.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(180)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(202.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(225)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(247.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(270)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(292.5)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(315)"/>
+                    <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(337.5)"/>
                 </g>
-                <!-- Top-right: three thick waves -->
-                <g transform="translate(185,57)" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none">
-                    <path d="M-34,-16 C-22,-30 -10,-2 2,-16 C14,-30 26,-2 38,-16"/>
-                    <path d="M-34,2 C-22,-12 -10,16 2,2 C14,-12 26,16 38,2"/>
-                    <path d="M-34,20 C-22,6 -10,34 2,20 C14,6 26,34 38,20"/>
-                </g>
-                <!-- Bottom-left: six concentric arcs (fan/sunrise) -->
-                <g transform="translate(55,162)" stroke="currentColor" stroke-width="7" stroke-linecap="round" fill="none">
-                    <path d="M-18,34 A16,16 0 0,0 -34,18"/>
-                    <path d="M-6,34 A28,28 0 0,0 -34,6"/>
-                    <path d="M8,34 A42,42 0 0,0 -34,-8"/>
-                    <path d="M22,34 A56,56 0 0,0 -34,-22"/>
-                    <path d="M34,30 A68,68 0 0,0 -34,-34"/>
-                    <path d="M42,20 A80,80 0 0,0 -34,-46"/>
-                </g>
-                <!-- Bottom-right: sun with 16 rays -->
-                <g transform="translate(185,162)">
-                    <circle r="18" fill="currentColor"/>
-                    <g stroke="currentColor" stroke-width="7" stroke-linecap="round">
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(0)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(22.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(45)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(67.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(90)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(112.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(135)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(157.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(180)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(202.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(225)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(247.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(270)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(292.5)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(315)"/>
-                        <line x1="0" y1="-22" x2="0" y2="-34" transform="rotate(337.5)"/>
-                    </g>
-                </g>
-                <!-- Wordmark -->
-                <text x="120" y="268" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">sea</text>
-                <text x="120" y="358" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">son</text>
-            </svg>
-        </div>
-
-        <p class="hero-eyebrow">Reservas</p>
-
-        <h1 class="hero-title">La experiencia<br>Season</h1>
-
-        <div class="hero-divider">
-            <div class="hero-divider-line"></div>
-            <div class="hero-divider-gem"></div>
-            <div class="hero-divider-line"></div>
-        </div>
-
-        <p class="hero-sub">Grupo Conbrassa</p>
-        <p class="hero-sub" style="margin-top:6px;letter-spacing:6px">Benidorm</p>
-
+            </g>
+            <text x="120" y="268" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">sea</text>
+            <text x="120" y="358" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">son</text>
+        </svg>
     </div>
+
+    <p class="hero-eyebrow">Reservas</p>
+    <p class="hero-sub">Grupo Conbrassa</p>
+    <p class="hero-sub">Benidorm</p>
 
     <div class="hero-cta" onclick="document.querySelector('.s-lang').scrollIntoView({behavior:'smooth'})">
         <span class="hero-cta-label">Reservar</span>
         <div class="hero-cta-line"></div>
     </div>
+
 </section>
 
 
