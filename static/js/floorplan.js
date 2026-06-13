@@ -94,8 +94,8 @@ function renderWebReservationsPanel(items) {
 const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
 
 function cancelWebReservation(id, name, time) {
-    if (!confirm(`¿Cancelar la reserva de ${name} a las ${time}?`)) return;
-    fetch(`/api/reservations/${id}`, { method: 'DELETE' })
+    showConfirmPopup(`¿Cancelar la reserva de ${name} a las ${time}?`, () => {
+        fetch(`/api/reservations/${id}`, { method: 'DELETE' })
         .then(r => { if (!r.ok) throw new Error(); })
         .then(() => {
             const card = document.getElementById(`web-res-card-${id}`);
@@ -107,6 +107,7 @@ function cancelWebReservation(id, name, time) {
             }
         })
         .catch(() => showAdminPopup && showAdminPopup('Error al cancelar la reserva', '❌'));
+    }, '✕');
 }
 
 // ── Floor Plan Edit Mode ──────────────────────────
@@ -152,10 +153,11 @@ async function saveEditPlan() {
 }
 
 function resetEditPlan() {
-    if (!confirm('¿Restaurar el plano original? Se perderán todos los cambios guardados.')) return;
-    localStorage.removeItem('season_table_defs');
-    localStorage.removeItem('season_user_tables');
-    location.reload();
+    showConfirmPopup('¿Restaurar el plano original? Se perderán todos los cambios guardados.', () => {
+        localStorage.removeItem('season_table_defs');
+        localStorage.removeItem('season_user_tables');
+        location.reload();
+    }, '🔄');
 }
 
 // ── Add / Delete tables ──────────────────────────
@@ -282,34 +284,34 @@ async function confirmCreateTable() {
     }
 }
 
-async function confirmDeleteTable(tableNumber) {
+function confirmDeleteTable(tableNumber) {
     const td = tableDataMap[tableNumber];
     if (!td?.id) { showToast('Mesa no encontrada en BD', 'error'); return; }
 
-    if (!confirm(`¿Eliminar la mesa ${tableNumber} del plano?\n\nSi tiene reservas futuras no se podrá eliminar.`)) return;
+    showConfirmPopup(`¿Eliminar la mesa ${tableNumber} del plano?\n\nSi tiene reservas futuras no se podrá eliminar.`, async () => {
+        try {
+            await apiDelete(`/api/tables/${td.id}`);
 
-    try {
-        await apiDelete(`/api/tables/${td.id}`);
+            // Remove from TABLE_DEFS
+            const idx = TABLE_DEFS.findIndex(d => d.n === tableNumber);
+            if (idx >= 0) TABLE_DEFS.splice(idx, 1);
 
-        // Remove from TABLE_DEFS
-        const idx = TABLE_DEFS.findIndex(d => d.n === tableNumber);
-        if (idx >= 0) TABLE_DEFS.splice(idx, 1);
+            // Remove from user-created list
+            const userTables = JSON.parse(localStorage.getItem('season_user_tables') || '[]');
+            const filtered = userTables.filter(n => n !== tableNumber);
+            localStorage.setItem('season_user_tables', JSON.stringify(filtered));
 
-        // Remove from user-created list
-        const userTables = JSON.parse(localStorage.getItem('season_user_tables') || '[]');
-        const filtered = userTables.filter(n => n !== tableNumber);
-        localStorage.setItem('season_user_tables', JSON.stringify(filtered));
+            // Update localStorage patches
+            const patches = JSON.parse(localStorage.getItem('season_table_defs') || '{}');
+            delete patches[tableNumber];
+            localStorage.setItem('season_table_defs', JSON.stringify(patches));
 
-        // Update localStorage patches
-        const patches = JSON.parse(localStorage.getItem('season_table_defs') || '{}');
-        delete patches[tableNumber];
-        localStorage.setItem('season_table_defs', JSON.stringify(patches));
-
-        showToast(`Mesa ${tableNumber} eliminada ✓`, 'success');
-        await loadFloorPlan();
-    } catch (e) {
-        showToast(e.message || 'Error al eliminar la mesa', 'error');
-    }
+            showToast(`Mesa ${tableNumber} eliminada ✓`, 'success');
+            await loadFloorPlan();
+        } catch (e) {
+            showToast(e.message || 'Error al eliminar la mesa', 'error');
+        }
+    }, '🗑️');
 }
 
 function openCapacityEditor(tableNumber) {
@@ -1408,17 +1410,18 @@ async function completeFromPlan(resId) {
     loadFloorPlan();
 }
 
-async function deleteFromPlan(resId, name) {
-    if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
-    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
-    closeModal('modalTableDetail');
-    try {
-        await apiDelete(`/api/reservations/${resId}/delete`);
-        showToast('Reserva eliminada');
-    } catch (e) {
-        showToast('Error al eliminar', 'error');
-    }
-    loadFloorPlan();
+function deleteFromPlan(resId, name) {
+    showConfirmPopup(`¿Eliminar definitivamente la reserva de ${name}?`, async () => {
+        _applyOptimistic(resId, 'free');
+        closeModal('modalTableDetail');
+        try {
+            await apiDelete(`/api/reservations/${resId}/delete`);
+            showToast('Reserva eliminada');
+        } catch (e) {
+            showToast('Error al eliminar', 'error');
+        }
+        loadFloorPlan();
+    }, '🗑️');
 }
 
 function editReservationFromPlan(resId) {
