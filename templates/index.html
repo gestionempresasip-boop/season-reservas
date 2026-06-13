@@ -348,6 +348,17 @@
                 </div>
             </div>
 
+            <!-- Date navigator (shown for hoy / semana / mes) -->
+            <div id="reportDateNav" class="report-date-nav" style="display:none">
+                <button class="rdn-arrow" onclick="reportNavStep(-1)">&#8592;</button>
+                <button class="rdn-label" onclick="reportOpenPicker()" id="reportDateLabel">—</button>
+                <button class="rdn-arrow" onclick="reportNavStep(1)">&#8594;</button>
+                <!-- Hidden native pickers -->
+                <input type="date"  id="rdnPickerDay"   style="display:none" onchange="reportPickDay(this.value)">
+                <input type="week"  id="rdnPickerWeek"  style="display:none" onchange="reportPickWeek(this.value)">
+                <input type="month" id="rdnPickerMonth" style="display:none" onchange="reportPickMonth(this.value)">
+            </div>
+
             <!-- Dynamic content — rendered by JS per mode -->
             <div id="reportsContent" style="padding-bottom:80px"></div>
         </section>
@@ -829,7 +840,7 @@
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>
     <script src="/static/js/calendar.js?v=25"></script>
-    <script src="/static/js/reports.js?v=33"></script>
+    <script src="/static/js/reports.js?v=34"></script>
 
     <!-- Modal: Selector Visual de Mesas -->
     <div class="modal-overlay hidden" id="modalTableSelector">

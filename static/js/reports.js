@@ -5,8 +5,123 @@
 
 let _reportMode = 'hoy';
 
+// Selected date state for each mode
+let _rdnDate  = new Date();                    // Hoy: selected day
+let _rdnWeek  = _mondayOf(new Date());         // Semana: Monday of selected week
+let _rdnMonth = { y: new Date().getFullYear(), m: new Date().getMonth() }; // Mes
+
 function localISODate(d) {
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function _mondayOf(d) {
+    const day = new Date(d);
+    const dow = day.getDay();
+    day.setDate(day.getDate() - (dow === 0 ? 6 : dow - 1));
+    day.setHours(0,0,0,0);
+    return day;
+}
+
+const _MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const _DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function _fmtDay(d) {
+    return `${_DAYS_ES[d.getDay()]} ${d.getDate()} ${_MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
+}
+function _fmtWeekRange(mon) {
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    const d1 = mon.getDate(), d2 = sun.getDate();
+    const m1 = _MONTHS_ES[mon.getMonth()], m2 = _MONTHS_ES[sun.getMonth()];
+    const y  = sun.getFullYear();
+    return mon.getMonth() === sun.getMonth()
+        ? `${d1} – ${d2} ${m1} ${y}`
+        : `${d1} ${m1} – ${d2} ${m2} ${y}`;
+}
+
+function _updateDateNav() {
+    const nav = document.getElementById('reportDateNav');
+    const lbl = document.getElementById('reportDateLabel');
+    if (!nav || !lbl) return;
+
+    const show = ['hoy','semana','mes'].includes(_reportMode);
+    nav.style.display = show ? 'flex' : 'none';
+
+    if (_reportMode === 'hoy') {
+        lbl.textContent = _fmtDay(_rdnDate);
+    } else if (_reportMode === 'semana') {
+        lbl.textContent = `Semana  ${_fmtWeekRange(_rdnWeek)}`;
+    } else if (_reportMode === 'mes') {
+        lbl.textContent = `${_MONTHS_ES[_rdnMonth.m]} ${_rdnMonth.y}`;
+    }
+}
+
+function reportNavStep(dir) {
+    if (_reportMode === 'hoy') {
+        _rdnDate = new Date(_rdnDate);
+        _rdnDate.setDate(_rdnDate.getDate() + dir);
+    } else if (_reportMode === 'semana') {
+        _rdnWeek = new Date(_rdnWeek);
+        _rdnWeek.setDate(_rdnWeek.getDate() + dir * 7);
+    } else if (_reportMode === 'mes') {
+        let m = _rdnMonth.m + dir;
+        let y = _rdnMonth.y;
+        if (m > 11) { m = 0; y++; }
+        if (m < 0)  { m = 11; y--; }
+        _rdnMonth = { y, m };
+    }
+    _updateDateNav();
+    loadReports();
+}
+
+function reportOpenPicker() {
+    if (_reportMode === 'hoy') {
+        const p = document.getElementById('rdnPickerDay');
+        p.value = localISODate(_rdnDate);
+        p.showPicker ? p.showPicker() : p.click();
+    } else if (_reportMode === 'semana') {
+        const p = document.getElementById('rdnPickerWeek');
+        // Format YYYY-Www for the input
+        const mon = _rdnWeek;
+        const jan4 = new Date(mon.getFullYear(), 0, 4);
+        const wk   = Math.ceil(((mon - jan4) / 86400000 + jan4.getDay() + 1) / 7);
+        p.value = `${mon.getFullYear()}-W${String(wk).padStart(2,'0')}`;
+        p.showPicker ? p.showPicker() : p.click();
+    } else if (_reportMode === 'mes') {
+        const p = document.getElementById('rdnPickerMonth');
+        p.value = `${_rdnMonth.y}-${String(_rdnMonth.m + 1).padStart(2,'0')}`;
+        p.showPicker ? p.showPicker() : p.click();
+    }
+}
+
+function reportPickDay(val) {
+    if (!val) return;
+    const [y, m, d] = val.split('-').map(Number);
+    _rdnDate = new Date(y, m - 1, d);
+    _updateDateNav();
+    loadReports();
+}
+
+function reportPickWeek(val) {
+    if (!val) return;
+    // val is "YYYY-Www"
+    const [yearStr, wStr] = val.split('-W');
+    const year = Number(yearStr), week = Number(wStr);
+    // ISO week → Monday date
+    const jan4 = new Date(year, 0, 4);
+    const mon  = new Date(jan4);
+    mon.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (week - 1) * 7);
+    _rdnWeek = mon;
+    _updateDateNav();
+    loadReports();
+}
+
+function reportPickMonth(val) {
+    if (!val) return;
+    const [y, m] = val.split('-').map(Number);
+    _rdnMonth = { y, m: m - 1 };
+    _updateDateNav();
+    loadReports();
 }
 
 function initReportDates() {
@@ -18,6 +133,7 @@ function setReportMode(mode) {
     document.querySelectorAll('.rmode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
     const customRange = document.getElementById('rmodeCustomRange');
     if (customRange) customRange.style.display = mode === 'custom' ? 'flex' : 'none';
+    _updateDateNav();
     if (mode !== 'custom') loadReports();
 }
 
@@ -40,7 +156,7 @@ async function loadReports() {
 // ═══════════════════════════════════════════════
 
 async function renderHoy(container) {
-    const today = localISODate(new Date());
+    const today = localISODate(_rdnDate);
     const safe = fn => fn.catch(() => null);
     const [summary, hours] = await Promise.all([
         safe(apiGet(`/api/reports/summary?date=${today}`)),
@@ -149,12 +265,12 @@ function renderHourBars(hours) {
 // ═══════════════════════════════════════════════
 
 async function renderSemana(container) {
-    const today = new Date();
-    const from7 = new Date(today); from7.setDate(from7.getDate() - 6);
-    const qs7 = `from=${localISODate(from7)}&to=${localISODate(today)}`;
+    const monday = _rdnWeek;
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const qs7 = `from=${localISODate(monday)}&to=${localISODate(sunday)}`;
     const safe = fn => fn.catch(() => null);
     const [weekData, retention, hours] = await Promise.all([
-        safe(apiGet(`/api/reports/week-comparison?from=${localISODate(today)}`)),
+        safe(apiGet(`/api/reports/week-comparison?from=${localISODate(monday)}`)),
         safe(apiGet(`/api/reports/new-vs-returning?${qs7}`)),
         safe(apiGet(`/api/reports/hours?${qs7}`)),
     ]);
@@ -278,9 +394,9 @@ function renderNoShowInsight(t) {
 // ═══════════════════════════════════════════════
 
 async function renderMes(container) {
-    const today = new Date();
-    const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
-    const qs = `from=${localISODate(from30)}&to=${localISODate(today)}`;
+    const firstDay = new Date(_rdnMonth.y, _rdnMonth.m, 1);
+    const lastDay  = new Date(_rdnMonth.y, _rdnMonth.m + 1, 0);
+    const qs = `from=${localISODate(firstDay)}&to=${localISODate(lastDay)}`;
 
     const safe = fn => fn.catch(() => null);
     const [kpi, trend, heatmap, sources, topClients, retention, hours] = await Promise.all([

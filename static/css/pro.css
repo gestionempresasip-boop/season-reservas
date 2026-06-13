@@ -825,6 +825,45 @@
     margin-left: 4px;
 }
 
+/* Date navigator bar */
+.report-date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+.rdn-arrow {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    font-size: 16px;
+    color: #374151;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .12s;
+    flex-shrink: 0;
+}
+.rdn-arrow:hover { border-color: #1a8a7d; color: #1a8a7d; background: #f0fdf9; }
+.rdn-label {
+    padding: 6px 18px;
+    border-radius: 20px;
+    border: 1.5px solid #1a8a7d;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a8a7d;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .12s;
+    min-width: 160px;
+    text-align: center;
+}
+.rdn-label:hover { background: #f0fdf9; }
+
 /* HOY styles */
 .rh-top { padding: 14px 16px 4px; }
 .rh-date { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
