@@ -106,7 +106,7 @@ function cancelWebReservation(id, name, time) {
                 document.getElementById('webReservationsPanel').style.display = 'none';
             }
         })
-        .catch(() => alert('Error al cancelar la reserva'));
+        .catch(() => showAdminPopup && showAdminPopup('Error al cancelar la reserva', '❌'));
 }
 
 // ── Floor Plan Edit Mode ──────────────────────────

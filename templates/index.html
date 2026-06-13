@@ -725,6 +725,18 @@
     <!-- Toast notification -->
     <div class="toast hidden" id="toast"></div>
 
+    <!-- Popup modal (replaces native alert) -->
+    <div id="adminPopupOverlay" onclick="closeAdminPopup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;align-items:center;justify-content:center;">
+        <div onclick="event.stopPropagation()" style="background:white;border-radius:16px;padding:32px 28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.25);animation:popInAdmin .2s ease">
+            <div id="adminPopupIcon" style="font-size:36px;margin-bottom:12px">⚠️</div>
+            <p id="adminPopupMsg" style="font-size:15px;color:#111827;line-height:1.6;margin-bottom:24px"></p>
+            <button onclick="closeAdminPopup()" style="background:var(--teal,#1a8a7d);color:white;border:none;border-radius:8px;padding:11px 32px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.5px">Entendido</button>
+        </div>
+    </div>
+    <style>
+        @keyframes popInAdmin { from { transform:scale(.9);opacity:0 } to { transform:scale(1);opacity:1 } }
+    </style>
+
     <!-- MODAL: User create / edit (admin) -->
     <div class="modal-overlay hidden" id="userModal">
         <div class="modal" style="max-width:440px">
@@ -766,6 +778,16 @@
         }
     </script>
     <script>
+    function showAdminPopup(msg, icon) {
+        document.getElementById('adminPopupMsg').textContent = msg;
+        document.getElementById('adminPopupIcon').textContent = icon || '⚠️';
+        const el = document.getElementById('adminPopupOverlay');
+        el.style.display = 'flex';
+    }
+    function closeAdminPopup() {
+        document.getElementById('adminPopupOverlay').style.display = 'none';
+    }
+
     function loadWebCapacity() {
         fetch('/api/settings/web_capacity_limit')
             .then(r => r.json())
@@ -779,7 +801,7 @@
         const inp = document.getElementById('webCapacityInput');
         const saved = document.getElementById('webCapacitySaved');
         const val = parseInt(inp.value);
-        if (!val || val < 1 || val > 500) { alert('Introduce un número entre 1 y 500'); return; }
+        if (!val || val < 1 || val > 500) { showAdminPopup('Introduce un número entre 1 y 500', '📋'); return; }
         fetch('/api/settings/web_capacity_limit', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -787,7 +809,7 @@
         }).then(r => r.json()).then(() => {
             saved.style.display = 'inline';
             setTimeout(() => { saved.style.display = 'none'; }, 2500);
-        }).catch(() => alert('Error al guardar'));
+        }).catch(() => showAdminPopup('Error al guardar', '❌'));
     }
 
     // Load capacity when switching to Ajustes
