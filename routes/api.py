@@ -19,8 +19,8 @@ api = Blueprint('api', __name__, url_prefix='/api')
 @api.before_request
 def require_login():
     """Require authenticated session for all API endpoints."""
-    # Allow health check unauthenticated
-    if request.endpoint in ('api.health',):
+    # Allow health check and public booking unauthenticated
+    if request.endpoint in ('api.health', 'api.public_reserve'):
         return None
     if not session.get('user_id'):
         return jsonify({'error': 'No autenticado', 'code': 'UNAUTHENTICATED'}), 401
@@ -1019,3 +1019,54 @@ def unassign_tables(rid):
     r = res_svc.update_reservation(rid, {'table_ids': []})
     notify()
     return jsonify(r.to_dict())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PUBLIC BOOKING (no auth required — used by /reservas page)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@api.route('/public/reserve', methods=['POST'])
+@handle_errors
+def public_reserve():
+    """Create a reservation from the public booking page. No auth required."""
+    data = request.json or {}
+
+    required = ['client_name', 'client_phone', 'date', 'shift', 'time', 'guests']
+    missing = [f for f in required if not data.get(f)]
+    if missing:
+        return error_response(f'Faltan campos: {", ".join(missing)}', 400)
+
+    if data['shift'] not in ('comida', 'cena'):
+        return error_response('Turno debe ser comida o cena', 400)
+
+    try:
+        guests = int(data['guests'])
+        if guests < 1 or guests > 20:
+            raise ValueError
+    except (ValueError, TypeError):
+        return error_response('Número de comensales inválido (1-20)', 400)
+
+    # Find or create client
+    client = cli_svc.get_client_by_phone(data['client_phone'].strip())
+    if not client:
+        try:
+            client = cli_svc.create_client({
+                'name': data['client_name'].strip(),
+                'phone': data['client_phone'].strip(),
+            })
+        except Exception:
+            client = None
+
+    r = res_svc.create_reservation({
+        'date': data['date'],
+        'shift': data['shift'],
+        'time': data['time'],
+        'guests': guests,
+        'client_name': data['client_name'].strip(),
+        'client_phone': data['client_phone'].strip(),
+        'notes': data.get('notes', ''),
+        'source': 'web',
+        'client_id': client.id if client else None,
+    })
+    notify()
+    return jsonify(r.to_dict()), 201

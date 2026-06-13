@@ -180,6 +180,11 @@ def _initialize_app():
         """Public booking page."""
         return render_template('public_booking.html', whatsapp_number=WHATSAPP_NUMBER)
 
+    @_app_instance.route('/reservas')
+    def public_reservas():
+        """New public booking page (v2)."""
+        return render_template('reservas.html', whatsapp_number=WHATSAPP_NUMBER)
+
     # ─── Register SocketIO handlers ──────────────────────────────────────
     @_socketio_instance.on('connect')
     def handle_connect():

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season · Reservas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal: #1a8a7d;
+            --teal-dark: #147068;
+            --teal-light: #e8f5f2;
+            --gold: #c5a55a;
+            --cream: #faf8f3;
+            --dark: #111827;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: white; color: var(--dark); }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            height: 100dvh;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: white;
+            overflow: hidden;
+        }
+        .hero-utensils {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 260px;
+            opacity: 0.055;
+            pointer-events: none;
+        }
+        .hero-sub {
+            font-size: 11px;
+            letter-spacing: 6px;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(64px, 13vw, 130px);
+            font-weight: 400;
+            letter-spacing: -3px;
+            color: var(--dark);
+            line-height: 0.9;
+        }
+        .hero-scroll {
+            position: absolute;
+            bottom: 36px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray-400);
+            font-size: 10px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .hero-scroll-bar {
+            width: 1px;
+            height: 44px;
+            background: linear-gradient(to bottom, var(--gray-400), transparent);
+        }
+
+        /* ── INFO ── */
+        .info-block {
+            background: var(--dark);
+            color: white;
+        }
+        .info-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 48px 28px;
+        }
+        .info-inner p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 14px;
+        }
+        .info-inner p:last-child { margin-bottom: 0; }
+        .info-inner strong { color: white; font-weight: 600; }
+        .info-inner a { color: var(--gold); text-decoration: none; }
+        .info-inner a:hover { text-decoration: underline; }
+
+        /* ── BOOKING ── */
+        .booking-section {
+            background: var(--cream);
+            padding: 56px 24px 72px;
+        }
+        .booking-inner { max-width: 720px; margin: 0 auto; }
+
+        /* Date strip */
+        .date-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+        .date-strip {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            flex: 1;
+            padding: 4px 0 8px;
+            scrollbar-width: none;
+        }
+        .date-strip::-webkit-scrollbar { display: none; }
+        .dp {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 44px;
+            height: 56px;
+            border-radius: 28px;
+            cursor: pointer;
+            transition: background 0.15s;
+            justify-content: center;
+        }
+        .dp:hover { background: var(--gray-200); }
+        .dp.selected { background: var(--dark); }
+        .dp-num {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            line-height: 1;
+        }
+        .dp-day {
+            font-size: 10px;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .dp.selected .dp-num,
+        .dp.selected .dp-day { color: white; }
+        .dp.today .dp-num { color: var(--teal); }
+        .dp.today.selected .dp-num { color: white; }
+
+        .cal-icon-btn {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--gray-200);
+            background: white;
+            cursor: pointer;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s;
+        }
+        .cal-icon-btn:hover { border-color: var(--teal); }
+        #calInput {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 1px;
+            height: 1px;
+        }
+
+        /* Shift blocks */
+        .shift-list { display: flex; flex-direction: column; gap: 16px; }
+        .shift-card {
+            background: white;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .shift-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 28px 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .shift-name {
+            font-size: 13px;
+            letter-spacing: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--dark);
+        }
+        .shift-time {
+            font-size: 13px;
+            color: var(--gray-400);
+        }
+        .shift-body { padding: 20px 28px 24px; }
+
+        /* CTA row */
+        .shift-cta { display: flex; align-items: center; gap: 16px; }
+
+        /* Inline form */
+        .inline-form { display: none; flex-direction: column; gap: 16px; }
+        .inline-form.open { display: flex; }
+
+        .irow { display: flex; gap: 12px; }
+        .igroup { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .igroup label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gray-400);
+            font-weight: 600;
+        }
+        .iinput {
+            padding: 11px 14px;
+            border: 1px solid var(--gray-200);
+            border-radius: 2px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            transition: border-color 0.15s;
+            width: 100%;
+        }
+        .iinput:focus { outline: none; border-color: var(--teal); }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--gray-200);
+            border-radius: 2px;
+            overflow: hidden;
+            height: 44px;
+        }
+        .counter-btn {
+            width: 40px;
+            height: 100%;
+            border: none;
+            background: var(--gray-100);
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--dark);
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .counter-btn:hover { background: var(--gray-200); }
+        .counter-val {
+            flex: 1;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        /* Buttons */
+        .btn-book {
+            padding: 13px 32px;
+            background: var(--dark);
+            color: white;
+            border: none;
+            border-radius: 2px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-book:hover { background: var(--teal); }
+        .btn-book:disabled { opacity: 0.45; cursor: not-allowed; background: var(--gray-400); }
+        .btn-cancel-link {
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--gray-400);
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+        .btn-cancel-link:hover { color: var(--dark); }
+
+        /* List de espera button */
+        .btn-espera {
+            padding: 12px 28px;
+            background: white;
+            color: var(--dark);
+            border: 1px solid var(--dark);
+            border-radius: 2px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-espera:hover { background: var(--dark); color: white; }
+
+        /* Full message */
+        .full-msg {
+            font-size: 13px;
+            color: var(--gray-400);
+            font-style: italic;
+        }
+
+        /* Success */
+        .success-box {
+            display: none;
+            padding: 20px 24px;
+            background: var(--teal-light);
+            border-left: 3px solid var(--teal);
+        }
+        .success-box.show { display: block; }
+        .success-box h4 {
+            font-size: 15px;
+            color: var(--teal-dark);
+            margin-bottom: 6px;
+        }
+        .success-box p { font-size: 13px; color: var(--gray-500); }
+
+        /* Footer */
+        .site-footer {
+            text-align: center;
+            padding: 28px;
+            font-size: 11px;
+            color: var(--gray-400);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        @media (max-width: 600px) {
+            .info-inner { padding: 36px 20px; }
+            .shift-head { padding: 20px; }
+            .shift-body { padding: 16px 20px 20px; }
+            .irow { flex-direction: column; gap: 12px; }
+            .shift-cta { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+    <svg class="hero-utensils" viewBox="0 0 160 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fork -->
+        <line x1="40" y1="10" x2="40" y2="310" stroke="black" stroke-width="5" stroke-linecap="round"/>
+        <line x1="26" y1="10" x2="26" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
+        <line x1="40" y1="10" x2="40" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
+        <line x1="54" y1="10" x2="54" y2="70" stroke="black" stroke-width="4" stroke-linecap="round"/>
+        <path d="M26 70 Q40 88 54 70" stroke="black" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <!-- Knife -->
+        <line x1="120" y1="10" x2="120" y2="310" stroke="black" stroke-width="5" stroke-linecap="round"/>
+        <path d="M120 10 Q148 30 142 76 L120 84 Z" fill="black"/>
+    </svg>
+
+    <p class="hero-sub">Season · Restaurante</p>
+    <h1 class="hero-title">RESERVAS</h1>
+
+    <div class="hero-scroll" onclick="document.querySelector('.info-block').scrollIntoView({behavior:'smooth'})">
+        <span>Ver más</span>
+        <div class="hero-scroll-bar"></div>
+    </div>
+</section>
+
+<!-- ══ INFO ══ -->
+<div class="info-block">
+    <div class="info-inner">
+        <p>
+            Todas las reservas deben realizarse a través de nuestra página web.
+            Indica la fecha, el turno y el número de comensales para confirmar tu mesa.
+        </p>
+        <p>
+            <strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes
+            de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no
+            asistencia, podrá aplicarse un cargo.
+        </p>
+        <p>
+            <strong>Grupos grandes (más de 10 personas):</strong> Por favor, contacta directamente
+            con nosotros antes de reservar para que podamos preparar el espacio adecuado.
+        </p>
+        <p>
+            ¿Tienes alguna duda? Escríbenos por
+            <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a>
+            o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.
+        </p>
+    </div>
+</div>
+
+<!-- ══ BOOKING ══ -->
+<div class="booking-section">
+    <div class="booking-inner">
+
+        <!-- Date selector -->
+        <div class="date-row">
+            <div class="date-strip" id="dateStrip"></div>
+            <button class="cal-icon-btn" title="Elegir fecha" onclick="openCal()">📅</button>
+            <input type="date" id="calInput">
+        </div>
+
+        <!-- Shift cards -->
+        <div class="shift-list">
+
+            <!-- COMIDA -->
+            <div class="shift-card">
+                <div class="shift-head">
+                    <span class="shift-name">Comida</span>
+                    <span class="shift-time">13:00 – 16:00</span>
+                </div>
+                <div class="shift-body">
+                    <div class="shift-cta" id="ctaComida">
+                        <button class="btn-book" onclick="openForm('comida')">Reservar</button>
+                    </div>
+                    <div class="inline-form" id="formComida"></div>
+                    <div class="success-box" id="okComida">
+                        <h4>✓ Reserva confirmada</h4>
+                        <p id="okComidaText"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENA -->
+            <div class="shift-card">
+                <div class="shift-head">
+                    <span class="shift-name">Cena</span>
+                    <span class="shift-time">20:00 – 23:30</span>
+                </div>
+                <div class="shift-body">
+                    <div class="shift-cta" id="ctaCena">
+                        <button class="btn-book" onclick="openForm('cena')">Reservar</button>
+                    </div>
+                    <div class="inline-form" id="formCena"></div>
+                    <div class="success-box" id="okCena">
+                        <h4>✓ Reserva confirmada</h4>
+                        <p id="okCenaText"></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<footer class="site-footer">Season &middot; Sistema de Reservas</footer>
+
+<script>
+const DAYS  = ['D','L','M','Mi','J','V','S'];
+const T_COM = ['13:00','13:30','14:00','14:30','15:00','15:30'];
+const T_CEN = ['20:00','20:30','21:00','21:30','22:00','22:30'];
+let selDate = '';
+let guests  = { comida: 2, cena: 2 };
+
+/* ── Date strip ── */
+function buildStrip(startDate) {
+    const strip = document.getElementById('dateStrip');
+    strip.innerHTML = '';
+    const todayIso = new Date().toISOString().split('T')[0];
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(startDate + 'T12:00:00');
+        d.setDate(d.getDate() + i);
+        const iso = d.toISOString().split('T')[0];
+        const el = document.createElement('div');
+        el.className = 'dp' + (iso === todayIso ? ' today' : '');
+        el.dataset.date = iso;
+        el.innerHTML = `<span class="dp-num">${d.getDate()}</span><span class="dp-day">${DAYS[d.getDay()]}</span>`;
+        el.onclick = () => pickDate(iso);
+        strip.appendChild(el);
+    }
+}
+
+function pickDate(iso) {
+    selDate = iso;
+    document.querySelectorAll('.dp').forEach(el => {
+        el.classList.toggle('selected', el.dataset.date === iso);
+    });
+    resetAll();
+}
+
+function openCal() {
+    const inp = document.getElementById('calInput');
+    inp.min = new Date().toISOString().split('T')[0];
+    inp.value = selDate;
+    inp.onchange = () => {
+        const v = inp.value;
+        if (!v) return;
+        const pill = document.querySelector(`.dp[data-date="${v}"]`);
+        if (pill) {
+            pickDate(v);
+            pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } else {
+            buildStrip(v);
+            pickDate(v);
+        }
+    };
+    try { inp.showPicker(); } catch { inp.click(); }
+}
+
+/* ── Form ── */
+function buildForm(shift) {
+    const times = (shift === 'comida' ? T_COM : T_CEN)
+        .map(t => `<option>${t}</option>`).join('');
+    return `
+        <div class="irow">
+            <div class="igroup" style="max-width:160px">
+                <label>Comensales</label>
+                <div class="counter">
+                    <button class="counter-btn" onclick="chg('${shift}',-1)">−</button>
+                    <span class="counter-val" id="gn_${shift}">${guests[shift]}</span>
+                    <button class="counter-btn" onclick="chg('${shift}',1)">+</button>
+                </div>
+            </div>
+            <div class="igroup">
+                <label>Hora</label>
+                <select class="iinput" id="t_${shift}">${times}</select>
+            </div>
+        </div>
+        <div class="irow">
+            <div class="igroup">
+                <label>Nombre *</label>
+                <input type="text" class="iinput" id="n_${shift}" placeholder="Tu nombre">
+            </div>
+            <div class="igroup">
+                <label>Teléfono *</label>
+                <input type="tel" class="iinput" id="p_${shift}" placeholder="+34 612 345 678">
+            </div>
+        </div>
+        <div class="igroup">
+            <label>Notas (opcional)</label>
+            <input type="text" class="iinput" id="no_${shift}" placeholder="Alergias, celebraciones...">
+        </div>
+        <div class="shift-cta">
+            <button class="btn-book" id="sb_${shift}" onclick="submit('${shift}')">Confirmar reserva</button>
+            <button class="btn-cancel-link" onclick="closeForm('${shift}')">Cancelar</button>
+        </div>`;
+}
+
+function chg(shift, d) {
+    guests[shift] = Math.max(1, Math.min(20, guests[shift] + d));
+    const el = document.getElementById('gn_' + shift);
+    if (el) el.textContent = guests[shift];
+}
+
+function openForm(shift) {
+    if (!selDate) { alert('Selecciona una fecha primero'); return; }
+    const other = shift === 'comida' ? 'cena' : 'comida';
+    closeForm(other);
+    document.getElementById('cta' + cap(shift)).style.display = 'none';
+    const f = document.getElementById('form' + cap(shift));
+    f.innerHTML = buildForm(shift);
+    f.classList.add('open');
+}
+
+function closeForm(shift) {
+    const f = document.getElementById('form' + cap(shift));
+    f.classList.remove('open');
+    f.innerHTML = '';
+    document.getElementById('cta' + cap(shift)).style.display = '';
+}
+
+function resetAll() {
+    ['comida','cena'].forEach(s => {
+        closeForm(s);
+        document.getElementById('ok' + cap(s)).classList.remove('show');
+        document.getElementById('cta' + cap(s)).style.display = '';
+    });
+}
+
+function cap(s) { return s[0].toUpperCase() + s.slice(1); }
+
+/* ── Submit ── */
+async function submit(shift) {
+    const name  = document.getElementById('n_'  + shift).value.trim();
+    const phone = document.getElementById('p_'  + shift).value.trim();
+    const time  = document.getElementById('t_'  + shift).value;
+    const notes = document.getElementById('no_' + shift).value.trim();
+    if (!name)  { alert('Introduce tu nombre');    return; }
+    if (!phone) { alert('Introduce tu teléfono'); return; }
+
+    const btn = document.getElementById('sb_' + shift);
+    btn.disabled = true;
+    btn.textContent = 'Reservando...';
+
+    try {
+        const res = await fetch('/api/public/reserve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                client_name: name, client_phone: phone,
+                date: selDate, shift, time,
+                guests: guests[shift], notes, source: 'web',
+            }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error al reservar');
+
+        closeForm(shift);
+        const d = new Date(selDate + 'T12:00:00');
+        const ds = d.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+        document.getElementById('ok' + cap(shift) + 'Text').textContent =
+            `${name} · ${ds} a las ${time} · ${guests[shift]} persona${guests[shift] > 1 ? 's' : ''}`;
+        document.getElementById('ok' + cap(shift)).classList.add('show');
+
+    } catch(e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Confirmar reserva';
+    }
+}
+
+/* ── Init ── */
+const todayIso = new Date().toISOString().split('T')[0];
+buildStrip(todayIso);
+pickDate(todayIso);
+</script>
+</body>
+</html>
