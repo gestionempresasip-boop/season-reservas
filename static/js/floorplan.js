@@ -78,19 +78,36 @@ function renderWebReservationsPanel(items) {
         <h4>🌐 Reservas web sin asignar <span class="web-badge">${items.length}</span></h4>
         <div class="web-res-list">
             ${items.map(r => `
-            <div class="web-res-card">
+            <div class="web-res-card" id="web-res-card-${r.id}">
                 <div class="web-res-dot"></div>
                 <div class="web-res-info">
                     <div class="web-res-name">${r.client_name}</div>
                     <div class="web-res-meta">${r.time} · ${r.guests} persona${r.guests !== 1 ? 's' : ''} · ${r.shift === 'comida' ? '🌞 Comida' : '🌙 Cena'}</div>
                 </div>
                 <button class="web-res-btn" onclick="openEditReservation(${r.id})">Ver / Asignar</button>
+                <button class="web-res-btn-cancel" onclick="cancelWebReservation(${r.id}, '${r.client_name.replace(/'/g,"\\'")}', '${r.time}')" title="Cancelar reserva">✕</button>
             </div>`).join('')}
         </div>`;
 }
 
 // Color palette for group reservations (assigned by index)
 const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
+
+function cancelWebReservation(id, name, time) {
+    if (!confirm(`¿Cancelar la reserva de ${name} a las ${time}?`)) return;
+    fetch(`/api/reservations/${id}`, { method: 'DELETE' })
+        .then(r => { if (!r.ok) throw new Error(); })
+        .then(() => {
+            const card = document.getElementById(`web-res-card-${id}`);
+            if (card) card.remove();
+            // Hide panel if no cards left
+            const list = document.querySelector('.web-res-list');
+            if (list && list.children.length === 0) {
+                document.getElementById('webReservationsPanel').style.display = 'none';
+            }
+        })
+        .catch(() => alert('Error al cancelar la reserva'));
+}
 
 // ── Floor Plan Edit Mode ──────────────────────────
 let _editMode = false;
