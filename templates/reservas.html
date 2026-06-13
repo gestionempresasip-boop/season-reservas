@@ -55,6 +55,15 @@
         .info-inner strong { color: white; font-weight: 600; }
         .info-inner a { color: var(--gold); text-decoration: none; }
         .info-inner a:hover { text-decoration: underline; }
+        .lang-tabs { display: flex; gap: 8px; margin-bottom: 28px; }
+        .lang-tab {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.5); border-radius: 20px;
+            padding: 5px 14px; font-size: 12px; letter-spacing: 1px;
+            cursor: pointer; transition: all .2s;
+        }
+        .lang-tab:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.8); }
+        .lang-tab.active { background: var(--teal); border-color: var(--teal); color: white; font-weight: 600; }
 
         /* ── BOOKING ── */
         .booking-section { background: var(--cream); padding: 56px 24px 72px; }
@@ -286,35 +295,45 @@
 <div class="info-block">
     <div class="info-inner">
 
-        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇪🇸 Español</p>
-        <p>Todas las reservas deben realizarse a través de esta página. Indica la fecha, el turno y el número de comensales para confirmar tu mesa.</p>
-        <p><strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no asistencia, podrá aplicarse un cargo.</p>
-        <p><strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros antes de reservar para que podamos preparar el espacio adecuado.</p>
-        <p>¿Necesitas ayuda? Escríbenos por <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        <!-- Language tabs -->
+        <div class="lang-tabs">
+            <button class="lang-tab active" onclick="switchLang('es',this)">🇪🇸 ES</button>
+            <button class="lang-tab" onclick="switchLang('en',this)">🇬🇧 EN</button>
+            <button class="lang-tab" onclick="switchLang('fr',this)">🇫🇷 FR</button>
+            <button class="lang-tab" onclick="switchLang('ru',this)">🇷🇺 RU</button>
+        </div>
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
+        <!-- Spanish -->
+        <div class="lang-content" id="lang-es">
+            <p>Todas las reservas deben realizarse a través de esta página. Indica la fecha, el turno y el número de comensales para confirmar tu mesa.</p>
+            <p><strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no asistencia, podrá aplicarse un cargo.</p>
+            <p><strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros antes de reservar para que podamos preparar el espacio adecuado.</p>
+            <p>¿Necesitas ayuda? Escríbenos por <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
 
-        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇬🇧 English</p>
-        <p>All reservations must be made through this page. Select the date, shift and number of guests to confirm your table.</p>
-        <p><strong>Cancellation policy:</strong> Guests may cancel up to 24 hours before the reservation at no charge. After that time or in case of no-show, a fee may apply.</p>
-        <p><strong>Groups of more than 10 people:</strong> Please contact us directly before booking so we can arrange the appropriate space.</p>
-        <p>Need help? Message us on <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> or call us at <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        <!-- English -->
+        <div class="lang-content" id="lang-en" style="display:none">
+            <p>All reservations must be made through this page. Select the date, shift and number of guests to confirm your table.</p>
+            <p><strong>Cancellation policy:</strong> Guests may cancel up to 24 hours before the reservation at no charge. After that time or in case of no-show, a fee may apply.</p>
+            <p><strong>Groups of more than 10 people:</strong> Please contact us directly before booking so we can arrange the appropriate space.</p>
+            <p>Need help? Message us on <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> or call us at <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
+        <!-- French -->
+        <div class="lang-content" id="lang-fr" style="display:none">
+            <p>Toutes les réservations doivent être effectuées via cette page. Indiquez la date, le service et le nombre de couverts pour confirmer votre table.</p>
+            <p><strong>Politique d'annulation :</strong> Le client dispose jusqu'à 24 heures avant la réservation pour l'annuler sans frais. Passé ce délai ou en cas de non-présentation, des frais pourront s'appliquer.</p>
+            <p><strong>Groupes de plus de 10 personnes :</strong> Contactez-nous directement avant de réserver afin que nous puissions préparer l'espace adéquat.</p>
+            <p>Besoin d'aide ? Écrivez-nous sur <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou appelez-nous au <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
 
-        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇫🇷 Français</p>
-        <p>Toutes les réservations doivent être effectuées via cette page. Indiquez la date, le service et le nombre de couverts pour confirmer votre table.</p>
-        <p><strong>Politique d'annulation :</strong> Le client dispose jusqu'à 24 heures avant la réservation pour l'annuler sans frais. Passé ce délai ou en cas de non-présentation, des frais pourront s'appliquer.</p>
-        <p><strong>Groupes de plus de 10 personnes :</strong> Contactez-nous directement avant de réserver afin que nous puissions préparer l'espace adéquat.</p>
-        <p>Besoin d'aide ? Écrivez-nous sur <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou appelez-nous au <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
-
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
-
-        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇷🇺 Русский</p>
-        <p>Все бронирования осуществляются через эту страницу. Выберите дату, смену и количество гостей для подтверждения столика.</p>
-        <p><strong>Политика отмены:</strong> Бронирование можно отменить бесплатно не позднее чем за 24 часа. В случае более поздней отмены или неявки может взиматься плата.</p>
-        <p><strong>Группы более 10 человек:</strong> Пожалуйста, свяжитесь с нами напрямую перед бронированием, чтобы мы могли подготовить подходящее пространство.</p>
-        <p>Нужна помощь? Напишите нам в <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> или позвоните по номеру <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        <!-- Russian -->
+        <div class="lang-content" id="lang-ru" style="display:none">
+            <p>Все бронирования осуществляются через эту страницу. Выберите дату, смену и количество гостей для подтверждения столика.</p>
+            <p><strong>Политика отмены:</strong> Бронирование можно отменить бесплатно не позднее чем за 24 часа. В случае более поздней отмены или неявки может взиматься плата.</p>
+            <p><strong>Группы более 10 человек:</strong> Пожалуйста, свяжитесь с нами напрямую перед бронированием, чтобы мы могли подготовить подходящее пространство.</p>
+            <p>Нужна помощь? Напишите нам в <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> или позвоните по номеру <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
 
     </div>
 </div>
@@ -380,6 +399,13 @@
 <script>
 const T_COM = ['13:00','13:15','13:30','13:45','14:00','14:15','14:30','14:45','15:00','15:15','15:30','15:45'];
 const T_CEN = ['19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:15','21:30','21:45','22:00','22:15','22:30'];
+
+function switchLang(lang, btn) {
+    document.querySelectorAll('.lang-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.lang-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('lang-' + lang).style.display = '';
+    btn.classList.add('active');
+}
 
 function isoToday() {
     const n = new Date();
