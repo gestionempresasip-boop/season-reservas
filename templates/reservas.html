@@ -56,6 +56,28 @@
         .info-inner a { color: var(--gold); text-decoration: none; }
         .info-inner a:hover { text-decoration: underline; }
         .lang-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+        /* ── Popup ── */
+        .popup-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .popup-overlay.show { display: flex; }
+        .popup-box {
+            background: white; border-radius: 16px;
+            padding: 32px 28px 24px; max-width: 360px; width: 90%;
+            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: popIn .2s ease;
+        }
+        @keyframes popIn { from { transform: scale(.9); opacity:0; } to { transform: scale(1); opacity:1; } }
+        .popup-icon { font-size: 36px; margin-bottom: 12px; }
+        .popup-msg  { font-size: 15px; color: var(--dark); line-height: 1.6; margin-bottom: 24px; }
+        .popup-btn  {
+            background: var(--teal); color: white; border: none;
+            border-radius: 8px; padding: 11px 32px; font-size: 14px;
+            font-weight: 600; cursor: pointer; letter-spacing: .5px;
+        }
+        .popup-btn:hover { opacity: .88; }
         .lang-tab {
             background: transparent; border: 1px solid rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.5); border-radius: 20px;
@@ -644,10 +666,19 @@ function chg(shift, d) {
     if (el) el.textContent = guests[shift];
 }
 
+function showPopup(msg, icon) {
+    document.getElementById('popupMsg').textContent  = msg;
+    document.getElementById('popupIcon').textContent = icon || '⚠️';
+    document.getElementById('popupOverlay').classList.add('show');
+}
+function closePopup() {
+    document.getElementById('popupOverlay').classList.remove('show');
+}
+
 function cap(s) { return s[0].toUpperCase() + s.slice(1); }
 
 function openForm(shift) {
-    if (!selDate) { alert('Selecciona una fecha primero'); return; }
+    if (!selDate) { showPopup('Selecciona una fecha primero', '📅'); return; }
     closeForm(shift === 'comida' ? 'cena' : 'comida');
     document.getElementById('cta' + cap(shift)).style.display = 'none';
     const f = document.getElementById('form' + cap(shift));
@@ -696,9 +727,9 @@ async function doSubmit(shift) {
     const phone = document.getElementById('p_'  + shift).value.trim();
     const time  = document.getElementById('t_'  + shift).value;
     const notes = document.getElementById('no_' + shift).value.trim();
-    if (!time)  { alert('Selecciona una hora');      return; }
-    if (!name)  { alert('Introduce tu nombre');      return; }
-    if (!phone) { alert('Introduce tu teléfono');    return; }
+    if (!time)  { showPopup('Selecciona una hora', '🕐');       return; }
+    if (!name)  { showPopup('Introduce tu nombre', '👤');      return; }
+    if (!phone) { showPopup('Introduce tu teléfono', '📱');    return; }
 
     const btn = document.getElementById('sb_' + shift);
     btn.disabled = true;
@@ -721,7 +752,7 @@ async function doSubmit(shift) {
         document.getElementById('ok' + cap(shift)).classList.add('show');
 
     } catch(e) {
-        alert(e.message);
+        showPopup(e.message, '❌');
         btn.disabled = false;
         btn.textContent = 'Confirmar reserva';
     }
@@ -738,5 +769,13 @@ async function doSubmit(shift) {
     renderCal();
 })();
 </script>
+<!-- ── Popup modal ── -->
+<div class="popup-overlay" id="popupOverlay" onclick="closePopup()">
+    <div class="popup-box" onclick="event.stopPropagation()">
+        <div class="popup-icon" id="popupIcon">⚠️</div>
+        <p class="popup-msg" id="popupMsg"></p>
+        <button class="popup-btn" onclick="closePopup()">Entendido</button>
+    </div>
+</div>
 </body>
 </html>
