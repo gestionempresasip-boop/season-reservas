@@ -127,11 +127,15 @@ def update_reservation(rid):
         return error_response('Content-Type must be application/json', 400)
 
     # Validate with partial schema (all fields optional)
+    raw = request.json or {}
     try:
-        data = ReservationUpdate(**request.json)
+        data = ReservationUpdate(**{k: v for k, v in raw.items() if k != 'date'})
         update_dict = data.model_dump(mode='json', exclude_unset=True)
     except Exception as e:
         return error_response(f'Validación fallida: {str(e)}', 400)
+    # Inject date directly (Pydantic v2 Optional[date] has a compat issue with @validator)
+    if 'date' in raw and raw['date']:
+        update_dict['date'] = raw['date']
 
     r = res_svc.update_reservation(rid, update_dict)
     notify()
