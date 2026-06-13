@@ -55,7 +55,7 @@
         .info-inner strong { color: white; font-weight: 600; }
         .info-inner a { color: var(--gold); text-decoration: none; }
         .info-inner a:hover { text-decoration: underline; }
-        .lang-tabs { display: flex; gap: 8px; margin-bottom: 28px; }
+        .lang-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
         .lang-tab {
             background: transparent; border: 1px solid rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.5); border-radius: 20px;
@@ -301,6 +301,14 @@
             <button class="lang-tab" onclick="switchLang('en',this)">🇬🇧 EN</button>
             <button class="lang-tab" onclick="switchLang('fr',this)">🇫🇷 FR</button>
             <button class="lang-tab" onclick="switchLang('ru',this)">🇷🇺 RU</button>
+            <button class="lang-tab" onclick="switchLang('it',this)">🇮🇹 IT</button>
+            <button class="lang-tab" onclick="switchLang('pl',this)">🇵🇱 PL</button>
+            <button class="lang-tab" onclick="switchLang('ja',this)">🇯🇵 JA</button>
+            <button class="lang-tab" onclick="switchLang('zh',this)">🇨🇳 ZH</button>
+            <button class="lang-tab" onclick="switchLang('pt',this)">🇵🇹 PT</button>
+            <button class="lang-tab" onclick="switchLang('nl',this)">🇳🇱 NL</button>
+            <button class="lang-tab" onclick="switchLang('no',this)">🇳🇴 NO</button>
+            <button class="lang-tab" onclick="switchLang('is',this)">🇮🇸 IS</button>
         </div>
 
         <!-- Spanish -->
@@ -333,6 +341,70 @@
             <p><strong>Политика отмены:</strong> Бронирование можно отменить бесплатно не позднее чем за 24 часа. В случае более поздней отмены или неявки может взиматься плата.</p>
             <p><strong>Группы более 10 человек:</strong> Пожалуйста, свяжитесь с нами напрямую перед бронированием, чтобы мы могли подготовить подходящее пространство.</p>
             <p>Нужна помощь? Напишите нам в <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> или позвоните по номеру <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Italian -->
+        <div class="lang-content" id="lang-it" style="display:none">
+            <p>Tutte le prenotazioni devono essere effettuate tramite questa pagina. Indica la data, il turno e il numero di commensali per confermare il tuo tavolo.</p>
+            <p><strong>Politica di cancellazione:</strong> Il cliente può cancellare fino a 24 ore prima della prenotazione senza alcun costo. Dopo tale termine o in caso di mancata presenza, potrà essere applicata una penale.</p>
+            <p><strong>Gruppi di più di 10 persone:</strong> Contattaci direttamente prima di prenotare in modo da poter preparare lo spazio adeguato.</p>
+            <p>Hai bisogno di aiuto? Scrivici su <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o chiamaci al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Polish -->
+        <div class="lang-content" id="lang-pl" style="display:none">
+            <p>Wszystkie rezerwacje należy składać przez tę stronę. Podaj datę, zmianę i liczbę gości, aby potwierdzić swój stolik.</p>
+            <p><strong>Polityka anulowania:</strong> Klient może anulować rezerwację bezpłatnie do 24 godzin przed jej terminem. Po upływie tego czasu lub w przypadku niestawienia się może zostać naliczona opłata.</p>
+            <p><strong>Grupy powyżej 10 osób:</strong> Skontaktuj się z nami bezpośrednio przed rezerwacją, abyśmy mogli odpowiednio przygotować przestrzeń.</p>
+            <p>Potrzebujesz pomocy? Napisz do nas na <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> lub zadzwoń pod numer <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Japanese -->
+        <div class="lang-content" id="lang-ja" style="display:none">
+            <p>すべてのご予約はこのページからお願いいたします。テーブルを確認するために、日付・時間帯・人数をご選択ください。</p>
+            <p><strong>キャンセルポリシー：</strong>ご予約の24時間前までは無料でキャンセルいただけます。それ以降のキャンセルや無断欠席の場合、料金が発生する場合があります。</p>
+            <p><strong>10名以上のグループ：</strong>ご予約前に直接ご連絡ください。適切なスペースをご用意いたします。</p>
+            <p>ご不明な点は <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> でメッセージをお送りいただくか、<a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a> までお電話ください。</p>
+        </div>
+
+        <!-- Chinese -->
+        <div class="lang-content" id="lang-zh" style="display:none">
+            <p>所有预订必须通过本页面完成。请选择日期、时段和用餐人数以确认您的餐桌。</p>
+            <p><strong>取消政策：</strong>客户可在预订前24小时内免费取消。超过该时限或无故缺席，可能会收取费用。</p>
+            <p><strong>10人以上团体：</strong>请在预订前直接与我们联系，以便我们提前做好相应安排。</p>
+            <p>需要帮助？请通过 <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> 联系我们，或拨打 <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>。</p>
+        </div>
+
+        <!-- Portuguese -->
+        <div class="lang-content" id="lang-pt" style="display:none">
+            <p>Todas as reservas devem ser feitas através desta página. Indique a data, o turno e o número de pessoas para confirmar a sua mesa.</p>
+            <p><strong>Política de cancelamento:</strong> O cliente pode cancelar até 24 horas antes da reserva sem qualquer custo. Após esse prazo ou em caso de não comparência, poderá ser cobrada uma taxa.</p>
+            <p><strong>Grupos de mais de 10 pessoas:</strong> Contacte-nos diretamente antes de reservar para que possamos preparar o espaço adequado.</p>
+            <p>Precisa de ajuda? Envie-nos uma mensagem pelo <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou ligue para <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Dutch -->
+        <div class="lang-content" id="lang-nl" style="display:none">
+            <p>Alle reserveringen moeten via deze pagina worden gemaakt. Geef de datum, het tijdvak en het aantal gasten op om uw tafel te bevestigen.</p>
+            <p><strong>Annuleringsbeleid:</strong> De klant kan tot 24 uur voor de reservering kosteloos annuleren. Na die tijd of bij niet-verschijnen kan een vergoeding in rekening worden gebracht.</p>
+            <p><strong>Groepen van meer dan 10 personen:</strong> Neem direct contact met ons op vóór het reserveren zodat wij de juiste ruimte kunnen voorbereiden.</p>
+            <p>Heeft u hulp nodig? Stuur ons een bericht via <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> of bel ons op <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Norwegian -->
+        <div class="lang-content" id="lang-no" style="display:none">
+            <p>Alle reservasjoner må gjøres via denne siden. Angi dato, skift og antall gjester for å bekrefte bordet ditt.</p>
+            <p><strong>Avbestillingspolicy:</strong> Kunden kan avbestille kostnadsfritt inntil 24 timer før reservasjonen. Etter dette tidspunktet eller ved uteblivelse kan det påløpe gebyr.</p>
+            <p><strong>Grupper på mer enn 10 personer:</strong> Ta kontakt med oss direkte før bestilling slik at vi kan forberede riktig plass.</p>
+            <p>Trenger du hjelp? Send oss en melding på <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> eller ring oss på <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
+        <!-- Icelandic -->
+        <div class="lang-content" id="lang-is" style="display:none">
+            <p>Allar pantanir verða að fara fram í gegnum þessa síðu. Veldu dagsetningu, vakt og fjölda gesta til að staðfesta borðið þitt.</p>
+            <p><strong>Afpöntunarregla:</strong> Viðskiptavinurinn getur afpantað án kostnaðar allt að 24 klukkustundum fyrir bókun. Eftir þann tíma eða ef mætt er ekki getur verið innheimt gjald.</p>
+            <p><strong>Hópar yfir 10 manns:</strong> Hafðu samband við okkur beint áður en þú pantar svo við getum undirbúið viðeigandi pláss.</p>
+            <p>Þarftu aðstoð? Skrifaðu okkur á <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> eða hringdu í okkur í <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
     </div>
