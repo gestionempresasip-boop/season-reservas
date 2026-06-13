@@ -4,320 +4,665 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Reservas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --teal: #1a8a7d;
-            --teal-dark: #147068;
-            --teal-light: #e8f5f2;
-            --gold: #c5a55a;
-            --cream: #faf8f3;
-            --cream-warm: #f0ebe0;
-            --dark: #111827;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
+            --sage:      #6b9080;
+            --sage-dk:   #4a6b5e;
+            --sage-lt:   #eaf2ee;
+            --forest:    #1c2b22;
+            --gold:      #b8956a;
+            --gold-lt:   #f5edd8;
+            --cream:     #faf8f3;
+            --linen:     #f3ede4;
+            --blush:     #ecddd4;
+            --char:      #1a1a1a;
+            --warm-gray: #7a7068;
+            --lt-gray:   #e4dfd8;
+            --mid-gray:  #a09890;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; background: white; color: var(--dark); }
+        body {
+            font-family: 'Jost', sans-serif;
+            background: var(--cream);
+            color: var(--char);
+            -webkit-font-smoothing: antialiased;
+        }
 
         /* ── HERO ── */
-        .hero {
+        .s-hero {
             min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: var(--cream-warm);
-            text-align: center;
-            padding: 60px 20px 90px;
+            background: var(--cream);
             position: relative;
+            padding: 80px 24px 100px;
+            text-align: center;
+            overflow: hidden;
         }
-        .hero-logo { width: min(260px, 65vw); margin: 0 auto 10px; }
-        .season-logo-svg { width: 100%; height: auto; color: var(--teal); }
-        .hero-reservas { font-size: 11px; letter-spacing: 7px; color: var(--teal); text-transform: uppercase; font-weight: 600; margin-top: 4px; }
-        .hero-sub { font-size: 11px; letter-spacing: 3px; color: var(--gray-400); text-transform: uppercase; margin-top: 8px; }
-        .hero-scroll {
-            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            color: var(--gray-400); font-size: 10px; letter-spacing: 2.5px;
-            text-transform: uppercase; cursor: pointer;
+        .s-hero::before {
+            content: '';
+            position: absolute;
+            width: min(680px, 115vw);
+            height: min(680px, 115vw);
+            border-radius: 50%;
+            border: 1px solid var(--blush);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
-        .hero-scroll-bar { width: 1px; height: 44px; background: linear-gradient(to bottom, var(--gray-400), transparent); }
+        .s-hero::after {
+            content: '';
+            position: absolute;
+            width: min(420px, 90vw);
+            height: min(420px, 90vw);
+            border-radius: 50%;
+            border: 1px solid var(--blush);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .hero-glow {
+            position: absolute;
+            width: min(500px, 100vw);
+            height: min(500px, 100vw);
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(236,221,212,0.55) 0%, transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hero-logo-wrap {
+            width: min(160px, 42vw);
+            margin-bottom: 32px;
+            animation: hFade 1s ease both;
+        }
+        .hero-logo-wrap svg { width: 100%; height: auto; color: var(--sage); }
 
-        /* ── INFO ── */
-        .info-block { background: var(--dark); color: white; }
-        .info-inner { max-width: 760px; margin: 0 auto; padding: 48px 28px; }
-        .info-inner p { font-size: 14px; line-height: 1.9; color: rgba(255,255,255,0.75); margin-bottom: 14px; }
-        .info-inner p:last-child { margin-bottom: 0; }
-        .info-inner strong { color: white; font-weight: 600; }
-        .info-inner a { color: var(--gold); text-decoration: none; }
-        .info-inner a:hover { text-decoration: underline; }
-        .lang-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-        /* ── Popup ── */
-        .popup-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45); z-index: 9999;
-            align-items: center; justify-content: center;
+        .hero-eyebrow {
+            font-family: 'Jost', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 18px;
+            animation: hFade 1s ease 0.2s both;
         }
-        .popup-overlay.show { display: flex; }
-        .popup-box {
-            background: white; border-radius: 16px;
-            padding: 32px 28px 24px; max-width: 360px; width: 90%;
-            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-            animation: popIn .2s ease;
+        .hero-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(54px, 11vw, 92px);
+            font-weight: 300;
+            font-style: italic;
+            line-height: 0.9;
+            color: var(--char);
+            letter-spacing: -0.02em;
+            margin-bottom: 28px;
+            animation: hFade 1s ease 0.3s both;
         }
-        @keyframes popIn { from { transform: scale(.9); opacity:0; } to { transform: scale(1); opacity:1; } }
-        .popup-icon { font-size: 36px; margin-bottom: 12px; }
-        .popup-msg  { font-size: 15px; color: var(--dark); line-height: 1.6; margin-bottom: 24px; }
-        .popup-btn  {
-            background: var(--teal); color: white; border: none;
-            border-radius: 8px; padding: 11px 32px; font-size: 14px;
-            font-weight: 600; cursor: pointer; letter-spacing: .5px;
+        .hero-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: hFade 1s ease 0.45s both;
         }
-        .popup-btn:hover { opacity: .88; }
+        .hero-divider-line { width: 44px; height: 1px; background: var(--lt-gray); }
+        .hero-divider-gem {
+            width: 6px; height: 6px;
+            background: var(--gold);
+            transform: rotate(45deg);
+        }
+        .hero-sub {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--mid-gray);
+            font-weight: 300;
+            animation: hFade 1s ease 0.52s both;
+        }
+        .hero-cta {
+            position: absolute;
+            bottom: 36px; left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            animation: hFade 1.2s ease 0.7s both;
+        }
+        .hero-cta-label {
+            font-size: 9px;
+            letter-spacing: 4.5px;
+            text-transform: uppercase;
+            color: var(--mid-gray);
+            font-weight: 400;
+        }
+        .hero-cta-line {
+            width: 1px; height: 52px;
+            background: var(--lt-gray);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-cta-line::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: 0;
+            width: 1px; height: 10px;
+            background: var(--gold);
+            animation: scrollDot 1.8s ease-in-out infinite;
+        }
+        @keyframes scrollDot {
+            0%   { top: -10px; opacity: 1; }
+            100% { top: 52px;  opacity: 0; }
+        }
+        @keyframes hFade {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── LANG + INFO ── */
+        .s-lang {
+            background: var(--forest);
+            padding: 36px 24px 44px;
+        }
+        .s-lang-inner {
+            max-width: 620px;
+            margin: 0 auto;
+        }
+        .lang-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 36px;
+        }
         .lang-tab {
-            background: transparent; border: 1px solid rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.5); border-radius: 20px;
-            padding: 5px 14px; font-size: 12px; letter-spacing: 1px;
-            cursor: pointer; transition: all .2s;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.13);
+            color: rgba(255,255,255,0.4);
+            border-radius: 20px;
+            padding: 5px 13px;
+            font-family: 'Jost', sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .lang-tab:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.8); }
-        .lang-tab.active { background: var(--teal); border-color: var(--teal); color: white; font-weight: 600; }
+        .lang-tab:hover {
+            border-color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.7);
+        }
+        .lang-tab.active {
+            background: var(--sage);
+            border-color: var(--sage);
+            color: white;
+            font-weight: 500;
+        }
+        .lang-content p {
+            font-size: 14px;
+            line-height: 2;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 14px;
+            font-weight: 300;
+        }
+        .lang-content p:last-child { margin-bottom: 0; }
+        .lang-content strong { color: rgba(255,255,255,0.88); font-weight: 500; }
+        .lang-content a { color: var(--gold); text-decoration: none; }
+        .lang-content a:hover { text-decoration: underline; }
 
         /* ── BOOKING ── */
-        .booking-section { background: var(--cream); padding: 56px 24px 72px; }
-        .booking-inner { max-width: 720px; margin: 0 auto; }
+        .s-booking {
+            background: var(--cream);
+            padding: 72px 24px 88px;
+        }
+        .s-booking-inner {
+            max-width: 580px;
+            margin: 0 auto;
+        }
+        .s-eyebrow {
+            font-size: 10px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--gold);
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .s-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(38px, 7vw, 58px);
+            font-weight: 300;
+            font-style: italic;
+            color: var(--char);
+            text-align: center;
+            margin-bottom: 10px;
+            line-height: 1.08;
+        }
+        .s-sub {
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--mid-gray);
+            text-align: center;
+            margin-bottom: 44px;
+            font-weight: 300;
+            min-height: 16px;
+            transition: color 0.3s;
+        }
+        .s-sub.has-date { color: var(--sage-dk); }
 
-        .date-row { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
-        .date-strip { display: flex; gap: 4px; overflow-x: auto; flex: 1; padding: 4px 0 8px; scrollbar-width: none; }
-        .date-strip::-webkit-scrollbar { display: none; }
-        .dp { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 44px; height: 56px; border-radius: 28px; cursor: pointer; transition: background 0.15s; justify-content: center; }
-        .dp:hover { background: var(--gray-200); }
-        .dp.selected { background: var(--dark); }
-        .dp-num { font-size: 16px; font-weight: 600; color: var(--dark); line-height: 1; }
-        .dp-day { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.3px; }
-        .dp.selected .dp-num, .dp.selected .dp-day { color: white; }
-        .dp.today .dp-num { color: var(--teal); }
-        .dp.today.selected .dp-num { color: white; }
-        /* ── Inline calendar ── */
+        /* ── CALENDAR ── */
         .cal-inline {
             background: white;
-            border-radius: 2px;
-            padding: 20px 20px 16px;
-            margin-bottom: 20px;
+            border-radius: 4px;
+            padding: 28px 24px 24px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 28px rgba(107,144,128,0.08);
             user-select: none;
         }
         .cal-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 22px;
         }
         .cal-nav-btn {
-            width: 36px; height: 36px;
-            border: 1px solid var(--gray-200); background: white;
-            cursor: pointer; font-size: 18px;
+            width: 34px; height: 34px;
+            border: 1px solid var(--lt-gray);
+            background: transparent;
+            cursor: pointer;
+            font-size: 15px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: var(--dark);
-            transition: border-color 0.12s, background 0.12s;
+            color: var(--warm-gray);
+            transition: all 0.15s;
             line-height: 1;
+            font-family: 'Jost', sans-serif;
         }
-        .cal-nav-btn:hover { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+        .cal-nav-btn:hover {
+            border-color: var(--sage);
+            color: var(--sage);
+            background: var(--sage-lt);
+        }
         .cal-month-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-            letter-spacing: 1px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--char);
             text-transform: capitalize;
+            letter-spacing: 0.01em;
         }
         .cal-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 3px;
+            gap: 2px;
         }
         .cal-dow {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--gray-400);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--mid-gray);
             text-align: center;
-            padding: 6px 0 8px;
-            letter-spacing: 0.5px;
+            padding: 0 0 14px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
         }
         .cal-day {
             aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 400;
             border-radius: 50%;
             cursor: pointer;
-            color: var(--dark);
-            transition: background 0.1s, color 0.1s;
+            color: var(--char);
+            transition: background 0.12s, color 0.12s;
         }
-        .cal-day:hover { background: var(--gray-100); }
-        .cal-day.today { color: var(--teal); font-weight: 700; }
-        .cal-day.selected { background: var(--dark); color: white !important; font-weight: 600; }
-        .cal-day.selected.today { background: var(--teal); }
-        .cal-day.other-month { color: var(--gray-300, #d1d5db); }
-        .cal-day.past { color: var(--gray-200); cursor: default; pointer-events: none; }
-
-        .shift-list { display: flex; flex-direction: column; gap: 16px; }
-        .shift-card { background: white; border-radius: 2px; }
-        .shift-head { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px 20px; border-bottom: 1px solid var(--gray-200); }
-        .shift-name { font-size: 13px; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; color: var(--dark); }
-        .shift-time { font-size: 13px; color: var(--gray-400); }
-        .shift-body { padding: 20px 28px 24px; }
-        .shift-cta { display: flex; align-items: center; gap: 16px; }
-        .inline-form { display: none; flex-direction: column; gap: 16px; }
-        .inline-form.open { display: flex; }
-
-        .irow { display: flex; gap: 12px; }
-        .igroup { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .igroup label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); font-weight: 600; }
-        .iinput { padding: 11px 14px; border: 1px solid var(--gray-200); border-radius: 2px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.15s; width: 100%; }
-        .iinput:focus { outline: none; border-color: var(--teal); }
-
-        .counter { display: flex; align-items: center; border: 1px solid var(--gray-200); border-radius: 2px; overflow: hidden; height: 44px; }
-        .counter-btn { width: 40px; height: 100%; border: none; background: var(--gray-100); font-size: 18px; cursor: pointer; color: var(--dark); transition: background 0.15s; flex-shrink: 0; }
-        .counter-btn:hover { background: var(--gray-200); }
-        .counter-val { flex: 1; text-align: center; font-size: 16px; font-weight: 600; color: var(--dark); }
-
-        /* ── Time slot chips ── */
-        .time-slots {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .time-chip {
-            padding: 9px 16px;
-            border: 1px solid var(--gray-200);
-            border-radius: 2px;
-            background: white;
-            font-size: 13px;
-            font-family: inherit;
-            color: var(--dark);
-            cursor: pointer;
-            transition: border-color 0.12s, background 0.12s, color 0.12s;
+        .cal-day:hover { background: var(--linen); }
+        .cal-day.today { color: var(--sage); font-weight: 600; }
+        .cal-day.selected {
+            background: var(--sage);
+            color: white !important;
             font-weight: 500;
         }
-        .time-chip:hover { border-color: var(--teal); color: var(--teal); }
-        .time-chip.selected { background: var(--dark); color: white; border-color: var(--dark); }
-        .time-chip.custom-chip { border-style: dashed; color: var(--gray-500); }
-        .time-chip.custom-chip:hover { border-color: var(--teal); color: var(--teal); border-style: solid; }
-        .custom-time-wrap { display: none; margin-top: 10px; }
-        .custom-time-wrap.show { display: block; }
+        .cal-day.selected.today { background: var(--sage-dk); }
+        .cal-day.other-month { color: var(--lt-gray); }
+        .cal-day.past { color: var(--lt-gray); cursor: default; pointer-events: none; }
 
-        .btn-book { padding: 13px 32px; background: var(--dark); color: white; border: none; border-radius: 2px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; font-family: inherit; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-        .btn-book:hover { background: var(--teal); }
-        .btn-book:disabled { opacity: 0.45; cursor: not-allowed; background: var(--gray-400); }
-        .btn-cancel-link { background: none; border: none; font-family: inherit; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: underline; padding: 0; }
-        .btn-cancel-link:hover { color: var(--dark); }
+        /* ── ORNAMENT ── */
+        .s-ornament {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 0 0 36px;
+        }
+        .s-ornament-line { flex: 1; height: 1px; background: var(--lt-gray); }
+        .s-ornament-mark {
+            font-size: 10px;
+            color: var(--gold);
+            letter-spacing: 6px;
+            font-weight: 300;
+        }
 
-        .success-box { display: none; padding: 20px 24px; background: var(--teal-light); border-left: 3px solid var(--teal); }
+        /* ── SHIFT CARDS ── */
+        .shift-list { display: flex; flex-direction: column; gap: 14px; }
+        .shift-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 28px rgba(107,144,128,0.08);
+            overflow: hidden;
+            border-top: 2px solid transparent;
+            transition: border-color 0.25s;
+        }
+        .shift-card:has(.inline-form.open) { border-top-color: var(--sage); }
+        .shift-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 26px 30px 22px;
+        }
+        .shift-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--char);
+        }
+        .shift-time {
+            font-size: 10px;
+            color: var(--mid-gray);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+        .shift-rule { height: 1px; background: var(--lt-gray); margin: 0 30px; }
+        .shift-body { padding: 22px 30px 30px; }
+
+        /* ── FORM (injected by JS) ── */
+        .shift-cta { display: flex; align-items: center; gap: 20px; }
+        .inline-form { display: none; flex-direction: column; gap: 22px; }
+        .inline-form.open { display: flex; }
+        .irow { display: flex; gap: 16px; }
+        .igroup { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+        .igroup label {
+            font-size: 9px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--mid-gray);
+            font-weight: 500;
+        }
+        .iinput {
+            padding: 10px 0;
+            border: none;
+            border-bottom: 1px solid var(--lt-gray);
+            border-radius: 0;
+            font-size: 14px;
+            font-family: 'Jost', sans-serif;
+            background: transparent;
+            transition: border-color 0.15s;
+            width: 100%;
+            color: var(--char);
+            font-weight: 300;
+        }
+        .iinput:focus { outline: none; border-color: var(--sage); }
+        .iinput::placeholder { color: var(--mid-gray); }
+
+        /* Guest counter */
+        .counter {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--lt-gray);
+            border-radius: 40px;
+            overflow: hidden;
+            height: 42px;
+            max-width: 128px;
+        }
+        .counter-btn {
+            width: 42px; height: 42px;
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--warm-gray);
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .counter-btn:hover { background: var(--sage-lt); color: var(--sage); }
+        .counter-val {
+            flex: 1;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--char);
+        }
+
+        /* Time chips */
+        .time-slots { display: flex; flex-wrap: wrap; gap: 7px; }
+        .time-chip {
+            padding: 7px 15px;
+            border: 1px solid var(--lt-gray);
+            border-radius: 20px;
+            background: transparent;
+            font-size: 12px;
+            font-family: 'Jost', sans-serif;
+            color: var(--warm-gray);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 400;
+        }
+        .time-chip:hover { border-color: var(--sage); color: var(--sage); }
+        .time-chip.selected {
+            background: var(--sage);
+            color: white;
+            border-color: var(--sage);
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn-book {
+            padding: 13px 30px;
+            background: var(--char);
+            color: white;
+            border: none;
+            border-radius: 2px;
+            font-size: 10px;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            font-family: 'Jost', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-book:hover { background: var(--sage); }
+        .btn-book:disabled { opacity: 0.4; cursor: not-allowed; background: var(--mid-gray); }
+        .btn-cancel-link {
+            background: none; border: none;
+            font-family: 'Jost', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--mid-gray);
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            font-weight: 300;
+        }
+        .btn-cancel-link:hover { color: var(--char); }
+
+        /* Success */
+        .success-box { display: none; padding: 18px 0 4px; }
         .success-box.show { display: block; }
-        .success-box h4 { font-size: 15px; color: var(--teal-dark); margin-bottom: 6px; }
-        .success-box p { font-size: 13px; color: var(--gray-500); }
-        .success-box .wa-hint { font-size: 12px; color: var(--gray-400); margin-top: 10px; }
+        .success-box h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--sage-dk);
+            margin-bottom: 7px;
+        }
+        .success-box p { font-size: 13px; color: var(--warm-gray); font-weight: 300; }
+        .success-box .wa-hint { font-size: 12px; color: var(--mid-gray); margin-top: 8px; }
 
-        .site-footer { text-align: center; padding: 28px; font-size: 11px; color: var(--gray-400); letter-spacing: 1.5px; text-transform: uppercase; border-top: 1px solid var(--gray-200); }
+        /* ── POPUP ── */
+        .popup-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.38); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .popup-overlay.show { display: flex; }
+        .popup-box {
+            background: white;
+            border-radius: 4px;
+            padding: 44px 36px 36px;
+            max-width: 360px; width: 90%;
+            text-align: center;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.18);
+            animation: popIn .2s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(.93); opacity: 0; }
+            to   { transform: scale(1);  opacity: 1; }
+        }
+        .popup-icon { font-size: 30px; margin-bottom: 16px; }
+        .popup-msg {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--char);
+            line-height: 1.55;
+            margin-bottom: 28px;
+        }
+        .popup-btn {
+            background: var(--char); color: white; border: none;
+            border-radius: 2px; padding: 12px 36px;
+            font-size: 10px; font-family: 'Jost', sans-serif;
+            font-weight: 500; letter-spacing: 3.5px;
+            text-transform: uppercase; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .popup-btn:hover { background: var(--sage); }
 
+        /* ── FOOTER ── */
+        .s-footer {
+            background: var(--forest);
+            text-align: center;
+            padding: 36px 24px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .s-footer p {
+            font-size: 10px;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.28);
+            font-weight: 300;
+        }
+
+        /* ── MOBILE ── */
         @media (max-width: 600px) {
-            .info-inner { padding: 36px 20px; }
-            .shift-head { padding: 20px; }
-            .shift-body { padding: 16px 20px 20px; }
-            .irow { flex-direction: column; gap: 12px; }
+            .hero-title { line-height: 0.88; }
+            .shift-head { padding: 22px 22px 18px; }
+            .shift-rule { margin: 0 22px; }
+            .shift-body { padding: 18px 22px 26px; }
+            .irow { flex-direction: column; gap: 18px; }
             .shift-cta { flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
 
-<!-- ══ HERO ══ -->
-<section class="hero">
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<section class="s-hero">
+    <div class="hero-glow"></div>
 
-    <div class="hero-logo">
-        <!-- Recreation of the Season brand logo in SVG: 4 Mediterranean icons + "sea/son" wordmark -->
-        <svg class="season-logo-svg" viewBox="0 0 240 375" xmlns="http://www.w3.org/2000/svg">
+    <div class="hero-content">
 
-            <!-- Icon 1: Tropical plant / palm frond (top-left) -->
-            <!-- 7 organic leaf-ellipses fanning from a common stem base -->
-            <g transform="translate(55,60)" fill="currentColor">
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-54)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-36)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-18)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(0)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(18)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(36)"/>
-                <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(54)"/>
-                <rect x="-3.5" y="2" width="7" height="16" rx="3.5"/>
-            </g>
-
-            <!-- Icon 2: Mediterranean sea waves (top-right) -->
-            <g transform="translate(185,57)" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
-                <path d="M-36,-18 C-22,-31 -12,-5 0,-18 C12,-31 22,-5 36,-18"/>
-                <path d="M-36,0 C-22,-13 -12,13 0,0 C12,-13 22,13 36,0"/>
-                <path d="M-36,18 C-22,5 -12,31 0,18 C12,5 22,31 36,18"/>
-            </g>
-
-            <!-- Icon 3: Benidorm sunset / horizon arcs (bottom-left) -->
-            <!-- Concentric quarter-circle arcs, all centered at (-34,34) in local space -->
-            <g transform="translate(55,162)" stroke="currentColor" stroke-width="7" stroke-linecap="round" fill="none">
-                <path d="M-14,34 A20,20 0 0,0 -34,14"/>
-                <path d="M0,34 A34,34 0 0,0 -34,0"/>
-                <path d="M14,34 A48,48 0 0,0 -34,-14"/>
-                <path d="M28,34 A62,62 0 0,0 -34,-28"/>
-            </g>
-
-            <!-- Icon 4: Mediterranean sun / starburst (bottom-right) -->
-            <g transform="translate(185,162)">
-                <circle r="14" fill="currentColor"/>
-                <g stroke="currentColor" stroke-width="5" stroke-linecap="round">
-                    <line x1="0" y1="-19" x2="0" y2="-32"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(30)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(60)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(90)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(120)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(150)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(180)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(210)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(240)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(270)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(300)"/>
-                    <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(330)"/>
+        <!-- Season logo -->
+        <div class="hero-logo-wrap">
+            <svg viewBox="0 0 240 375" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(55,60)" fill="currentColor">
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-54)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-36)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(-18)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(0)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(18)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(36)"/>
+                    <ellipse cx="0" cy="-22" rx="8" ry="24" transform="rotate(54)"/>
+                    <rect x="-3.5" y="2" width="7" height="16" rx="3.5"/>
                 </g>
-            </g>
+                <g transform="translate(185,57)" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                    <path d="M-36,-18 C-22,-31 -12,-5 0,-18 C12,-31 22,-5 36,-18"/>
+                    <path d="M-36,0 C-22,-13 -12,13 0,0 C12,-13 22,13 36,0"/>
+                    <path d="M-36,18 C-22,5 -12,31 0,18 C12,5 22,31 36,18"/>
+                </g>
+                <g transform="translate(55,162)" stroke="currentColor" stroke-width="7" stroke-linecap="round" fill="none">
+                    <path d="M-14,34 A20,20 0 0,0 -34,14"/>
+                    <path d="M0,34 A34,34 0 0,0 -34,0"/>
+                    <path d="M14,34 A48,48 0 0,0 -34,-14"/>
+                    <path d="M28,34 A62,62 0 0,0 -34,-28"/>
+                </g>
+                <g transform="translate(185,162)">
+                    <circle r="14" fill="currentColor"/>
+                    <g stroke="currentColor" stroke-width="5" stroke-linecap="round">
+                        <line x1="0" y1="-19" x2="0" y2="-32"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(30)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(60)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(90)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(120)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(150)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(180)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(210)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(240)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(270)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(300)"/>
+                        <line x1="0" y1="-19" x2="0" y2="-32" transform="rotate(330)"/>
+                    </g>
+                </g>
+                <text x="120" y="268" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">sea</text>
+                <text x="120" y="358" font-family="'Cormorant Garamond', Georgia, serif" font-size="88" font-weight="300" fill="currentColor" text-anchor="middle">son</text>
+            </svg>
+        </div>
 
-            <!-- Wordmark -->
-            <text x="120" y="268"
-                  font-family="'Playfair Display', Georgia, serif"
-                  font-size="92" font-weight="400"
-                  fill="currentColor" text-anchor="middle">sea</text>
-            <text x="120" y="358"
-                  font-family="'Playfair Display', Georgia, serif"
-                  font-size="92" font-weight="400"
-                  fill="currentColor" text-anchor="middle">son</text>
+        <p class="hero-eyebrow">Reservas</p>
 
-        </svg>
+        <h1 class="hero-title">Tu mesa,<br>tu momento</h1>
+
+        <div class="hero-divider">
+            <div class="hero-divider-line"></div>
+            <div class="hero-divider-gem"></div>
+            <div class="hero-divider-line"></div>
+        </div>
+
+        <p class="hero-sub">Benidorm &middot; Grupo Conbrassa</p>
+
     </div>
 
-    <p class="hero-reservas">RESERVAS</p>
-    <p class="hero-sub">Benidorm &middot; Grupo Conbrassa</p>
-
-    <div class="hero-scroll" onclick="document.querySelector('.info-block').scrollIntoView({behavior:'smooth'})">
-        <span>Reservar</span>
-        <div class="hero-scroll-bar"></div>
+    <div class="hero-cta" onclick="document.querySelector('.s-lang').scrollIntoView({behavior:'smooth'})">
+        <span class="hero-cta-label">Reservar</span>
+        <div class="hero-cta-line"></div>
     </div>
 </section>
 
-<!-- ══ INFO ══ -->
-<div class="info-block">
-    <div class="info-inner">
 
-        <!-- Language tabs -->
+<!-- ══════════════════════ LANG + INFO ══════════════════════ -->
+<div class="s-lang">
+    <div class="s-lang-inner">
+
         <div class="lang-tabs">
             <button class="lang-tab active" onclick="switchLang('es',this)">🇪🇸 ES</button>
             <button class="lang-tab" onclick="switchLang('en',this)">🇬🇧 EN</button>
@@ -334,7 +679,6 @@
             <button class="lang-tab" onclick="switchLang('ar',this)">🇸🇦 AR</button>
         </div>
 
-        <!-- Spanish -->
         <div class="lang-content" id="lang-es">
             <p>Todas las reservas deben realizarse a través de esta página. Indica la fecha, el turno y el número de comensales para confirmar tu mesa.</p>
             <p><strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no asistencia, podrá aplicarse un cargo.</p>
@@ -342,7 +686,6 @@
             <p>¿Necesitas ayuda? Escríbenos por <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- English -->
         <div class="lang-content" id="lang-en" style="display:none">
             <p>All reservations must be made through this page. Select the date, shift and number of guests to confirm your table.</p>
             <p><strong>Cancellation policy:</strong> Guests may cancel up to 24 hours before the reservation at no charge. After that time or in case of no-show, a fee may apply.</p>
@@ -350,7 +693,6 @@
             <p>Need help? Message us on <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> or call us at <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- French -->
         <div class="lang-content" id="lang-fr" style="display:none">
             <p>Toutes les réservations doivent être effectuées via cette page. Indiquez la date, le service et le nombre de couverts pour confirmer votre table.</p>
             <p><strong>Politique d'annulation :</strong> Le client dispose jusqu'à 24 heures avant la réservation pour l'annuler sans frais. Passé ce délai ou en cas de non-présentation, des frais pourront s'appliquer.</p>
@@ -358,7 +700,6 @@
             <p>Besoin d'aide ? Écrivez-nous sur <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou appelez-nous au <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Russian -->
         <div class="lang-content" id="lang-ru" style="display:none">
             <p>Все бронирования осуществляются через эту страницу. Выберите дату, смену и количество гостей для подтверждения столика.</p>
             <p><strong>Политика отмены:</strong> Бронирование можно отменить бесплатно не позднее чем за 24 часа. В случае более поздней отмены или неявки может взиматься плата.</p>
@@ -366,7 +707,6 @@
             <p>Нужна помощь? Напишите нам в <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> или позвоните по номеру <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Italian -->
         <div class="lang-content" id="lang-it" style="display:none">
             <p>Tutte le prenotazioni devono essere effettuate tramite questa pagina. Indica la data, il turno e il numero di commensali per confermare il tuo tavolo.</p>
             <p><strong>Politica di cancellazione:</strong> Il cliente può cancellare fino a 24 ore prima della prenotazione senza alcun costo. Dopo tale termine o in caso di mancata presenza, potrà essere applicata una penale.</p>
@@ -374,7 +714,6 @@
             <p>Hai bisogno di aiuto? Scrivici su <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o chiamaci al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Polish -->
         <div class="lang-content" id="lang-pl" style="display:none">
             <p>Wszystkie rezerwacje należy składać przez tę stronę. Podaj datę, zmianę i liczbę gości, aby potwierdzić swój stolik.</p>
             <p><strong>Polityka anulowania:</strong> Klient może anulować rezerwację bezpłatnie do 24 godzin przed jej terminem. Po upływie tego czasu lub w przypadku niestawienia się może zostać naliczona opłata.</p>
@@ -382,7 +721,6 @@
             <p>Potrzebujesz pomocy? Napisz do nas na <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> lub zadzwoń pod numer <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Japanese -->
         <div class="lang-content" id="lang-ja" style="display:none">
             <p>すべてのご予約はこのページからお願いいたします。テーブルを確認するために、日付・時間帯・人数をご選択ください。</p>
             <p><strong>キャンセルポリシー：</strong>ご予約の24時間前までは無料でキャンセルいただけます。それ以降のキャンセルや無断欠席の場合、料金が発生する場合があります。</p>
@@ -390,7 +728,6 @@
             <p>ご不明な点は <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> でメッセージをお送りいただくか、<a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a> までお電話ください。</p>
         </div>
 
-        <!-- Chinese -->
         <div class="lang-content" id="lang-zh" style="display:none">
             <p>所有预订必须通过本页面完成。请选择日期、时段和用餐人数以确认您的餐桌。</p>
             <p><strong>取消政策：</strong>客户可在预订前24小时内免费取消。超过该时限或无故缺席，可能会收取费用。</p>
@@ -398,7 +735,6 @@
             <p>需要帮助？请通过 <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> 联系我们，或拨打 <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>。</p>
         </div>
 
-        <!-- Portuguese -->
         <div class="lang-content" id="lang-pt" style="display:none">
             <p>Todas as reservas devem ser feitas através desta página. Indique a data, o turno e o número de pessoas para confirmar a sua mesa.</p>
             <p><strong>Política de cancelamento:</strong> O cliente pode cancelar até 24 horas antes da reserva sem qualquer custo. Após esse prazo ou em caso de não comparência, poderá ser cobrada uma taxa.</p>
@@ -406,7 +742,6 @@
             <p>Precisa de ajuda? Envie-nos uma mensagem pelo <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou ligue para <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Dutch -->
         <div class="lang-content" id="lang-nl" style="display:none">
             <p>Alle reserveringen moeten via deze pagina worden gemaakt. Geef de datum, het tijdvak en het aantal gasten op om uw tafel te bevestigen.</p>
             <p><strong>Annuleringsbeleid:</strong> De klant kan tot 24 uur voor de reservering kosteloos annuleren. Na die tijd of bij niet-verschijnen kan een vergoeding in rekening worden gebracht.</p>
@@ -414,7 +749,6 @@
             <p>Heeft u hulp nodig? Stuur ons een bericht via <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> of bel ons op <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Norwegian -->
         <div class="lang-content" id="lang-no" style="display:none">
             <p>Alle reservasjoner må gjøres via denne siden. Angi dato, skift og antall gjester for å bekrefte bordet ditt.</p>
             <p><strong>Avbestillingspolicy:</strong> Kunden kan avbestille kostnadsfritt inntil 24 timer før reservasjonen. Etter dette tidspunktet eller ved uteblivelse kan det påløpe gebyr.</p>
@@ -422,15 +756,6 @@
             <p>Trenger du hjelp? Send oss en melding på <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> eller ring oss på <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
-        <!-- Arabic -->
-        <div class="lang-content" id="lang-ar" style="display:none;direction:rtl;text-align:right">
-            <p>يجب إجراء جميع الحجوزات عبر هذه الصفحة. اختر التاريخ والفترة وعدد الأشخاص لتأكيد طاولتك.</p>
-            <p><strong>سياسة الإلغاء:</strong> يمكن للعميل إلغاء الحجز مجاناً حتى 24 ساعة قبل الموعد. بعد ذلك الوقت أو في حالة عدم الحضور، قد يُطبَّق رسم إلغاء.</p>
-            <p><strong>مجموعات أكثر من 10 أشخاص:</strong> يُرجى التواصل معنا مباشرةً قبل الحجز حتى نتمكن من تجهيز المكان المناسب.</p>
-            <p>هل تحتاج إلى مساعدة؟ راسلنا عبر <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">واتساب</a> أو اتصل بنا على <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
-        </div>
-
-        <!-- Icelandic -->
         <div class="lang-content" id="lang-is" style="display:none">
             <p>Allar pantanir verða að fara fram í gegnum þessa síðu. Veldu dagsetningu, vakt og fjölda gesta til að staðfesta borðið þitt.</p>
             <p><strong>Afpöntunarregla:</strong> Viðskiptavinurinn getur afpantað án kostnaðar allt að 24 klukkustundum fyrir bókun. Eftir þann tíma eða ef mætt er ekki getur verið innheimt gjald.</p>
@@ -438,14 +763,26 @@
             <p>Þarftu aðstoð? Skrifaðu okkur á <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> eða hringdu í okkur í <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
 
+        <div class="lang-content" id="lang-ar" style="display:none;direction:rtl;text-align:right">
+            <p>يجب إجراء جميع الحجوزات عبر هذه الصفحة. اختر التاريخ والفترة وعدد الأشخاص لتأكيد طاولتك.</p>
+            <p><strong>سياسة الإلغاء:</strong> يمكن للعميل إلغاء الحجز مجاناً حتى 24 ساعة قبل الموعد. بعد ذلك الوقت أو في حالة عدم الحضور، قد يُطبَّق رسم إلغاء.</p>
+            <p><strong>مجموعات أكثر من 10 أشخاص:</strong> يُرجى التواصل معنا مباشرةً قبل الحجز حتى نتمكن من تجهيز المكان المناسب.</p>
+            <p>هل تحتاج إلى مساعدة؟ راسلنا عبر <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">واتساب</a> أو اتصل بنا على <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+        </div>
+
     </div>
 </div>
 
-<!-- ══ BOOKING ══ -->
-<div class="booking-section">
-    <div class="booking-inner">
 
-        <!-- Inline calendar - always visible -->
+<!-- ══════════════════════ BOOKING ══════════════════════ -->
+<section class="s-booking">
+    <div class="s-booking-inner">
+
+        <p class="s-eyebrow">Reserva</p>
+        <h2 class="s-title">Elige tu fecha</h2>
+        <p class="s-sub" id="dateSubtitle">Selecciona un día disponible</p>
+
+        <!-- Calendar -->
         <div class="cal-inline">
             <div class="cal-nav">
                 <button class="cal-nav-btn" onclick="calMove(-1)">&#8592;</button>
@@ -455,13 +792,23 @@
             <div class="cal-grid" id="calGrid"></div>
         </div>
 
+        <!-- Ornamental divider -->
+        <div class="s-ornament">
+            <div class="s-ornament-line"></div>
+            <span class="s-ornament-mark">✦ ✦ ✦</span>
+            <div class="s-ornament-line"></div>
+        </div>
+
+        <!-- Shift cards -->
         <div class="shift-list">
+
             <!-- COMIDA -->
             <div class="shift-card">
                 <div class="shift-head">
                     <span class="shift-name">Comida</span>
-                    <span class="shift-time">13:00 – 16:00</span>
+                    <span class="shift-time">13:00 — 16:00</span>
                 </div>
+                <div class="shift-rule"></div>
                 <div class="shift-body">
                     <div class="shift-cta" id="ctaComida">
                         <button class="btn-book" onclick="openForm('comida')">Reservar</button>
@@ -470,7 +817,7 @@
                     <div class="success-box" id="okComida">
                         <h4>✓ Reserva confirmada</h4>
                         <p id="okComidaText"></p>
-                        <p class="wa-hint">📱 Si tienes WhatsApp en ese número recibirás una confirmación.</p>
+                        <p class="wa-hint">📱 Recibirás confirmación por WhatsApp si tienes ese número.</p>
                     </div>
                 </div>
             </div>
@@ -479,8 +826,9 @@
             <div class="shift-card">
                 <div class="shift-head">
                     <span class="shift-name">Cena</span>
-                    <span class="shift-time">19:00 – 23:00</span>
+                    <span class="shift-time">19:00 — 23:00</span>
                 </div>
+                <div class="shift-rule"></div>
                 <div class="shift-body">
                     <div class="shift-cta" id="ctaCena">
                         <button class="btn-book" onclick="openForm('cena')">Reservar</button>
@@ -489,16 +837,30 @@
                     <div class="success-box" id="okCena">
                         <h4>✓ Reserva confirmada</h4>
                         <p id="okCenaText"></p>
-                        <p class="wa-hint">📱 Si tienes WhatsApp en ese número recibirás una confirmación.</p>
+                        <p class="wa-hint">📱 Recibirás confirmación por WhatsApp si tienes ese número.</p>
                     </div>
                 </div>
             </div>
+
         </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer class="s-footer">
+    <p>Season &middot; Benidorm &middot; Grupo Conbrassa</p>
+</footer>
+
+<!-- ══════════════════════ POPUP ══════════════════════ -->
+<div class="popup-overlay" id="popupOverlay" onclick="closePopup()">
+    <div class="popup-box" onclick="event.stopPropagation()">
+        <div class="popup-icon" id="popupIcon">⚠️</div>
+        <p class="popup-msg" id="popupMsg"></p>
+        <button class="popup-btn" onclick="closePopup()">Entendido</button>
     </div>
 </div>
 
-<footer class="site-footer">Season &middot; Benidorm &middot; Grupo Conbrassa</footer>
-
+<!-- ══════════════════════ SCRIPT ══════════════════════ -->
 <script>
 const T_COM = ['13:00','13:15','13:30','13:45','14:00','14:15','14:30','14:45','15:00','15:15','15:30'];
 const T_CEN = ['19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:15','21:30','21:45','22:00','22:15','22:30'];
@@ -517,25 +879,32 @@ function isoToday() {
 
 function getAvailableTimes(shift) {
     const all = shift === 'comida' ? T_COM : T_CEN;
-    if (selDate !== isoToday()) return all;          // fecha futura → todos
+    if (selDate !== isoToday()) return all;
     const now    = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes() + 30;  // buffer 30 min
+    const nowMin = now.getHours() * 60 + now.getMinutes() + 30;
     return all.filter(t => {
         const [h, m] = t.split(':').map(Number);
         return h * 60 + m > nowMin;
     });
 }
+
 let selDate = '';
 let guests  = { comida: 2, cena: 2 };
 
-/* ── Inline calendar ── */
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let calYear, calMonth;
 
 function pickDate(iso) {
     selDate = iso;
-    renderCal();   // re-render to update selected highlight
+    renderCal();
     resetAll();
+    const d = new Date(iso + 'T12:00:00');
+    const label = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const sub = document.getElementById('dateSubtitle');
+    if (sub) {
+        sub.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+        sub.classList.add('has-date');
+    }
 }
 
 function calMove(dir) {
@@ -548,35 +917,25 @@ function calMove(dir) {
 function renderCal() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
-
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
-
-    // Day-of-week headers, week starts Monday
     ['L','M','X','J','V','S','D'].forEach(d => {
         const h = document.createElement('div');
         h.className = 'cal-dow';
         h.textContent = d;
         grid.appendChild(h);
     });
-
-    // Offset: Monday = 0
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const offset   = firstDay === 0 ? 6 : firstDay - 1;
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
-
-    // Previous-month filler (greyed out)
     for (let i = offset - 1; i >= 0; i--) {
         const el = document.createElement('div');
         el.className = 'cal-day other-month';
         el.textContent = daysInPrev - i;
         grid.appendChild(el);
     }
-
-    // Current-month days
     for (let day = 1; day <= daysInMonth; day++) {
         const d   = new Date(calYear, calMonth, day);
         d.setHours(0, 0, 0, 0);
@@ -592,8 +951,6 @@ function renderCal() {
         if (d >= today && !isWed) el.onclick = () => pickDate(iso);
         grid.appendChild(el);
     }
-
-    // Next-month filler
     const filled    = offset + daysInMonth;
     const remainder = filled % 7 === 0 ? 0 : 7 - (filled % 7);
     for (let i = 1; i <= remainder; i++) {
@@ -606,21 +963,19 @@ function renderCal() {
 
 function buildForm(shift) {
     const times = getAvailableTimes(shift);
-
     if (times.length === 0) {
         return `
-        <div style="padding:16px 0;color:var(--gray-500);font-size:14px;line-height:1.7;">
+        <div style="padding:16px 0;color:var(--warm-gray);font-size:14px;line-height:1.8;font-weight:300;">
             No quedan horas disponibles para este turno hoy.<br>
             <a href="https://wa.me/{{ whatsapp_number }}" target="_blank"
-               style="color:var(--teal);font-weight:600;text-decoration:none;">
+               style="color:var(--sage);font-weight:500;text-decoration:none;">
                Contáctanos por WhatsApp
-            </a> si necesitas una reserva urgente.
+            </a>
         </div>
         <div class="shift-cta" style="margin-top:8px;">
             <button class="btn-cancel-link" onclick="closeForm('${shift}')">Volver</button>
         </div>`;
     }
-
     const chips = times.map(t =>
         `<button type="button" class="time-chip" onclick="selectTime('${shift}','${t}',this)">${t}</button>`
     ).join('');
@@ -705,21 +1060,6 @@ function selectTime(shift, time, btn) {
     document.querySelectorAll(`#slots_${shift} .time-chip`).forEach(c => c.classList.remove('selected'));
     btn.classList.add('selected');
     document.getElementById(`t_${shift}`).value = time;
-    document.getElementById(`customWrap_${shift}`).classList.remove('show');
-}
-
-function toggleCustom(shift, btn) {
-    document.querySelectorAll(`#slots_${shift} .time-chip`).forEach(c => c.classList.remove('selected'));
-    btn.classList.add('selected');
-    document.getElementById(`t_${shift}`).value = '';
-    const wrap = document.getElementById(`customWrap_${shift}`);
-    wrap.classList.add('show');
-    wrap.querySelector('input').focus();
-}
-
-function selectCustomTime(shift) {
-    const val = document.getElementById(`customTime_${shift}`).value;
-    document.getElementById(`t_${shift}`).value = val;
 }
 
 async function doSubmit(shift) {
@@ -758,24 +1098,24 @@ async function doSubmit(shift) {
     }
 }
 
-// Init: show current month, pre-select today (skip Wednesday — rest day)
+// Init: show current month, skip Wednesday
 (function () {
     const now = new Date();
-    // If today is Wednesday (3), jump to Thursday
     if (now.getDay() === 3) now.setDate(now.getDate() + 1);
     calYear  = now.getFullYear();
     calMonth = now.getMonth();
     selDate  = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     renderCal();
+    // Update subtitle with pre-selected date
+    const d = new Date(selDate + 'T12:00:00');
+    const label = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const sub = document.getElementById('dateSubtitle');
+    if (sub) {
+        sub.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+        sub.classList.add('has-date');
+    }
 })();
 </script>
-<!-- ── Popup modal ── -->
-<div class="popup-overlay" id="popupOverlay" onclick="closePopup()">
-    <div class="popup-box" onclick="event.stopPropagation()">
-        <div class="popup-icon" id="popupIcon">⚠️</div>
-        <p class="popup-msg" id="popupMsg"></p>
-        <button class="popup-btn" onclick="closePopup()">Entendido</button>
-    </div>
-</div>
+
 </body>
 </html>
