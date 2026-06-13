@@ -70,7 +70,7 @@ def import_reservation():
     from services import client as cli_svc
     client = None
     if client_phone:
-        client = cli_svc.find_client_by_phone(client_phone)
+        client = cli_svc.get_client_by_phone(client_phone)
     if not client and len(client_name) >= 2:
         try:
             client = cli_svc.create_client({'name': client_name, 'phone': client_phone})
