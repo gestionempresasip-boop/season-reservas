@@ -378,8 +378,24 @@
 <footer class="site-footer">Season &middot; Benidorm &middot; Grupo Conbrassa</footer>
 
 <script>
-const T_COM = ['13:00','13:30','14:00','14:30','15:00','15:30'];
-const T_CEN = ['19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'];
+const T_COM = ['13:00','13:15','13:30','13:45','14:00','14:15','14:30','14:45','15:00','15:15','15:30','15:45'];
+const T_CEN = ['19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:15','21:30','21:45','22:00','22:15','22:30'];
+
+function isoToday() {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+
+function getAvailableTimes(shift) {
+    const all = shift === 'comida' ? T_COM : T_CEN;
+    if (selDate !== isoToday()) return all;          // fecha futura → todos
+    const now    = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes() + 30;  // buffer 30 min
+    return all.filter(t => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m > nowMin;
+    });
+}
 let selDate = '';
 let guests  = { comida: 2, cena: 2 };
 
@@ -459,7 +475,22 @@ function renderCal() {
 }
 
 function buildForm(shift) {
-    const times = shift === 'comida' ? T_COM : T_CEN;
+    const times = getAvailableTimes(shift);
+
+    if (times.length === 0) {
+        return `
+        <div style="padding:16px 0;color:var(--gray-500);font-size:14px;line-height:1.7;">
+            No quedan horas disponibles para este turno hoy.<br>
+            <a href="https://wa.me/{{ whatsapp_number }}" target="_blank"
+               style="color:var(--teal);font-weight:600;text-decoration:none;">
+               Contáctanos por WhatsApp
+            </a> si necesitas una reserva urgente.
+        </div>
+        <div class="shift-cta" style="margin-top:8px;">
+            <button class="btn-cancel-link" onclick="closeForm('${shift}')">Volver</button>
+        </div>`;
+    }
+
     const chips = times.map(t =>
         `<button type="button" class="time-chip" onclick="selectTime('${shift}','${t}',this)">${t}</button>`
     ).join('');
