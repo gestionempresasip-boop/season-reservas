@@ -71,59 +71,49 @@
         .dp.selected .dp-num, .dp.selected .dp-day { color: white; }
         .dp.today .dp-num { color: var(--teal); }
         .dp.today.selected .dp-num { color: white; }
-        .cal-icon-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gray-200); background: white; cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; position: relative; }
-        .cal-icon-btn:hover, .cal-icon-btn.active { border-color: var(--teal); background: var(--teal-light); }
-
-        /* ── Popup calendar ── */
-        .cal-popup {
-            display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            z-index: 200;
+        /* ── Inline calendar ── */
+        .cal-inline {
             background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 4px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-            width: 280px;
-            padding: 16px;
+            border-radius: 2px;
+            padding: 20px 20px 16px;
+            margin-bottom: 20px;
             user-select: none;
         }
-        .cal-popup.open { display: block; }
         .cal-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
         .cal-nav-btn {
-            width: 30px; height: 30px;
-            border: none; background: none;
-            cursor: pointer; font-size: 16px;
+            width: 36px; height: 36px;
+            border: 1px solid var(--gray-200); background: white;
+            cursor: pointer; font-size: 18px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             color: var(--dark);
-            transition: background 0.12s;
+            transition: border-color 0.12s, background 0.12s;
+            line-height: 1;
         }
-        .cal-nav-btn:hover { background: var(--gray-100); }
+        .cal-nav-btn:hover { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
         .cal-month-label {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--dark);
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             text-transform: capitalize;
         }
         .cal-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
+            gap: 3px;
         }
         .cal-dow {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--gray-400);
             text-align: center;
-            padding: 4px 0;
+            padding: 6px 0 8px;
             letter-spacing: 0.5px;
         }
         .cal-day {
@@ -131,7 +121,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 14px;
             border-radius: 50%;
             cursor: pointer;
             color: var(--dark);
@@ -139,9 +129,9 @@
         }
         .cal-day:hover { background: var(--gray-100); }
         .cal-day.today { color: var(--teal); font-weight: 700; }
-        .cal-day.selected { background: var(--dark); color: white; }
+        .cal-day.selected { background: var(--dark); color: white !important; font-weight: 600; }
         .cal-day.selected.today { background: var(--teal); }
-        .cal-day.other-month { color: var(--gray-400); }
+        .cal-day.other-month { color: var(--gray-300, #d1d5db); }
         .cal-day.past { color: var(--gray-200); cursor: default; pointer-events: none; }
 
         .shift-list { display: flex; flex-direction: column; gap: 16px; }
@@ -270,24 +260,37 @@
 <!-- ══ INFO ══ -->
 <div class="info-block">
     <div class="info-inner">
-        <p>
-            Todas las reservas deben realizarse a través de esta página.
-            Indica la fecha, el turno y el número de comensales para confirmar tu mesa.
-        </p>
-        <p>
-            <strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes
-            de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no
-            asistencia, podrá aplicarse un cargo.
-        </p>
-        <p>
-            <strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros
-            antes de reservar para que podamos preparar el espacio adecuado.
-        </p>
-        <p>
-            ¿Necesitas ayuda? Escríbenos por
-            <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a>
-            o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.
-        </p>
+
+        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇪🇸 Español</p>
+        <p>Todas las reservas deben realizarse a través de esta página. Indica la fecha, el turno y el número de comensales para confirmar tu mesa.</p>
+        <p><strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no asistencia, podrá aplicarse un cargo.</p>
+        <p><strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros antes de reservar para que podamos preparar el espacio adecuado.</p>
+        <p>¿Necesitas ayuda? Escríbenos por <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
+
+        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇬🇧 English</p>
+        <p>All reservations must be made through this page. Select the date, shift and number of guests to confirm your table.</p>
+        <p><strong>Cancellation policy:</strong> Guests may cancel up to 24 hours before the reservation at no charge. After that time or in case of no-show, a fee may apply.</p>
+        <p><strong>Groups of more than 10 people:</strong> Please contact us directly before booking so we can arrange the appropriate space.</p>
+        <p>Need help? Message us on <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> or call us at <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
+
+        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇫🇷 Français</p>
+        <p>Toutes les réservations doivent être effectuées via cette page. Indiquez la date, le service et le nombre de couverts pour confirmer votre table.</p>
+        <p><strong>Politique d'annulation :</strong> Le client dispose jusqu'à 24 heures avant la réservation pour l'annuler sans frais. Passé ce délai ou en cas de non-présentation, des frais pourront s'appliquer.</p>
+        <p><strong>Groupes de plus de 10 personnes :</strong> Contactez-nous directement avant de réserver afin que nous puissions préparer l'espace adéquat.</p>
+        <p>Besoin d'aide ? Écrivez-nous sur <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> ou appelez-nous au <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:28px 0;">
+
+        <p style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:20px;">🇷🇺 Русский</p>
+        <p>Все бронирования осуществляются через эту страницу. Выберите дату, смену и количество гостей для подтверждения столика.</p>
+        <p><strong>Политика отмены:</strong> Бронирование можно отменить бесплатно не позднее чем за 24 часа. В случае более поздней отмены или неявки может взиматься плата.</p>
+        <p><strong>Группы более 10 человек:</strong> Пожалуйста, свяжитесь с нами напрямую перед бронированием, чтобы мы могли подготовить подходящее пространство.</p>
+        <p>Нужна помощь? Напишите нам в <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> или позвоните по номеру <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
+
     </div>
 </div>
 
@@ -295,19 +298,14 @@
 <div class="booking-section">
     <div class="booking-inner">
 
-        <div class="date-row">
-            <div class="date-strip" id="dateStrip"></div>
-            <div style="position:relative; flex-shrink:0;">
-                <button class="cal-icon-btn" id="calBtn" title="Elegir otra fecha" onclick="toggleCal()">📅</button>
-                <div class="cal-popup" id="calPopup">
-                    <div class="cal-nav">
-                        <button class="cal-nav-btn" onclick="calMove(-1)">&#8592;</button>
-                        <span class="cal-month-label" id="calMonthLabel"></span>
-                        <button class="cal-nav-btn" onclick="calMove(1)">&#8594;</button>
-                    </div>
-                    <div class="cal-grid" id="calGrid"></div>
-                </div>
+        <!-- Inline calendar - always visible -->
+        <div class="cal-inline">
+            <div class="cal-nav">
+                <button class="cal-nav-btn" onclick="calMove(-1)">&#8592;</button>
+                <span class="cal-month-label" id="calMonthLabel"></span>
+                <button class="cal-nav-btn" onclick="calMove(1)">&#8594;</button>
             </div>
+            <div class="cal-grid" id="calGrid"></div>
         </div>
 
         <div class="shift-list">
@@ -355,56 +353,19 @@
 <footer class="site-footer">Season &middot; Benidorm &middot; Grupo Conbrassa</footer>
 
 <script>
-const DAYS  = ['D','L','M','Mi','J','V','S'];
 const T_COM = ['13:00','13:30','14:00','14:30','15:00','15:30'];
 const T_CEN = ['20:00','20:30','21:00','21:30','22:00','22:30'];
 let selDate = '';
 let guests  = { comida: 2, cena: 2 };
 
-function buildStrip(startDate) {
-    const strip = document.getElementById('dateStrip');
-    strip.innerHTML = '';
-    const todayIso = new Date().toISOString().split('T')[0];
-    for (let i = 0; i < 14; i++) {
-        const d = new Date(startDate + 'T12:00:00');
-        d.setDate(d.getDate() + i);
-        const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const el = document.createElement('div');
-        el.className = 'dp' + (iso === todayIso ? ' today' : '');
-        el.dataset.date = iso;
-        el.innerHTML = `<span class="dp-num">${d.getDate()}</span><span class="dp-day">${DAYS[d.getDay()]}</span>`;
-        el.onclick = () => pickDate(iso);
-        strip.appendChild(el);
-    }
-}
+/* ── Inline calendar ── */
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let calYear, calMonth;
 
 function pickDate(iso) {
     selDate = iso;
-    document.querySelectorAll('.dp').forEach(el => el.classList.toggle('selected', el.dataset.date === iso));
+    renderCal();   // re-render to update selected highlight
     resetAll();
-}
-
-/* ── Popup calendar ── */
-let calYear, calMonth;
-
-function toggleCal() {
-    const popup = document.getElementById('calPopup');
-    const btn   = document.getElementById('calBtn');
-    if (popup.classList.contains('open')) {
-        closeCal();
-    } else {
-        const d = selDate ? new Date(selDate + 'T12:00:00') : new Date();
-        calYear  = d.getFullYear();
-        calMonth = d.getMonth();
-        renderCal();
-        popup.classList.add('open');
-        btn.classList.add('active');
-    }
-}
-
-function closeCal() {
-    document.getElementById('calPopup').classList.remove('open');
-    document.getElementById('calBtn').classList.remove('active');
 }
 
 function calMove(dir) {
@@ -415,15 +376,15 @@ function calMove(dir) {
 }
 
 function renderCal() {
-    const today   = new Date();
-    today.setHours(0,0,0,0);
-    const months  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    document.getElementById('calMonthLabel').textContent = `${months[calMonth]} ${calYear}`;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
 
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
 
-    // Day-of-week headers (L M X J V S D)
+    // Day-of-week headers, week starts Monday
     ['L','M','X','J','V','S','D'].forEach(d => {
         const h = document.createElement('div');
         h.className = 'cal-dow';
@@ -431,64 +392,46 @@ function renderCal() {
         grid.appendChild(h);
     });
 
-    // First day of month (0=Sun…6=Sat), shift so week starts on Monday
+    // Offset: Monday = 0
     const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const offset   = (firstDay === 0) ? 6 : firstDay - 1;
-    const daysInMonth   = new Date(calYear, calMonth + 1, 0).getDate();
-    const daysInPrev    = new Date(calYear, calMonth, 0).getDate();
+    const offset   = firstDay === 0 ? 6 : firstDay - 1;
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
 
-    // Previous month filler
+    // Previous-month filler (greyed out)
     for (let i = offset - 1; i >= 0; i--) {
         const el = document.createElement('div');
-        el.className = 'cal-day other-month past';
+        el.className = 'cal-day other-month';
         el.textContent = daysInPrev - i;
         grid.appendChild(el);
     }
 
-    // Current month days
+    // Current-month days
     for (let day = 1; day <= daysInMonth; day++) {
         const d   = new Date(calYear, calMonth, day);
-        d.setHours(0,0,0,0);
-        const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        d.setHours(0, 0, 0, 0);
+        const iso = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const el  = document.createElement('div');
         let cls   = 'cal-day';
-        if (d < today)     cls += ' past';
+        if (d < today)                       cls += ' past';
         if (d.getTime() === today.getTime()) cls += ' today';
-        if (iso === selDate) cls += ' selected';
-        el.className = cls;
+        if (iso === selDate)                 cls += ' selected';
+        el.className  = cls;
         el.textContent = day;
-        if (d >= today) {
-            el.onclick = () => {
-                // rebuild strip from chosen date so it's always visible
-                buildStrip(iso);
-                pickDate(iso);
-                closeCal();
-                // scroll the pill into view
-                setTimeout(() => {
-                    const pill = document.querySelector(`.dp[data-date="${iso}"]`);
-                    if (pill) pill.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
-                }, 50);
-            };
-        }
+        if (d >= today) el.onclick = () => pickDate(iso);
         grid.appendChild(el);
     }
 
-    // Next month filler
-    const total = offset + daysInMonth;
-    const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+    // Next-month filler
+    const filled    = offset + daysInMonth;
+    const remainder = filled % 7 === 0 ? 0 : 7 - (filled % 7);
     for (let i = 1; i <= remainder; i++) {
         const el = document.createElement('div');
-        el.className = 'cal-day other-month past';
+        el.className = 'cal-day other-month';
         el.textContent = i;
         grid.appendChild(el);
     }
 }
-
-// Close popup when clicking outside
-document.addEventListener('click', e => {
-    const wrap = document.getElementById('calBtn')?.closest('div');
-    if (wrap && !wrap.contains(e.target)) closeCal();
-});
 
 function buildForm(shift) {
     const times = (shift === 'comida' ? T_COM : T_CEN).map(t => `<option>${t}</option>`).join('');
@@ -594,9 +537,15 @@ async function doSubmit(shift) {
     }
 }
 
-const todayIso = new Date().toISOString().split('T')[0];
-buildStrip(todayIso);
-pickDate(todayIso);
+// Init: show current month, pre-select today
+(function () {
+    const now  = new Date();
+    calYear    = now.getFullYear();
+    calMonth   = now.getMonth();
+    const todayIso = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    selDate    = todayIso;
+    renderCal();
+})();
 </script>
 </body>
 </html>
