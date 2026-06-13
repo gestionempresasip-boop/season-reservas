@@ -209,7 +209,7 @@ def _initialize_app():
 
         try:
             with _app_instance.app_context():
-                from models import Table
+                from models import Table, AppSetting
                 from sqlalchemy import text as _text
                 db.create_all()
 
@@ -225,6 +225,10 @@ def _initialize_app():
                     except Exception as _mig_e:
                         db.session.rollback()
                         _logger_instance.warning(f'⚠️ Migration warning: {_mig_e}')
+
+                # Seed default settings if not present
+                if not AppSetting.get('web_capacity_limit'):
+                    AppSetting.set('web_capacity_limit', '30')
 
                 if Table.query.count() == 0:
                     for t in DEFAULT_TABLES:

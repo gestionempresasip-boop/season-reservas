@@ -434,6 +434,24 @@
                 </div>
 
                 <div class="settings-card">
+                    <h3>🌐 Página de Reservas Web</h3>
+                    <p class="settings-desc">Controla cuántos comensales en total se pueden reservar por web en cada turno. Cuando se alcanza el límite, la página deja de aceptar nuevas reservas para ese turno y día.</p>
+                    <div class="setting-row">
+                        <label>Enlace público:</label>
+                        <a href="/reservas" target="_blank" style="color:var(--teal);font-weight:600;">/reservas</a>
+                    </div>
+                    <div class="setting-row" style="gap:10px;flex-wrap:wrap">
+                        <label style="flex-shrink:0">Límite de comensales por turno:</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input type="number" id="webCapacityInput" min="1" max="500" value="30"
+                                style="width:80px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;text-align:center">
+                            <button class="btn-primary btn-sm" onclick="saveWebCapacity()">Guardar</button>
+                            <span id="webCapacitySaved" style="color:#10b981;font-size:12px;font-weight:600;display:none">✓ Guardado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
                     <h3>Capacidad del Restaurante</h3>
                     <div class="setting-row"><label>Zona Exterior:</label><span>8 mesas &middot; 20 plazas</span></div>
                     <div class="setting-row"><label>Sal&oacute;n Principal:</label><span>19 mesas &middot; 70 plazas</span></div>
@@ -747,9 +765,41 @@
             });
         }
     </script>
+    <script>
+    function loadWebCapacity() {
+        fetch('/api/settings/web_capacity_limit')
+            .then(r => r.json())
+            .then(d => {
+                const inp = document.getElementById('webCapacityInput');
+                if (inp && d.value !== null && d.value !== undefined) inp.value = d.value;
+            }).catch(() => {});
+    }
+
+    function saveWebCapacity() {
+        const inp = document.getElementById('webCapacityInput');
+        const saved = document.getElementById('webCapacitySaved');
+        const val = parseInt(inp.value);
+        if (!val || val < 1 || val > 500) { alert('Introduce un número entre 1 y 500'); return; }
+        fetch('/api/settings/web_capacity_limit', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: val })
+        }).then(r => r.json()).then(() => {
+            saved.style.display = 'inline';
+            setTimeout(() => { saved.style.display = 'none'; }, 2500);
+        }).catch(() => alert('Error al guardar'));
+    }
+
+    // Load capacity when switching to Ajustes
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.nav-btn[data-view="viewAjustes"]').forEach(btn => {
+            btn.addEventListener('click', loadWebCapacity);
+        });
+    });
+    </script>
     <script src="/static/js/auth.js?v=4"></script>
     <script src="/static/js/app.js?v=32"></script>
-    <script src="/static/js/floorplan.js?v=40"></script>
+    <script src="/static/js/floorplan.js?v=41"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>

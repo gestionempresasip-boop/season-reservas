@@ -1022,6 +1022,42 @@ def unassign_tables(rid):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# APP SETTINGS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@api.route('/settings/<key>', methods=['GET'])
+@handle_errors
+def get_setting(key):
+    from models import AppSetting
+    ALLOWED = {'web_capacity_limit'}
+    if key not in ALLOWED:
+        return error_response('Setting no permitido', 403)
+    value = AppSetting.get(key, None)
+    return jsonify({'key': key, 'value': value})
+
+@api.route('/settings/<key>', methods=['PUT'])
+@handle_errors
+def put_setting(key):
+    from models import AppSetting
+    ALLOWED = {'web_capacity_limit'}
+    if key not in ALLOWED:
+        return error_response('Setting no permitido', 403)
+    data = request.json or {}
+    value = data.get('value')
+    if value is None:
+        return error_response('Falta value', 400)
+    if key == 'web_capacity_limit':
+        try:
+            v = int(value)
+            if v < 1 or v > 500:
+                raise ValueError
+        except (ValueError, TypeError):
+            return error_response('El límite debe ser un número entre 1 y 500', 400)
+    AppSetting.set(key, value)
+    return jsonify({'key': key, 'value': str(value)})
+
+
 # PUBLIC BOOKING (no auth required — used by /reservas page)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1046,8 +1082,12 @@ def public_reserve():
     except (ValueError, TypeError):
         return error_response('Número de comensales inválido (1-20)', 400)
 
-    # Overbooking check: max 90 guests per shift
-    MAX_SHIFT_GUESTS = 90
+    # Overbooking check: limit comes from DB setting (default 30)
+    from models import AppSetting as _AS
+    try:
+        MAX_SHIFT_GUESTS = int(_AS.get('web_capacity_limit', 30))
+    except (ValueError, TypeError):
+        MAX_SHIFT_GUESTS = 30
     from models import Reservation
     from sqlalchemy import func as _func
     from datetime import date as _date

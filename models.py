@@ -390,3 +390,29 @@ class WhatsappSession(db.Model):
 
     def __repr__(self):
         return f'<WhatsappSession {self.phone}>'
+
+
+class AppSetting(db.Model):
+    """Key-value store for runtime app settings."""
+    __tablename__ = 'app_settings'
+
+    key   = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.String(255), nullable=False)
+
+    @staticmethod
+    def get(key, default=None):
+        row = AppSetting.query.get(key)
+        return row.value if row else default
+
+    @staticmethod
+    def set(key, value):
+        row = AppSetting.query.get(key)
+        if row:
+            row.value = str(value)
+        else:
+            row = AppSetting(key=key, value=str(value))
+            db.session.add(row)
+        db.session.commit()
+
+    def __repr__(self):
+        return f'<AppSetting {self.key}={self.value}>'
