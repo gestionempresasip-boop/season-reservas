@@ -368,7 +368,7 @@ function buildStrip(startDate) {
     for (let i = 0; i < 14; i++) {
         const d = new Date(startDate + 'T12:00:00');
         d.setDate(d.getDate() + i);
-        const iso = d.toISOString().split('T')[0];
+        const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const el = document.createElement('div');
         el.className = 'dp' + (iso === todayIso ? ' today' : '');
         el.dataset.date = iso;
@@ -449,7 +449,7 @@ function renderCal() {
     for (let day = 1; day <= daysInMonth; day++) {
         const d   = new Date(calYear, calMonth, day);
         d.setHours(0,0,0,0);
-        const iso = d.toISOString().split('T')[0];
+        const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const el  = document.createElement('div');
         let cls   = 'cal-day';
         if (d < today)     cls += ' past';
