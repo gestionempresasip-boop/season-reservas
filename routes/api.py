@@ -1046,6 +1046,29 @@ def public_reserve():
     except (ValueError, TypeError):
         return error_response('Número de comensales inválido (1-20)', 400)
 
+    # Overbooking check: max 90 guests per shift
+    MAX_SHIFT_GUESTS = 90
+    from models import Reservation
+    from sqlalchemy import func as _func
+    from datetime import date as _date
+    try:
+        booked = db.session.query(_func.sum(Reservation.guests)).filter(
+            Reservation.date == _date.fromisoformat(data['date']),
+            Reservation.shift == data['shift'],
+            Reservation.status.in_(['confirmed', 'seated']),
+        ).scalar() or 0
+        if booked + guests > MAX_SHIFT_GUESTS:
+            remaining = max(0, MAX_SHIFT_GUESTS - booked)
+            if remaining == 0:
+                return error_response(
+                    f'Lo sentimos, el turno de {data["shift"]} de ese día está completo. '
+                    f'Por favor elige otro día o contáctanos por WhatsApp.', 409)
+            return error_response(
+                f'Solo quedan {remaining} plazas disponibles en ese turno. '
+                f'Reduce el número de comensales o contáctanos por WhatsApp.', 409)
+    except Exception:
+        pass  # If check fails, allow the booking rather than blocking it
+
     # Find or create client
     client = cli_svc.get_client_by_phone(data['client_phone'].strip())
     if not client:

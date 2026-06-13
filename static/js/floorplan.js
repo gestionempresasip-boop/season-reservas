@@ -60,7 +60,34 @@ let TABLE_DEFS = [
 
 let tableDataMap = {};
 let groupMode = false;
-let groupSelectedTables = []; // table numbers
+let groupSelectedTables = [];
+
+// ── Web reservations panel ────────────────────────
+function renderWebReservationsPanel(items) {
+    const panel = document.getElementById('webReservationsPanel');
+    const list  = document.getElementById('webReservationsList');
+    if (!panel || !list) return;
+
+    if (!items || items.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = '';
+    list.innerHTML = `
+        <h4>🌐 Reservas web sin asignar <span class="web-badge">${items.length}</span></h4>
+        <div class="web-res-list">
+            ${items.map(r => `
+            <div class="web-res-card">
+                <div class="web-res-dot"></div>
+                <div class="web-res-info">
+                    <div class="web-res-name">${r.client_name}</div>
+                    <div class="web-res-meta">${r.time} · ${r.guests} persona${r.guests !== 1 ? 's' : ''} · ${r.shift === 'comida' ? '🌞 Comida' : '🌙 Cena'}</div>
+                </div>
+                <button class="web-res-btn" onclick="openEditReservation(${r.id})">Ver / Asignar</button>
+            </div>`).join('')}
+        </div>`;
+}
 
 // Color palette for group reservations (assigned by index)
 const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
@@ -743,48 +770,10 @@ function renderFloorPlan() {
         });
     });
 
-    // Unassigned reservations panel
-    if (tableDataMap._unassigned && tableDataMap._unassigned.unassignedReservations.length > 0) {
-        const unassignedBox = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        unassignedBox.classList.add('unassigned-reservations-box');
-
-        const items = tableDataMap._unassigned.unassignedReservations;
-        const boxHeight = Math.max(8, 5 + items.length * 1.5);
-        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bg.setAttribute('x', '2');
-        bg.setAttribute('y', '2');
-        bg.setAttribute('width', '22');
-        bg.setAttribute('height', boxHeight);
-        bg.setAttribute('fill', '#fff7ed');
-        bg.setAttribute('stroke', '#f59e0b');
-        bg.setAttribute('stroke-width', '0.3');
-        bg.setAttribute('rx', '0.5');
-        unassignedBox.appendChild(bg);
-
-        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        title.setAttribute('x', '3');
-        title.setAttribute('y', '4');
-        title.setAttribute('font-size', '1.2');
-        title.setAttribute('font-weight', 'bold');
-        title.setAttribute('fill', '#92400e');
-        title.textContent = `📋 Por asignar (${items.length})`;
-        unassignedBox.appendChild(title);
-
-        let yPos = 5.8;
-        items.slice(0, 6).forEach(r => {
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', '3.5');
-            text.setAttribute('y', yPos);
-            text.setAttribute('font-size', '0.9');
-            text.setAttribute('fill', '#7c2d12');
-            text.style.cursor = 'pointer';
-            text.textContent = `• ${r.client_name.substring(0, 18)} (${r.guests}p) ${r.time}`;
-            text.addEventListener('click', () => openEditReservation(r.id));
-            unassignedBox.appendChild(text);
-            yPos += 1.5;
-        });
-        svg.appendChild(unassignedBox);
-    }
+    // Unassigned reservations — HTML panel above the floor plan
+    renderWebReservationsPanel(
+        tableDataMap._unassigned ? tableDataMap._unassigned.unassignedReservations : []
+    );
 
     TABLE_DEFS.forEach(def => {
         const td = tableDataMap[def.n] || {};

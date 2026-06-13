@@ -219,6 +219,60 @@ body {
 
 /* ── FLOOR PLAN ──────────────────────────────── */
 
+/* ── Web reservations panel ── */
+#webReservationsPanel {
+    max-width: 1100px;
+    margin: 0 auto 12px;
+    background: #f0fdf8;
+    border: 1.5px solid #6ee7c7;
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+#webReservationsPanel h4 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #065f46;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+#webReservationsPanel h4 .web-badge {
+    background: #10b981;
+    color: white;
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.web-res-list { display: flex; flex-direction: column; gap: 7px; }
+.web-res-card {
+    background: white;
+    border: 1px solid #a7f3d0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: box-shadow .15s;
+}
+.web-res-card:hover { box-shadow: 0 2px 8px rgba(16,185,129,.2); }
+.web-res-dot { width: 9px; height: 9px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
+.web-res-info { flex: 1; min-width: 0; }
+.web-res-name { font-size: 13px; font-weight: 600; color: #064e3b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.web-res-meta { font-size: 12px; color: #059669; margin-top: 1px; }
+.web-res-btn {
+    background: #10b981; color: white; border: none;
+    border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background .15s;
+}
+.web-res-btn:hover { background: #059669; }
+@media (max-width: 600px) {
+    #webReservationsPanel { margin: 0 0 10px; border-radius: 10px; padding: 10px 12px; }
+    .web-res-card { padding: 9px 10px; gap: 8px; }
+    .web-res-btn { padding: 6px 10px; font-size: 11px; }
+}
+
 .floorplan-container {
     background: var(--white);
     border-radius: var(--radius-lg);
