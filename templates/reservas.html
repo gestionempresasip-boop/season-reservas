@@ -534,15 +534,6 @@ function buildForm(shift) {
             <label>Hora</label>
             <div class="time-slots" id="slots_${shift}">
                 ${chips}
-                <button type="button" class="time-chip custom-chip" onclick="toggleCustom('${shift}',this)">
-                    &#43; Personalizada
-                </button>
-            </div>
-            <div class="custom-time-wrap" id="customWrap_${shift}">
-                <input type="time" class="iinput" id="customTime_${shift}"
-                       min="${shift === 'comida' ? '13:00' : '19:00'}"
-                       max="${shift === 'comida' ? '16:00' : '23:00'}"
-                       oninput="selectCustomTime('${shift}')">
             </div>
             <input type="hidden" id="t_${shift}" value="">
         </div>
