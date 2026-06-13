@@ -71,9 +71,78 @@
         .dp.selected .dp-num, .dp.selected .dp-day { color: white; }
         .dp.today .dp-num { color: var(--teal); }
         .dp.today.selected .dp-num { color: white; }
-        .cal-icon-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gray-200); background: white; cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
-        .cal-icon-btn:hover { border-color: var(--teal); }
-        #calInput { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+        .cal-icon-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gray-200); background: white; cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; position: relative; }
+        .cal-icon-btn:hover, .cal-icon-btn.active { border-color: var(--teal); background: var(--teal-light); }
+
+        /* ── Popup calendar ── */
+        .cal-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            z-index: 200;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            width: 280px;
+            padding: 16px;
+            user-select: none;
+        }
+        .cal-popup.open { display: block; }
+        .cal-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .cal-nav-btn {
+            width: 30px; height: 30px;
+            border: none; background: none;
+            cursor: pointer; font-size: 16px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--dark);
+            transition: background 0.12s;
+        }
+        .cal-nav-btn:hover { background: var(--gray-100); }
+        .cal-month-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--dark);
+            letter-spacing: 0.5px;
+            text-transform: capitalize;
+        }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        .cal-dow {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--gray-400);
+            text-align: center;
+            padding: 4px 0;
+            letter-spacing: 0.5px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--dark);
+            transition: background 0.1s, color 0.1s;
+        }
+        .cal-day:hover { background: var(--gray-100); }
+        .cal-day.today { color: var(--teal); font-weight: 700; }
+        .cal-day.selected { background: var(--dark); color: white; }
+        .cal-day.selected.today { background: var(--teal); }
+        .cal-day.other-month { color: var(--gray-400); }
+        .cal-day.past { color: var(--gray-200); cursor: default; pointer-events: none; }
 
         .shift-list { display: flex; flex-direction: column; gap: 16px; }
         .shift-card { background: white; border-radius: 2px; }
@@ -228,8 +297,17 @@
 
         <div class="date-row">
             <div class="date-strip" id="dateStrip"></div>
-            <button class="cal-icon-btn" title="Elegir fecha" onclick="openCal()">📅</button>
-            <input type="date" id="calInput">
+            <div style="position:relative; flex-shrink:0;">
+                <button class="cal-icon-btn" id="calBtn" title="Elegir otra fecha" onclick="toggleCal()">📅</button>
+                <div class="cal-popup" id="calPopup">
+                    <div class="cal-nav">
+                        <button class="cal-nav-btn" onclick="calMove(-1)">&#8592;</button>
+                        <span class="cal-month-label" id="calMonthLabel"></span>
+                        <button class="cal-nav-btn" onclick="calMove(1)">&#8594;</button>
+                    </div>
+                    <div class="cal-grid" id="calGrid"></div>
+                </div>
+            </div>
         </div>
 
         <div class="shift-list">
@@ -306,19 +384,111 @@ function pickDate(iso) {
     resetAll();
 }
 
-function openCal() {
-    const inp = document.getElementById('calInput');
-    inp.min = new Date().toISOString().split('T')[0];
-    inp.value = selDate;
-    inp.onchange = () => {
-        const v = inp.value;
-        if (!v) return;
-        const pill = document.querySelector(`.dp[data-date="${v}"]`);
-        if (pill) { pickDate(v); pill.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }); }
-        else { buildStrip(v); pickDate(v); }
-    };
-    try { inp.showPicker(); } catch { inp.click(); }
+/* ── Popup calendar ── */
+let calYear, calMonth;
+
+function toggleCal() {
+    const popup = document.getElementById('calPopup');
+    const btn   = document.getElementById('calBtn');
+    if (popup.classList.contains('open')) {
+        closeCal();
+    } else {
+        const d = selDate ? new Date(selDate + 'T12:00:00') : new Date();
+        calYear  = d.getFullYear();
+        calMonth = d.getMonth();
+        renderCal();
+        popup.classList.add('open');
+        btn.classList.add('active');
+    }
 }
+
+function closeCal() {
+    document.getElementById('calPopup').classList.remove('open');
+    document.getElementById('calBtn').classList.remove('active');
+}
+
+function calMove(dir) {
+    calMonth += dir;
+    if (calMonth > 11) { calMonth = 0;  calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    renderCal();
+}
+
+function renderCal() {
+    const today   = new Date();
+    today.setHours(0,0,0,0);
+    const months  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    document.getElementById('calMonthLabel').textContent = `${months[calMonth]} ${calYear}`;
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    // Day-of-week headers (L M X J V S D)
+    ['L','M','X','J','V','S','D'].forEach(d => {
+        const h = document.createElement('div');
+        h.className = 'cal-dow';
+        h.textContent = d;
+        grid.appendChild(h);
+    });
+
+    // First day of month (0=Sun…6=Sat), shift so week starts on Monday
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const offset   = (firstDay === 0) ? 6 : firstDay - 1;
+    const daysInMonth   = new Date(calYear, calMonth + 1, 0).getDate();
+    const daysInPrev    = new Date(calYear, calMonth, 0).getDate();
+
+    // Previous month filler
+    for (let i = offset - 1; i >= 0; i--) {
+        const el = document.createElement('div');
+        el.className = 'cal-day other-month past';
+        el.textContent = daysInPrev - i;
+        grid.appendChild(el);
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const d   = new Date(calYear, calMonth, day);
+        d.setHours(0,0,0,0);
+        const iso = d.toISOString().split('T')[0];
+        const el  = document.createElement('div');
+        let cls   = 'cal-day';
+        if (d < today)     cls += ' past';
+        if (d.getTime() === today.getTime()) cls += ' today';
+        if (iso === selDate) cls += ' selected';
+        el.className = cls;
+        el.textContent = day;
+        if (d >= today) {
+            el.onclick = () => {
+                // rebuild strip from chosen date so it's always visible
+                buildStrip(iso);
+                pickDate(iso);
+                closeCal();
+                // scroll the pill into view
+                setTimeout(() => {
+                    const pill = document.querySelector(`.dp[data-date="${iso}"]`);
+                    if (pill) pill.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+                }, 50);
+            };
+        }
+        grid.appendChild(el);
+    }
+
+    // Next month filler
+    const total = offset + daysInMonth;
+    const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= remainder; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day other-month past';
+        el.textContent = i;
+        grid.appendChild(el);
+    }
+}
+
+// Close popup when clicking outside
+document.addEventListener('click', e => {
+    const wrap = document.getElementById('calBtn')?.closest('div');
+    if (wrap && !wrap.contains(e.target)) closeCal();
+});
 
 function buildForm(shift) {
     const times = (shift === 'comida' ? T_COM : T_CEN).map(t => `<option>${t}</option>`).join('');
