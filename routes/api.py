@@ -446,7 +446,8 @@ def dashboard():
     # Slim down table data for mobile (only essential fields)
     # Skip special entries like _unassigned (no 'id' field)
     slim_tables = [
-        {'id': t['id'], 'number': t['number'], 'status': t['status'], 'reservation': t.get('reservation')}
+        {'id': t['id'], 'number': t['number'], 'status': t['status'],
+         'blocked': t.get('blocked', False), 'reservation': t.get('reservation')}
         for t in tables if 'id' in t
     ]
 
