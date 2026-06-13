@@ -453,13 +453,14 @@ function renderCal() {
         d.setHours(0, 0, 0, 0);
         const iso = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const el  = document.createElement('div');
+        const isWed = d.getDay() === 3;
         let cls   = 'cal-day';
-        if (d < today)                       cls += ' past';
+        if (d < today || isWed)              cls += ' past';
         if (d.getTime() === today.getTime()) cls += ' today';
         if (iso === selDate)                 cls += ' selected';
         el.className  = cls;
         el.textContent = day;
-        if (d >= today) el.onclick = () => pickDate(iso);
+        if (d >= today && !isWed) el.onclick = () => pickDate(iso);
         grid.appendChild(el);
     }
 
@@ -628,13 +629,14 @@ async function doSubmit(shift) {
     }
 }
 
-// Init: show current month, pre-select today
+// Init: show current month, pre-select today (skip Wednesday — rest day)
 (function () {
-    const now  = new Date();
-    calYear    = now.getFullYear();
-    calMonth   = now.getMonth();
-    const todayIso = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    selDate    = todayIso;
+    const now = new Date();
+    // If today is Wednesday (3), jump to Thursday
+    if (now.getDay() === 3) now.setDate(now.getDate() + 1);
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth();
+    selDate  = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     renderCal();
 })();
 </script>
