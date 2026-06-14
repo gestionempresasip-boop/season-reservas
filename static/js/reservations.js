@@ -306,11 +306,14 @@ function openNewReservationModal(preselectedTableIds) {
 async function openEditReservation(resId) {
     let r = allReservations.find(x => x.id === resId);
     if (!r) {
-        const data = await apiGet(`/api/reservations?date=${currentDate}&shift=${currentShift}&all=true`);
-        allReservations = data;
-        r = data.find(x => x.id === resId);
-        if (!r) return;
+        try {
+            r = await apiGet(`/api/reservations/${resId}`);
+        } catch(e) {
+            console.warn('openEditReservation: not found', resId);
+            return;
+        }
     }
+    if (!r) return;
     fillEditForm(r);
 }
 

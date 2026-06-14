@@ -142,6 +142,14 @@ def create_reservation(data: ReservationCreate):
     return jsonify(r.to_dict()), 201
 
 
+@api.route('/reservations/<int:rid>', methods=['GET'])
+@handle_errors
+def get_reservation(rid):
+    """Get a single reservation by ID."""
+    r = Reservation.query.get_or_404(rid)
+    return jsonify(r.to_dict())
+
+
 @api.route('/reservations/<int:rid>', methods=['PUT'])
 @handle_errors
 def update_reservation(rid):
