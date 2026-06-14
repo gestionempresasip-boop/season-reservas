@@ -99,6 +99,8 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
 </html>
 """
 
+        bcc = 'seasonreserva@gmail.com'
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = f'✅ Reserva confirmada — Season Benidorm · {fecha}'
         msg['From']    = f'Season Benidorm <{gmail_user}>'
@@ -109,7 +111,7 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
             server.ehlo()
             server.starttls()
             server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, to_email, msg.as_string())
+            server.sendmail(gmail_user, [to_email, bcc], msg.as_string())
 
         return True
     except Exception as e:
