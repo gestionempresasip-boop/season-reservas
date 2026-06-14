@@ -1157,7 +1157,6 @@ def public_reserve():
         'notes': data.get('notes', ''),
         'source': 'web',
         'client_id': client.id if client else None,
-        'client_email': data.get('email', '').strip(),
     })
     notify()
 
@@ -1176,61 +1175,3 @@ def public_reserve():
         pass
 
     return jsonify(r.to_dict()), 201
-
-
-@api.route('/reservation-action/<token>/<action>', methods=['GET'])
-def reservation_action(token, action):
-    """Confirm or cancel a reservation via email link. No auth required."""
-    from models import Reservation
-    r = Reservation.query.filter_by(confirmation_token=token).first()
-    if not r:
-        return '<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f2e9d8"><h2>Enlace no válido o ya utilizado.</h2></body></html>', 404
-
-    if action not in ('confirm', 'cancel'):
-        return '<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f2e9d8"><h2>Acción no reconocida.</h2></body></html>', 400
-
-    if r.status not in ('pending', 'confirmed'):
-        return f'<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f2e9d8"><h2>Esta reserva ya fue procesada (estado: {r.status}).</h2></body></html>', 200
-
-    if action == 'confirm':
-        r.status = 'confirmed'
-        db.session.commit()
-        # Send confirmation email to client if they provided one
-        if r.client_email and '@' in r.client_email:
-            try:
-                from services.email_service import send_confirmation_email
-                send_confirmation_email(
-                    to_email=r.client_email,
-                    name=r.client_name,
-                    date_str=r.date.isoformat(),
-                    shift=r.shift,
-                    time_str=r.time,
-                    guests=r.guests,
-                    notes=r.notes or '',
-                )
-            except Exception:
-                pass
-        turno = 'Comida' if r.shift == 'comida' else 'Cena'
-        return f'''<html><body style="font-family:'Helvetica Neue',sans-serif;text-align:center;padding:60px;background:#f2e9d8;color:#333">
-  <div style="max-width:480px;margin:0 auto;background:#f8f1e4;border-radius:16px;padding:48px 40px;">
-    <p style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#00b5a8;margin:0 0 8px">Season · Benidorm</p>
-    <h1 style="font-size:36px;font-weight:300;margin:0 0 24px;color:#0a1e30">season</h1>
-    <p style="font-size:32px;margin:0 0 16px">✅</p>
-    <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Reserva confirmada</h2>
-    <p style="color:#555;font-size:15px;margin:0 0 24px"><strong>{r.client_name}</strong> · {turno} · {r.time}<br>{r.date.strftime("%d/%m/%Y")} · {r.guests} persona{"s" if r.guests != 1 else ""}</p>
-    {"<p style='font-size:13px;color:#00b5a8;'>Se ha enviado confirmación al cliente por email.</p>" if r.client_email else ""}
-  </div>
-</body></html>''', 200
-
-    else:  # cancel
-        r.status = 'cancelled'
-        db.session.commit()
-        return f'''<html><body style="font-family:'Helvetica Neue',sans-serif;text-align:center;padding:60px;background:#f2e9d8;color:#333">
-  <div style="max-width:480px;margin:0 auto;background:#f8f1e4;border-radius:16px;padding:48px 40px;">
-    <p style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#00b5a8;margin:0 0 8px">Season · Benidorm</p>
-    <h1 style="font-size:36px;font-weight:300;margin:0 0 24px;color:#0a1e30">season</h1>
-    <p style="font-size:32px;margin:0 0 16px">✗</p>
-    <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Reserva cancelada</h2>
-    <p style="color:#555;font-size:15px;margin:0">{r.client_name} · {r.date.strftime("%d/%m/%Y")}</p>
-  </div>
-</body></html>''', 200

@@ -215,8 +215,6 @@ def create_reservation(data):
         source=data.get('source', 'phone'),
         notes=data.get('notes', ''),
         duration_minutes=duration,
-        client_email=data.get('client_email', ''),
-        confirmation_token=data.get('confirmation_token'),
     )
     db.session.add(reservation)
     db.session.flush()
