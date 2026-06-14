@@ -520,9 +520,33 @@
         .s-footer {
             background: var(--forest);
             text-align: center;
-            padding: 36px 24px;
+            padding: 48px 24px 40px;
             border-top: 1px solid rgba(255,255,255,0.05);
         }
+        .s-footer-divider {
+            width: 32px;
+            height: 1px;
+            background: rgba(255,255,255,0.12);
+            margin: 18px auto;
+        }
+        .s-footer-address {
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.55);
+            font-weight: 300;
+            line-height: 1.9;
+            margin-bottom: 6px;
+        }
+        .s-footer-phone {
+            display: inline-block;
+            font-size: 13px;
+            letter-spacing: 1px;
+            color: var(--sage);
+            text-decoration: none;
+            font-weight: 400;
+            transition: opacity 0.2s;
+        }
+        .s-footer-phone:hover { opacity: 0.75; }
         .s-footer p {
             font-size: 10px;
             letter-spacing: 3.5px;
@@ -750,6 +774,9 @@
 
 <!-- ══════════════════════ FOOTER ══════════════════════ -->
 <footer class="s-footer">
+    <p class="s-footer-address">Av. Vicente Llorca Alos, 8<br>03502 · Benidorm (Alicante)</p>
+    <a class="s-footer-phone" href="tel:+34689135630">+34 689 135 630</a>
+    <div class="s-footer-divider"></div>
     <p>Season &middot; Benidorm &middot; Grupo Conbrassa</p>
 </footer>
 
