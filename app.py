@@ -34,26 +34,30 @@ def create_app():
     # DATABASE CONFIGURATION
     # ──────────────────────────────────────────────────────────────────────
 
-    # PostgreSQL required (no fallback to SQLite)
+    # Database configuration: PostgreSQL in production, SQLite allowed locally
     db_url = os.getenv('DATABASE_URL')
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('RENDER')
+
     if not db_url:
-        raise ValueError(
-            'DATABASE_URL environment variable is required. '
-            'Please set it to your Supabase PostgreSQL URL.'
-        )
+        if is_production:
+            raise ValueError(
+                'DATABASE_URL environment variable is required. '
+                'Please set it to your Supabase PostgreSQL URL.'
+            )
+        # Local dev fallback
+        db_url = 'sqlite:///season_local.db'
 
-    # Ensure PostgreSQL format (handle both postgres:// and postgresql:// prefixes)
-    if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
-    elif db_url.startswith('postgresql://'):
-        db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
-    elif not db_url.startswith('postgresql+psycopg2://'):
-        raise ValueError(
-            'DATABASE_URL must be a PostgreSQL URL (postgres:// or postgresql://). '
-            'Got: ' + db_url[:30] + '...'
-        )
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    if db_url.startswith('sqlite'):
+        if is_production:
+            raise ValueError('SQLite is not allowed in production. Use PostgreSQL.')
+        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    else:
+        # Ensure SQLAlchemy-compatible PostgreSQL format
+        if db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+        elif db_url.startswith('postgresql://'):
+            db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
     # ──────────────────────────────────────────────────────────────────────
     # SESSION CONFIGURATION
@@ -70,7 +74,7 @@ def create_app():
     logger = setup_logging(app)
     logger.info('✅ Application initialized')
     logger.info(f'✅ Environment: {os.getenv("FLASK_ENV", "development")}')
-    logger.info('✅ Using PostgreSQL for database')
+    logger.info(f'✅ Database: {app.config["SQLALCHEMY_DATABASE_URI"][:30]}...')
 
     # ──────────────────────────────────────────────────────────────────────
     # EXTENSIONS INITIALIZATION
@@ -366,10 +370,8 @@ if __name__ == '__main__':
     app_instance, logger, socketio = _app_instance, _logger_instance, _socketio_instance
     port = int(os.getenv('PORT', 3000))
     debug = os.getenv('FLASK_ENV') == 'development'
-    socketio.run(
-        app_instance,
-        debug=debug,
-        host='0.0.0.0',
-        port=port,
-        allow_unsafe_werkzeug=True
-    )
+    run_kwargs = dict(debug=debug, host='0.0.0.0', port=port)
+    try:
+        socketio.run(app_instance, allow_unsafe_werkzeug=True, **run_kwargs)
+    except TypeError:
+        socketio.run(app_instance, **run_kwargs)
