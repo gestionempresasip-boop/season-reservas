@@ -1147,9 +1147,6 @@ def public_reserve():
         except Exception:
             client = None
 
-    import secrets
-    token = secrets.token_urlsafe(32)
-
     r = res_svc.create_reservation({
         'date': data['date'],
         'shift': data['shift'],
@@ -1160,25 +1157,20 @@ def public_reserve():
         'notes': data.get('notes', ''),
         'source': 'web',
         'client_id': client.id if client else None,
-        'status': 'pending',
         'client_email': data.get('email', '').strip(),
-        'confirmation_token': token,
     })
     notify()
 
     try:
-        from services.email_service import send_restaurant_notification
-        send_restaurant_notification(
-            reservation_id=r.id,
-            token=token,
+        from services.email_service import send_confirmation_email
+        send_confirmation_email(
+            to_email=data.get('email', ''),
             name=data['client_name'].strip(),
-            phone=data['client_phone'].strip(),
             date_str=data['date'],
             shift=data['shift'],
             time_str=data['time'],
             guests=guests,
             notes=data.get('notes', ''),
-            client_email=data.get('email', '').strip(),
         )
     except Exception:
         pass
