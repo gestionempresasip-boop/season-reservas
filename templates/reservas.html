@@ -224,11 +224,11 @@
 
         /* ── CALENDAR ── */
         .cal-inline {
-            background: white;
+            background: #faf6ef;
             border-radius: 4px;
             padding: 28px 24px 24px;
             margin-bottom: 40px;
-            box-shadow: 0 2px 28px rgba(107,144,128,0.08);
+            border: 1px solid rgba(180,148,100,0.18);
             user-select: none;
         }
         .cal-nav {
@@ -318,11 +318,11 @@
         /* ── SHIFT CARDS ── */
         .shift-list { display: flex; flex-direction: column; gap: 14px; }
         .shift-card {
-            background: white;
+            background: #faf6ef;
             border-radius: 4px;
-            box-shadow: 0 2px 28px rgba(107,144,128,0.08);
-            overflow: hidden;
+            border: 1px solid rgba(180,148,100,0.18);
             border-top: 2px solid transparent;
+            overflow: hidden;
             transition: border-color 0.25s;
         }
         .shift-card:has(.inline-form.open) { border-top-color: var(--sage); }
