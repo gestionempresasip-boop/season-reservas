@@ -226,7 +226,7 @@
 
         /* ── CALENDAR ── */
         .cal-inline {
-            background: var(--cream);
+            background: #fdf9f3;
             border-radius: 20px;
             padding: 28px 24px 24px;
             margin-bottom: 40px;
@@ -302,7 +302,7 @@
         }
         .cal-day.selected.today { background: var(--sage-dk); }
         .cal-day.other-month { color: var(--lt-gray); }
-        .cal-day.past { color: #8b2020; cursor: default; pointer-events: none; opacity: 0.55; }
+        .cal-day.past { color: #e00000; cursor: default; pointer-events: none; }
 
         /* ── ORNAMENT ── */
         .s-ornament {
@@ -322,7 +322,7 @@
         /* ── SHIFT CARDS ── */
         .shift-list { display: flex; flex-direction: column; gap: 14px; }
         .shift-card {
-            background: var(--cream);
+            background: #fdf9f3;
             border-radius: 20px;
             border: 1px solid rgba(180,148,100,0.18);
             border-top: 2px solid transparent;
@@ -438,20 +438,20 @@
 
         /* Buttons */
         .btn-book {
-            padding: 13px 30px;
-            background: var(--char);
-            color: white;
-            border: none;
-            border-radius: 2px;
-            font-size: 10px;
-            letter-spacing: 3.5px;
+            padding: 13px 36px;
+            background: transparent;
+            color: var(--sage);
+            border: 1px solid var(--sage);
+            border-radius: 0;
+            font-size: 22px;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            font-family: 'Jost', sans-serif;
-            font-weight: 500;
+            font-family: 'Bebas Neue', sans-serif;
+            font-weight: 400;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.25s, color 0.25s;
         }
-        .btn-book:hover { background: var(--sage); }
+        .btn-book:hover { background: var(--sage); color: white; }
         .btn-book:disabled { opacity: 0.4; cursor: not-allowed; background: var(--mid-gray); }
         .btn-cancel-link {
             background: none; border: none;
