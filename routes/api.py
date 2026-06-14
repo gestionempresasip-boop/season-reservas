@@ -189,14 +189,20 @@ def cancel_reservation(rid):
 @handle_errors
 def get_unassigned_reservations():
     """Future reservations without a table assigned (web bookings pending table)."""
+    from app import cache_get, cache_set
     from datetime import date as _date
+    cached = cache_get('unassigned', max_age=15)
+    if cached:
+        return jsonify(cached)
     today = _date.today()
     rows = Reservation.query.filter(
         Reservation.date >= today,
         Reservation.table_id == None,
         Reservation.status.in_(['confirmed', 'seated', 'pending']),
     ).order_by(Reservation.date, Reservation.time).all()
-    return jsonify([r.to_dict() for r in rows])
+    result = [r.to_dict() for r in rows]
+    cache_set('unassigned', result)
+    return jsonify(result)
 
 
 @api.route('/reservations/<int:rid>/delete', methods=['DELETE'])
@@ -482,7 +488,7 @@ def dashboard():
     shift = request.args.get('shift', 'comida')
     cache_key = f'dashboard:{d}:{shift}'
 
-    cached = cache_get(cache_key, max_age=2)
+    cached = cache_get(cache_key, max_age=15)
     if cached:
         return jsonify(cached)
 
@@ -686,14 +692,21 @@ def report_weekly():
 @api.route('/reports/range', methods=['GET'])
 def report_range():
     """Return daily summary for a date range (used by agenda month view)."""
+    from app import cache_get, cache_set
     from_d = request.args.get('from', date.today().isoformat())
     to_d = request.args.get('to', date.today().isoformat())
+    cache_key = f'reports_range:{from_d}:{to_d}'
+    cached = cache_get(cache_key, max_age=30)
+    if cached:
+        return jsonify(cached)
     start = date.fromisoformat(from_d)
     end = date.fromisoformat(to_d)
     days = (end - start).days + 1
     if days > 42:
-        days = 42  # max 6 weeks
-    return jsonify(rpt_svc.weekly_trend(start, days=days))
+        days = 42
+    result = rpt_svc.weekly_trend(start, days=days)
+    cache_set(cache_key, result)
+    return jsonify(result)
 
 
 @api.route('/reports/new-vs-returning', methods=['GET'])

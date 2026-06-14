@@ -417,42 +417,31 @@ def find_available_tables(target_date, shift, guests=1, time_str=None, duration_
 # ═══════════════════════════════════════════════════════════════════════════
 
 def get_shift_stats(target_date, shift):
-    """Get statistics for a shift."""
+    """Get statistics for a shift — single aggregation query."""
     from config.settings import MAX_CAPACITY
+    from sqlalchemy import case
 
-    total_reservations = Reservation.query.filter(
+    row = db.session.query(
+        func.count(Reservation.id).label('total'),
+        func.coalesce(func.sum(Reservation.guests), 0).label('guests'),
+        func.count(case((Reservation.status == 'seated', 1))).label('seated'),
+        func.count(case((Reservation.status == 'confirmed', 1))).label('confirmed'),
+    ).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
-        Reservation.status.in_(['confirmed', 'seated', 'completed'])
-    ).count()
+        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+    ).one()
 
-    total_guests = db.session.query(func.sum(Reservation.guests)).filter(
-        Reservation.date == target_date,
-        Reservation.shift == shift,
-        Reservation.status.in_(['confirmed', 'seated', 'completed'])
-    ).scalar() or 0
-
-    seated_count = Reservation.query.filter(
-        Reservation.date == target_date,
-        Reservation.shift == shift,
-        Reservation.status == 'seated'
-    ).count()
-
-    confirmed_count = Reservation.query.filter(
-        Reservation.date == target_date,
-        Reservation.shift == shift,
-        Reservation.status == 'confirmed'
-    ).count()
-
+    total_guests = int(row.guests or 0)
     occupancy = round(total_guests / MAX_CAPACITY * 100, 1) if total_guests else 0
 
     return {
-        'reservations': total_reservations,
+        'reservations': row.total,
         'guests': total_guests,
         'max_capacity': MAX_CAPACITY,
         'occupancy': occupancy,
-        'seated': seated_count,
-        'pending': confirmed_count,
+        'seated': row.seated,
+        'pending': row.confirmed,
     }
 
 

@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    // Auto-refresh: desktop 90s, mobile 120s
-    const refreshInterval = isMobile ? 120000 : 90000;
+    // Auto-refresh: desktop 3min, mobile 5min (backend now caches 15-30s so polling less is fine)
+    const refreshInterval = isMobile ? 300000 : 180000;
     setInterval(refreshAll, refreshInterval);
 });
 
@@ -255,10 +255,10 @@ async function refreshAll() {
             } else if (active.id === 'viewAgenda' && typeof loadCalendar === 'function') {
                 loadCalendar().catch(e => console.warn('Calendar refresh:', e?.message));
             }
-        }
-        // Always refresh the floor plan pending panel (any view — user may switch)
-        if (typeof loadFloorPlanPending === 'function') {
-            loadFloorPlanPending().catch(e => console.warn('FP pending refresh:', e?.message));
+            // Pending panel only when floor plan is visible
+            if (active.id === 'viewPlano' && typeof loadFloorPlanPending === 'function') {
+                loadFloorPlanPending().catch(e => console.warn('FP pending refresh:', e?.message));
+            }
         }
     } catch (e) {
         // Secondary errors must NEVER show the connection banner

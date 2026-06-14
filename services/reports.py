@@ -107,36 +107,55 @@ def daily_summary(target_date):
 
 
 def weekly_trend(from_date, days=7):
+    from sqlalchemy.orm import joinedload
+    end_date = from_date + timedelta(days=days - 1)
+
+    # Single query for all days + eagerly load table to avoid N+1
+    all_res = (
+        Reservation.query
+        .options(joinedload(Reservation.table))
+        .filter(
+            Reservation.date >= from_date,
+            Reservation.date <= end_date,
+            Reservation.status.in_(['confirmed', 'seated', 'completed']),
+        )
+        .order_by(Reservation.date, Reservation.time)
+        .all()
+    )
+
+    # Group by date in Python
+    by_date = {}
+    for r in all_res:
+        key = r.date.isoformat()
+        by_date.setdefault(key, []).append(r)
+
+    def res_list(items):
+        return [{
+            'id': r.id,
+            'client_name': r.client_name,
+            'time': r.time,
+            'guests': r.guests,
+            'table_number': r.table.number if r.table else None,
+            'status': r.status,
+            'source': r.source,
+            'notes': r.notes or '',
+            'client_phone': r.client_phone or '',
+        } for r in items]
+
     result = []
     for i in range(days):
         d = from_date + timedelta(days=i)
-        reservations = Reservation.query.filter(
-            Reservation.date == d,
-            Reservation.status.in_(['confirmed', 'seated', 'completed']),
-        ).order_by(Reservation.time).all()
-
+        key = d.isoformat()
+        reservations = by_date.get(key, [])
         comida = [r for r in reservations if r.shift == 'comida']
-        cena = [r for r in reservations if r.shift == 'cena']
-
-        def res_list(items):
-            return [{
-                'id': r.id,
-                'client_name': r.client_name,
-                'time': r.time,
-                'guests': r.guests,
-                'table_number': r.table.number if r.table else None,
-                'status': r.status,
-                'source': r.source,
-                'notes': r.notes or '',
-            } for r in items]
-
+        cena   = [r for r in reservations if r.shift == 'cena']
         result.append({
-            'date': d.isoformat(),
+            'date': key,
             'day_name': d.strftime('%A'),
             'reservations': len(reservations),
             'guests': sum(r.guests for r in reservations),
             'comida': {'count': len(comida), 'guests': sum(r.guests for r in comida), 'items': res_list(comida)},
-            'cena': {'count': len(cena), 'guests': sum(r.guests for r in cena), 'items': res_list(cena)},
+            'cena':   {'count': len(cena),   'guests': sum(r.guests for r in cena),   'items': res_list(cena)},
         })
     return result
 

@@ -312,7 +312,7 @@ async function agendaCancelRes(resId, name) {
     } catch(e) {
         showToast('Error al cancelar', 'error');
     }
-    agendaCache = {};
+    _invalidateAgendaDay(agendaSelectedDate);
     debouncedRefresh();
 }
 
@@ -325,8 +325,13 @@ async function agendaDeleteRes(resId, name) {
     } catch(e) {
         showToast('Error al eliminar', 'error');
     }
-    agendaCache = {};
+    _invalidateAgendaDay(agendaSelectedDate);
     debouncedRefresh();
+}
+
+function _invalidateAgendaDay(dateStr) {
+    // Only drop the month that contains this day — other months stay cached
+    if (dateStr) delete agendaCache[dateStr.substring(0, 7)];
 }
 
 // ── Bulk selection ───────────────────────────────
@@ -415,7 +420,7 @@ async function agendaBulkCancel() {
     if (failed > 0) showToast(`Error en ${failed} reserva${failed > 1 ? 's' : ''}`, 'error');
 
     _agendaSelected.clear();
-    agendaCache = {};
+    _invalidateAgendaDay(agendaSelectedDate);
     debouncedRefresh();
     if (_agendaSelectMode) toggleAgendaSelectMode();
 }
@@ -435,7 +440,7 @@ async function agendaBulkDelete() {
     if (failed > 0) showToast(`Error en ${failed} reserva${failed > 1 ? 's' : ''}`, 'error');
 
     _agendaSelected.clear();
-    agendaCache = {};
+    _invalidateAgendaDay(agendaSelectedDate);
     debouncedRefresh();
     if (_agendaSelectMode) toggleAgendaSelectMode();
 }
