@@ -56,17 +56,17 @@
             font-weight: 500;
             font-style: italic;
             letter-spacing: 1px;
-            color: var(--char);
+            color: var(--sage);
             text-decoration: none;
-            border: 1px solid var(--char);
+            border: 1px solid var(--sage);
             padding: 13px 48px;
             cursor: pointer;
             transition: background 0.25s, color 0.25s;
             animation: hFade 1s ease 0.4s both;
         }
         .hero-reserve-btn:hover {
-            background: var(--char);
-            color: var(--cream);
+            background: var(--sage);
+            color: white;
         }
         .hero-sub {
             font-size: 11px;
@@ -225,7 +225,7 @@
         /* ── CALENDAR ── */
         .cal-inline {
             background: #faf6ef;
-            border-radius: 4px;
+            border-radius: 20px;
             padding: 28px 24px 24px;
             margin-bottom: 40px;
             border: 1px solid rgba(180,148,100,0.18);
@@ -282,7 +282,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 16px;
             font-weight: 400;
             border-radius: 50%;
             cursor: pointer;
@@ -319,7 +319,7 @@
         .shift-list { display: flex; flex-direction: column; gap: 14px; }
         .shift-card {
             background: #faf6ef;
-            border-radius: 4px;
+            border-radius: 20px;
             border: 1px solid rgba(180,148,100,0.18);
             border-top: 2px solid transparent;
             overflow: hidden;
@@ -584,7 +584,6 @@
 
         <div class="lang-content" id="lang-es">
             <p>Todas las reservas deben realizarse a través de esta página. Indica la fecha, el turno y el número de comensales para confirmar tu mesa.</p>
-            <p><strong>Política de cancelación:</strong> El cliente dispone hasta 24 horas antes de la reserva para cancelarla sin coste alguno. Pasado ese plazo o en caso de no asistencia, podrá aplicarse un cargo.</p>
             <p><strong>Grupos de más de 10 personas:</strong> Contacta directamente con nosotros antes de reservar para que podamos preparar el espacio adecuado.</p>
             <p>¿Necesitas ayuda? Escríbenos por <a href="https://wa.me/{{ whatsapp_number }}" target="_blank">WhatsApp</a> o llámanos al <a href="tel:{{ whatsapp_number }}">{{ whatsapp_number }}</a>.</p>
         </div>
