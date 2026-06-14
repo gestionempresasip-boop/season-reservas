@@ -203,6 +203,11 @@ class Reservation(db.Model):
     status = db.Column(db.String(20), default='confirmed', index=True)
     source = db.Column(db.String(20), default='phone')  # phone, whatsapp, walk_in, web
 
+    # Client email (for confirmation)
+    client_email = db.Column(db.String(200), default='')
+    # Secure token for email confirm/cancel links
+    confirmation_token = db.Column(db.String(64), unique=True, nullable=True, index=True)
+
     # Additional Info
     notes = db.Column(db.Text, default='')
 
@@ -280,6 +285,7 @@ class Reservation(db.Model):
             'guests': self.guests,
             'client_name': self.client_name,
             'client_phone': self.client_phone,
+            'client_email': self.client_email or '',
             'status': self.status,
             'source': self.source,
             'notes': self.notes,

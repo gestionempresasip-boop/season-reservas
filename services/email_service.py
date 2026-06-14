@@ -116,3 +116,127 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
         import sys
         print(f'[Email] Error sending confirmation: {e}', file=sys.stderr)
         return False
+
+
+def send_restaurant_notification(reservation_id, token, name, phone, date_str, shift, time_str, guests, notes='', client_email=''):
+    """Send new reservation notification to the restaurant with confirm/cancel buttons."""
+    gmail_user = os.getenv('GMAIL_USER')
+    gmail_pass = os.getenv('GMAIL_APP_PASSWORD')
+    restaurant_email = os.getenv('RESTAURANT_EMAIL', 'reservaseason@gmail.com')
+    base_url = os.getenv('APP_BASE_URL', 'https://season-reservas.onrender.com')
+    if not (gmail_user and gmail_pass):
+        return False
+    try:
+        d = _date.fromisoformat(date_str)
+        days_es = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        fecha = f"{days_es[d.weekday()]} {d.strftime('%d/%m/%Y')}"
+        turno_label = 'Comida' if shift == 'comida' else 'Cena'
+        g = int(guests)
+        personas = f'{g} persona{"s" if g != 1 else ""}'
+
+        confirm_url = f"{base_url}/api/reservation-action/{token}/confirm"
+        cancel_url  = f"{base_url}/api/reservation-action/{token}/cancel"
+
+        email_row = f"<tr><td style='padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);'><span style='font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;'>Email cliente</span><br><span style='font-size:15px;color:#333;font-weight:600;'>{client_email}</span></td></tr>" if client_email else ""
+        notes_row  = f"<tr><td style='padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);'><span style='font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;'>Notas</span><br><span style='font-size:15px;color:#555;'>{notes}</span></td></tr>" if notes else ""
+
+        html = f"""<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f2e9d8;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f2e9d8;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#f8f1e4;border-radius:16px;overflow:hidden;max-width:560px;width:100%;">
+
+        <tr>
+          <td align="center" style="background:#0a1e30;padding:28px 40px 20px;">
+            <p style="margin:0;font-size:10px;letter-spacing:6px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Nueva Reserva Web</p>
+            <h1 style="margin:8px 0 0;font-size:42px;font-weight:300;color:white;letter-spacing:2px;line-height:1;">season</h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:28px 40px 8px;">
+            <p style="margin:0 0 16px;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#00b5a8;font-weight:600;">🔔 Nueva solicitud de reserva</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f2e9d8;border-radius:12px;padding:20px 24px;">
+              <tr>
+                <td style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+                  <span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;">Cliente</span><br>
+                  <span style="font-size:16px;color:#333;font-weight:700;">{name}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+                  <span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;">Teléfono</span><br>
+                  <span style="font-size:15px;color:#333;font-weight:600;">{phone}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+                  <span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;">Fecha</span><br>
+                  <span style="font-size:16px;color:#333;font-weight:700;">{fecha}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+                  <span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;">Turno · Hora</span><br>
+                  <span style="font-size:16px;color:#333;font-weight:700;">{turno_label} · {time_str}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+                  <span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;">Comensales</span><br>
+                  <span style="font-size:16px;color:#333;font-weight:700;">{personas}</span>
+                </td>
+              </tr>
+              {notes_row}
+              {email_row}
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:24px 40px 32px;">
+            <p style="margin:0 0 20px;font-size:13px;color:#777;">¿Confirmáis esta reserva?</p>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding-right:12px;">
+                  <a href="{confirm_url}" style="display:inline-block;padding:14px 36px;background:#00b5a8;color:white;text-decoration:none;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;border-radius:4px;">✅ Confirmar</a>
+                </td>
+                <td>
+                  <a href="{cancel_url}" style="display:inline-block;padding:14px 36px;background:#c0392b;color:white;text-decoration:none;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;border-radius:4px;">✗ Cancelar</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="background:#0a1e30;padding:16px 40px;">
+            <p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.3);">Season · Benidorm · Grupo Conbrassa</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'🔔 Nueva reserva — {name} · {turno_label} {fecha}'
+        msg['From']    = f'Season Reservas <{gmail_user}>'
+        msg['To']      = restaurant_email
+        msg.attach(MIMEText(html, 'html', 'utf-8'))
+
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(gmail_user, gmail_pass)
+            server.sendmail(gmail_user, restaurant_email, msg.as_string())
+
+        return True
+    except Exception as e:
+        import sys
+        print(f'[Email] Error sending restaurant notification: {e}', file=sys.stderr)
+        return False
