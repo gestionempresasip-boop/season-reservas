@@ -10,6 +10,10 @@ let agendaSelectedDate = _todayStr();
 let agendaCache = {};
 let _pendingOpen = true;
 
+// Bulk selection state
+let _agendaSelectMode = false;
+let _agendaSelected = new Set();
+
 function _todayStr() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -197,6 +201,14 @@ function selectAgendaDay(dateStr) {
 // ── Render day detail with cards ─────────────────
 
 function renderDayDetail(dateStr) {
+    // Exit select mode when switching days
+    if (_agendaSelectMode) {
+        _agendaSelectMode = false;
+        _agendaSelected.clear();
+        const bar = document.getElementById('agendaBulkBar');
+        if (bar) bar.classList.add('hidden');
+    }
+
     const panel = document.getElementById('agendaDayDetail');
     if (!panel) return;
 
@@ -219,7 +231,10 @@ function renderDayDetail(dateStr) {
     let html = `
     <div class="agenda-detail-header">
         <span class="agenda-detail-date">${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}</span>
-        <button class="btn-primary btn-sm" onclick="openNewReservationModal()">+ Reserva</button>
+        <div style="display:flex;gap:6px">
+            <button class="btn-secondary btn-sm" onclick="toggleAgendaSelectMode()" id="agendaBtnSelectToggle">Seleccionar</button>
+            <button class="btn-primary btn-sm" onclick="openNewReservationModal()">+ Reserva</button>
+        </div>
     </div>`;
 
     if (day.reservations === 0) {
@@ -254,9 +269,13 @@ function renderAgendaCard(r) {
     const safeName   = (r.client_name || '').replace(/'/g, "\\'");
     const tableInfo  = r.table_number ? `Mesa ${r.table_number}` : '<span style="color:#f59e0b;font-weight:600;">Sin mesa</span>';
     const phone      = r.client_phone ? `· ${r.client_phone}` : '';
+    const isSelected = _agendaSelected.has(r.id);
+    const selectedClass = isSelected ? ' agenda-selected' : '';
+    const checkMark = isSelected ? '✓' : '';
 
     return `
-    <div class="agenda-res-card" data-id="${r.id}" onclick="openEditReservation(${r.id})">
+    <div class="agenda-res-card${selectedClass}" data-id="${r.id}" onclick="_agendaCardClick(event, ${r.id})">
+        <span class="agenda-check">${checkMark}</span>
         <span class="agenda-res-dot" style="background:${color}"></span>
         <div class="agenda-res-body">
             <div class="agenda-res-top">
@@ -308,6 +327,117 @@ async function agendaDeleteRes(resId, name) {
     }
     agendaCache = {};
     debouncedRefresh();
+}
+
+// ── Bulk selection ───────────────────────────────
+
+function toggleAgendaSelectMode() {
+    _agendaSelectMode = !_agendaSelectMode;
+    _agendaSelected.clear();
+
+    const bar = document.getElementById('agendaBulkBar');
+    const btn = document.getElementById('agendaBtnSelectToggle');
+    if (bar) bar.classList.toggle('hidden', !_agendaSelectMode);
+    if (btn) btn.textContent = _agendaSelectMode ? 'Listo' : 'Seleccionar';
+
+    // Toggle checkbox visibility and card cursor
+    document.querySelectorAll('.agenda-res-card').forEach(card => {
+        card.classList.remove('agenda-selected');
+        const chk = card.querySelector('.agenda-check');
+        if (chk) { chk.style.display = _agendaSelectMode ? 'flex' : 'none'; chk.textContent = ''; }
+        const actions = card.querySelector('.agenda-res-actions');
+        if (actions) actions.style.display = _agendaSelectMode ? 'none' : '';
+    });
+
+    _updateAgendaBulkBar();
+}
+
+function _agendaCardClick(event, resId) {
+    if (_agendaSelectMode) {
+        event.stopPropagation();
+        _toggleAgendaSelection(resId);
+    } else {
+        openEditReservation(resId);
+    }
+}
+
+function _toggleAgendaSelection(resId) {
+    if (_agendaSelected.has(resId)) {
+        _agendaSelected.delete(resId);
+    } else {
+        _agendaSelected.add(resId);
+    }
+    const card = document.querySelector(`.agenda-res-card[data-id="${resId}"]`);
+    if (card) {
+        const selected = _agendaSelected.has(resId);
+        card.classList.toggle('agenda-selected', selected);
+        const chk = card.querySelector('.agenda-check');
+        if (chk) chk.textContent = selected ? '✓' : '';
+    }
+    _updateAgendaBulkBar();
+}
+
+function _updateAgendaBulkBar() {
+    const count = _agendaSelected.size;
+    const countEl = document.getElementById('agendaBulkCount');
+    if (countEl) countEl.textContent = `${count} seleccionada${count !== 1 ? 's' : ''}`;
+
+    const delBtn = document.getElementById('agendaBtnBulkDelete');
+    if (delBtn) delBtn.disabled = count === 0;
+
+    const cancelBtn = document.querySelector('.btn-cancel-bulk');
+    if (cancelBtn) cancelBtn.disabled = count === 0;
+}
+
+function agendaBulkSelectAll() {
+    document.querySelectorAll('.agenda-res-card[data-id]').forEach(card => {
+        const id = parseInt(card.dataset.id);
+        _agendaSelected.add(id);
+        card.classList.add('agenda-selected');
+        const chk = card.querySelector('.agenda-check');
+        if (chk) chk.textContent = '✓';
+    });
+    _updateAgendaBulkBar();
+}
+
+async function agendaBulkCancel() {
+    const ids = [..._agendaSelected];
+    if (ids.length === 0) return;
+    if (!confirm(`¿Cancelar ${ids.length} reserva${ids.length > 1 ? 's' : ''}?`)) return;
+
+    ids.forEach(id => { if (typeof optimisticRemove === 'function') optimisticRemove(id); });
+    showToast(`${ids.length} reserva${ids.length > 1 ? 's' : ''} cancelada${ids.length > 1 ? 's' : ''}`);
+
+    const results = await Promise.allSettled(
+        ids.map(id => apiPut(`/api/reservations/${id}`, { status: 'cancelled' }))
+    );
+    const failed = results.filter(r => r.status === 'rejected').length;
+    if (failed > 0) showToast(`Error en ${failed} reserva${failed > 1 ? 's' : ''}`, 'error');
+
+    _agendaSelected.clear();
+    agendaCache = {};
+    debouncedRefresh();
+    if (_agendaSelectMode) toggleAgendaSelectMode();
+}
+
+async function agendaBulkDelete() {
+    const ids = [..._agendaSelected];
+    if (ids.length === 0) return;
+    if (!confirm(`¿Eliminar definitivamente ${ids.length} reserva${ids.length > 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return;
+
+    ids.forEach(id => { if (typeof optimisticRemove === 'function') optimisticRemove(id); });
+    showToast(`${ids.length} reserva${ids.length > 1 ? 's' : ''} eliminada${ids.length > 1 ? 's' : ''}`);
+
+    const results = await Promise.allSettled(
+        ids.map(id => apiDelete(`/api/reservations/${id}/delete`))
+    );
+    const failed = results.filter(r => r.status === 'rejected').length;
+    if (failed > 0) showToast(`Error en ${failed} reserva${failed > 1 ? 's' : ''}`, 'error');
+
+    _agendaSelected.clear();
+    agendaCache = {};
+    debouncedRefresh();
+    if (_agendaSelectMode) toggleAgendaSelectMode();
 }
 
 // Legacy

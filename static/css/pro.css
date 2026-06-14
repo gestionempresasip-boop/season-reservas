@@ -2608,6 +2608,67 @@
 .agenda-res-btn.btn-delete:hover { background: #fee2e2; border-color: #ef4444; }
 .agenda-res-btn.btn-cancel:hover { background: #fff3cd; border-color: #f59e0b; }
 
+/* ── AGENDA: Bulk action bar ── */
+.agenda-bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    background: #1a1a2e;
+    border-radius: 12px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+}
+.agenda-bulk-bar.hidden { display: none; }
+.agenda-bulk-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+    min-width: 100px;
+}
+.agenda-bulk-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+}
+.agenda-bulk-btn:hover { opacity: 0.85; }
+.agenda-bulk-btn:disabled { opacity: 0.4; cursor: default; }
+.btn-cancel-bulk { background: #f59e0b; color: #1a1a2e; }
+.btn-delete-bulk  { background: #ef4444; color: #fff; }
+.btn-exit-bulk    { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+
+/* Card selected state */
+.agenda-res-card.agenda-selected {
+    border-color: #1a8a7d;
+    background: #f0fdf9;
+    box-shadow: 0 0 0 2px rgba(26,138,125,0.25);
+}
+.agenda-res-card .agenda-check {
+    width: 20px; height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.13s, border-color 0.13s;
+    font-size: 12px;
+    color: transparent;
+}
+.agenda-res-card.agenda-selected .agenda-check {
+    background: #1a8a7d;
+    border-color: #1a8a7d;
+    color: #fff;
+}
+
 /* Mobile: single column */
 @media (max-width: 768px) {
     .agenda-layout {
