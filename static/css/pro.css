@@ -420,7 +420,7 @@
    WALK-IN BUTTON & MODAL
 ══════════════════════════════════════════════ */
 .btn-walkin {
-    background: #f97316;
+    background: #2d8f7b;
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -431,7 +431,7 @@
     transition: background 0.15s, transform 0.1s;
     white-space: nowrap;
 }
-.btn-walkin:hover  { background: #ea6d0e; transform: translateY(-1px); }
+.btn-walkin:hover  { background: #247a68; transform: translateY(-1px); }
 .btn-walkin:active { transform: translateY(0); }
 .btn-walkin:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
