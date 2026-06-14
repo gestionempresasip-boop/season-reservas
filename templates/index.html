@@ -300,27 +300,45 @@
 
         <!-- AGENDA/CALENDAR VIEW -->
         <section class="view" id="viewAgenda">
-            <!-- Month navigation -->
-            <div class="agenda-month-nav">
-                <button class="agenda-nav-btn" id="agendaPrevMonth">&#8592;</button>
-                <div class="agenda-month-center">
-                    <span class="agenda-month-label" id="agendaMonthLabel">Junio 2026</span>
-                    <button class="agenda-today-btn" id="agendaTodayBtn">Hoy</button>
+
+            <!-- Pending unassigned banner -->
+            <div class="agenda-pending-section" id="agendaPendingSection" style="display:none">
+                <div class="agenda-pending-header" onclick="togglePendingSection()">
+                    <span class="agenda-pending-title">
+                        <span class="agenda-pending-dot"></span>
+                        Sin mesa asignada — <span id="agendaPendingCount">0</span> reserva<span id="agendaPendingS">s</span>
+                    </span>
+                    <span class="agenda-pending-toggle" id="agendaPendingToggle">▲</span>
                 </div>
-                <button class="agenda-nav-btn" id="agendaNextMonth">&#8594;</button>
+                <div class="agenda-pending-list" id="agendaPendingList"></div>
             </div>
 
-            <!-- Week day headers -->
-            <div class="agenda-weekdays">
-                <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
-            </div>
+            <!-- Two-column layout -->
+            <div class="agenda-layout">
 
-            <!-- Month grid -->
-            <div class="agenda-month-grid" id="agendaMonthGrid"></div>
+                <!-- Left: compact calendar -->
+                <div class="agenda-left">
+                    <div class="agenda-month-nav">
+                        <button class="agenda-nav-btn" id="agendaPrevMonth">&#8592;</button>
+                        <div class="agenda-month-center">
+                            <span class="agenda-month-label" id="agendaMonthLabel">Junio 2026</span>
+                            <button class="agenda-today-btn" id="agendaTodayBtn">Hoy</button>
+                        </div>
+                        <button class="agenda-nav-btn" id="agendaNextMonth">&#8594;</button>
+                    </div>
+                    <div class="agenda-weekdays">
+                        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                    </div>
+                    <div class="agenda-month-grid" id="agendaMonthGrid"></div>
+                </div>
 
-            <!-- Selected day detail -->
-            <div class="agenda-day-detail" id="agendaDayDetail">
-                <div class="agenda-day-detail-empty">Toca un día para ver sus reservas</div>
+                <!-- Right: day detail with cards -->
+                <div class="agenda-right">
+                    <div class="agenda-day-detail" id="agendaDayDetail">
+                        <div class="agenda-day-detail-empty">Selecciona un día</div>
+                    </div>
+                </div>
+
             </div>
         </section>
 

@@ -177,6 +177,20 @@ def cancel_reservation(rid):
     return jsonify(r.to_dict())
 
 
+@api.route('/reservations/unassigned', methods=['GET'])
+@handle_errors
+def get_unassigned_reservations():
+    """Future reservations without a table assigned (web bookings pending table)."""
+    from datetime import date as _date
+    today = _date.today()
+    rows = Reservation.query.filter(
+        Reservation.date >= today,
+        Reservation.table_id == None,
+        Reservation.status.in_(['confirmed', 'seated', 'pending']),
+    ).order_by(Reservation.date, Reservation.time).all()
+    return jsonify([r.to_dict() for r in rows])
+
+
 @api.route('/reservations/<int:rid>/delete', methods=['DELETE'])
 @handle_errors
 def delete_reservation(rid):
