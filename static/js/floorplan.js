@@ -62,53 +62,102 @@ let tableDataMap = {};
 let groupMode = false;
 let groupSelectedTables = [];
 
-// ── Web reservations panel ────────────────────────
+// ── Pending unassigned panel (floor plan) ─────────
+
+let _planPendingOpen = true;
+
+function _fpShortDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    if (dateStr === todayStr) return 'HOY';
+    const days   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+async function loadFloorPlanPending() {
+    try {
+        const data = await apiGet('/api/reservations/unassigned');
+        renderWebReservationsPanel(data || []);
+    } catch(e) {
+        console.warn('Error cargando pendientes plano:', e);
+    }
+}
+
 function renderWebReservationsPanel(items) {
     const panel = document.getElementById('webReservationsPanel');
-    const list  = document.getElementById('webReservationsList');
-    if (!panel || !list) return;
+    if (!panel) return;
 
     if (!items || items.length === 0) {
         panel.style.display = 'none';
         return;
     }
 
+    const plural = items.length === 1 ? '' : 's';
     panel.style.display = '';
-    list.innerHTML = `
-        <h4>🌐 Reservas web sin asignar <span class="web-badge">${items.length}</span></h4>
-        <div class="web-res-list">
-            ${items.map(r => `
-            <div class="web-res-card" id="web-res-card-${r.id}">
-                <div class="web-res-dot"></div>
-                <div class="web-res-info">
-                    <div class="web-res-name">${r.client_name}</div>
-                    <div class="web-res-meta">${r.time} · ${r.guests} persona${r.guests !== 1 ? 's' : ''} · ${r.shift === 'comida' ? '🌞 Comida' : '🌙 Cena'}</div>
-                </div>
-                <button class="web-res-btn" onclick="openEditReservation(${r.id})">Ver / Asignar</button>
-                <button class="web-res-btn-cancel" onclick="cancelWebReservation(${r.id}, '${r.client_name.replace(/'/g,"\\'")}', '${r.time}')" title="Cancelar reserva">✕</button>
-            </div>`).join('')}
+    panel.innerHTML = `
+        <div class="fp-pending-header" onclick="_toggleFpPending()">
+            <span class="fp-pending-title">
+                <span class="fp-pending-dot"></span>
+                Sin mesa asignada &mdash; <strong>${items.length}</strong> reserva${plural}
+            </span>
+            <span class="fp-pending-toggle" id="fpPendingToggle">▲</span>
+        </div>
+        <div class="fp-pending-list" id="fpPendingList">
+            ${items.map(r => {
+                const turno = r.shift === 'comida' ? '☀️ Comida' : '🌙 Cena';
+                const safeName = (r.client_name || '').replace(/'/g, "\\'");
+                const notes = r.notes ? ` · ${r.notes}` : '';
+                return `
+                <div class="fp-pending-card" id="fp-pending-card-${r.id}">
+                    <div class="fp-pending-date">${_fpShortDate(r.date)}</div>
+                    <div class="fp-pending-info">
+                        <div class="fp-pending-name">${r.client_name}</div>
+                        <div class="fp-pending-meta">${turno} · ${r.time} · ${r.guests}p${notes}</div>
+                    </div>
+                    <button class="fp-assign-btn" onclick="openEditReservation(${r.id})">Asignar mesa</button>
+                    <button class="fp-cancel-btn" onclick="fpCancelPending(${r.id}, '${safeName}')" title="Cancelar">✕</button>
+                </div>`;
+            }).join('')}
         </div>`;
+
+    // Restore collapse state
+    if (!_planPendingOpen) {
+        const list = document.getElementById('fpPendingList');
+        const tog  = document.getElementById('fpPendingToggle');
+        if (list) list.style.display = 'none';
+        if (tog)  tog.classList.add('collapsed');
+    }
+}
+
+function _toggleFpPending() {
+    _planPendingOpen = !_planPendingOpen;
+    const list = document.getElementById('fpPendingList');
+    const tog  = document.getElementById('fpPendingToggle');
+    if (list) list.style.display = _planPendingOpen ? '' : 'none';
+    if (tog)  tog.classList.toggle('collapsed', !_planPendingOpen);
+}
+
+async function fpCancelPending(id, name) {
+    if (!confirm(`¿Cancelar la reserva de ${name}?`)) return;
+    const card = document.getElementById(`fp-pending-card-${id}`);
+    if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+    try {
+        await apiPut(`/api/reservations/${id}`, { status: 'cancelled' });
+        if (card) card.remove();
+        showToast('Reserva cancelada');
+        // Reload panel to update count
+        loadFloorPlanPending();
+        debouncedRefresh();
+    } catch(e) {
+        showToast('Error al cancelar', 'error');
+        if (card) { card.style.opacity = ''; card.style.pointerEvents = ''; }
+    }
 }
 
 // Color palette for group reservations (assigned by index)
 const GROUP_COLORS = ['#a78bfa', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6'];
-
-function cancelWebReservation(id, name, time) {
-    showConfirmPopup(`¿Cancelar la reserva de ${name} a las ${time}?`, () => {
-        fetch(`/api/reservations/${id}`, { method: 'DELETE' })
-        .then(r => { if (!r.ok) throw new Error(); })
-        .then(() => {
-            const card = document.getElementById(`web-res-card-${id}`);
-            if (card) card.remove();
-            // Hide panel if no cards left
-            const list = document.querySelector('.web-res-list');
-            if (list && list.children.length === 0) {
-                document.getElementById('webReservationsPanel').style.display = 'none';
-            }
-        })
-        .catch(() => showAdminPopup && showAdminPopup('Error al cancelar la reserva', '❌'));
-    }, '✕');
-}
 
 // ── Floor Plan Edit Mode ──────────────────────────
 let _editMode = false;
@@ -789,10 +838,7 @@ function renderFloorPlan() {
         });
     });
 
-    // Unassigned reservations — HTML panel above the floor plan
-    renderWebReservationsPanel(
-        tableDataMap._unassigned ? tableDataMap._unassigned.unassignedReservations : []
-    );
+    // Pending panel is loaded independently via loadFloorPlanPending()
 
     TABLE_DEFS.forEach(def => {
         const td = tableDataMap[def.n] || {};

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
     <link rel="stylesheet" href="/static/css/style.css?v=33">
-    <link rel="stylesheet" href="/static/css/pro.css?v=45">
+    <link rel="stylesheet" href="/static/css/pro.css?v=46">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -161,10 +161,8 @@
                     <button class="btn-secondary btn-sm" onclick="toggleEditMode()">✕ Salir</button>
                 </div>
             </div>
-            <!-- Web reservations panel (hidden when empty) -->
-            <div id="webReservationsPanel" style="display:none">
-                <div id="webReservationsList"></div>
-            </div>
+            <!-- Pending unassigned reservations panel -->
+            <div id="webReservationsPanel" class="fp-pending-panel" style="display:none"></div>
 
             <div class="floorplan-container">
                 <svg id="floorplanSVG" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
@@ -877,8 +875,8 @@
     });
     </script>
     <script src="/static/js/auth.js?v=4"></script>
-    <script src="/static/js/app.js?v=32"></script>
-    <script src="/static/js/floorplan.js?v=43"></script>
+    <script src="/static/js/app.js?v=33"></script>
+    <script src="/static/js/floorplan.js?v=44"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>

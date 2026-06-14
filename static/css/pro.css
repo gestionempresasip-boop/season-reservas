@@ -2678,3 +2678,126 @@
     .agenda-day-detail { max-height: 50vh; }
     .agenda-month-label { font-size: 15px; }
 }
+
+/* ── Floor Plan: Pending unassigned panel ── */
+.fp-pending-panel {
+    max-width: 1100px;
+    margin: 0 auto 12px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1.5px solid rgba(245,158,11,0.35);
+    background: #fff;
+}
+.fp-pending-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    background: #1a1a2e;
+    cursor: pointer;
+    user-select: none;
+}
+.fp-pending-header:hover { background: #252540; }
+.fp-pending-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+.fp-pending-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #f59e0b;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.25);
+    animation: fpDotPulse 2s ease-in-out infinite;
+}
+@keyframes fpDotPulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+    50%      { box-shadow: 0 0 0 5px rgba(245,158,11,0.10); }
+}
+.fp-pending-toggle {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    transition: transform 0.2s;
+}
+.fp-pending-toggle.collapsed { transform: rotate(180deg); }
+
+.fp-pending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.fp-pending-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.12s;
+}
+.fp-pending-card:last-child { border-bottom: none; }
+.fp-pending-card:hover { background: #fffbf0; }
+.fp-pending-date {
+    font-size: 11px;
+    font-weight: 700;
+    color: #f59e0b;
+    background: #fef3c7;
+    border-radius: 6px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 52px;
+    text-align: center;
+}
+.fp-pending-info { flex: 1; min-width: 0; }
+.fp-pending-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fp-pending-meta {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 1px;
+}
+.fp-assign-btn {
+    background: #1a8a7d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.fp-assign-btn:hover { background: #147a6e; }
+.fp-cancel-btn {
+    background: transparent;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.fp-cancel-btn:hover { background: #fef2f2; border-color: #dc2626; }
+
+@media (max-width: 600px) {
+    .fp-pending-panel { margin: 0 0 10px; border-radius: 10px; }
+    .fp-pending-card  { padding: 9px 12px; gap: 8px; }
+    .fp-assign-btn    { padding: 6px 10px; font-size: 11px; }
+}

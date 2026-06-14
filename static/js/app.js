@@ -256,6 +256,10 @@ async function refreshAll() {
                 loadCalendar().catch(e => console.warn('Calendar refresh:', e?.message));
             }
         }
+        // Always refresh the floor plan pending panel (any view — user may switch)
+        if (typeof loadFloorPlanPending === 'function') {
+            loadFloorPlanPending().catch(e => console.warn('FP pending refresh:', e?.message));
+        }
     } catch (e) {
         // Secondary errors must NEVER show the connection banner
         console.warn('View refresh secondario:', e?.message || e);
