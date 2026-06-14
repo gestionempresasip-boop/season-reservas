@@ -9,7 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy
+      - name: Trigger Render deploy
         run: |
-          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
-          echo "✅ Deploy triggered on Render"
+          curl -s "${{ secrets.RENDER_DEPLOY_HOOK }}" \
+            -X POST \
+            --fail \
+            -o /dev/null \
+            -w "Deploy triggered: HTTP %{http_code}\n"
