@@ -942,6 +942,10 @@ function buildForm(shift) {
             </div>
         </div>
         <div class="igroup">
+            <label>Email (opcional — para recibir confirmación)</label>
+            <input type="email" class="iinput" id="em_${shift}" placeholder="tu@email.com">
+        </div>
+        <div class="igroup">
             <label>Notas (opcional)</label>
             <input type="text" class="iinput" id="no_${shift}" placeholder="Alergias, celebraciones&hellip;">
         </div>
@@ -1002,6 +1006,7 @@ async function doSubmit(shift) {
     const name  = document.getElementById('n_'  + shift).value.trim();
     const phone = document.getElementById('p_'  + shift).value.trim();
     const time  = document.getElementById('t_'  + shift).value;
+    const email = document.getElementById('em_' + shift).value.trim();
     const notes = document.getElementById('no_' + shift).value.trim();
     if (!time)  { showPopup('Selecciona una hora', '🕐');       return; }
     if (!name)  { showPopup('Introduce tu nombre', '👤');      return; }
@@ -1015,7 +1020,7 @@ async function doSubmit(shift) {
         const res = await fetch('/api/public/reserve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ client_name: name, client_phone: phone, date: selDate, shift, time, guests: guests[shift], notes, source: 'web' }),
+            body: JSON.stringify({ client_name: name, client_phone: phone, email, date: selDate, shift, time, guests: guests[shift], notes, source: 'web' }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Error al reservar');
