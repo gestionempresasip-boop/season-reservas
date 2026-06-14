@@ -113,6 +113,19 @@ def create_reservation(data: ReservationCreate):
         reservation_data['force_past'] = True
     r = res_svc.create_reservation(reservation_data)
     notify()
+    try:
+        from services.whatsapp import send_confirmation_whatsapp
+        send_confirmation_whatsapp(
+            to_phone  = reservation_data.get('client_phone', ''),
+            name      = reservation_data.get('client_name', ''),
+            date_str  = reservation_data.get('date', ''),
+            shift     = reservation_data.get('shift', ''),
+            time_str  = reservation_data.get('time', ''),
+            guests    = reservation_data.get('guests', 1),
+            notes     = reservation_data.get('notes', ''),
+        )
+    except Exception:
+        pass
     return jsonify(r.to_dict()), 201
 
 
