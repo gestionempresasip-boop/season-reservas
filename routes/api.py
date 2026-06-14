@@ -1129,10 +1129,10 @@ def public_reserve():
             if remaining == 0:
                 return error_response(
                     f'Lo sentimos, el turno de {data["shift"]} de ese día está completo. '
-                    f'Por favor elige otro día o contáctanos por WhatsApp.', 409)
+                    f'Por favor elige otro día o contáctanos por WhatsApp o llámanos al +34 689 135 630.', 409)
             return error_response(
                 f'Solo quedan {remaining} plazas disponibles en ese turno. '
-                f'Reduce el número de comensales o contáctanos por WhatsApp.', 409)
+                f'Reduce el número de comensales o contáctanos por WhatsApp o llámanos al +34 689 135 630.', 409)
     except Exception:
         pass  # If check fails, allow the booking rather than blocking it
 
