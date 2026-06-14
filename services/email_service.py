@@ -100,7 +100,7 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
 """
 
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'✅ Reserva confirmada — Season Benidorm · {fecha}'
+        msg['Subject'] = f'✅ {name} · {turno_label} {time_str} — Season Benidorm · {fecha}'
         msg['From']    = f'Season Benidorm <{gmail_user}>'
         msg['To']      = to_email
         msg.attach(MIMEText(html, 'html', 'utf-8'))
