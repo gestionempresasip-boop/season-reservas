@@ -15,7 +15,6 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
         d = _date.fromisoformat(date_str)
         days_es = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
         fecha = f"{days_es[d.weekday()]} {d.strftime('%d/%m/%Y')}"
-        turno_label = '🌞 Comida (13:00–16:00)' if shift == 'comida' else '🌙 Cena (20:00–23:30)'
         g = int(guests)
         personas = f'{g} persona{"s" if g != 1 else ""}'
 
@@ -56,8 +55,8 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
               </tr>
               <tr>
                 <td style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);">
-                  <span style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#888;font-weight:500;">Turno · Hora</span><br>
-                  <span style="font-size:16px;color:#333;font-weight:600;">{turno_label} · {time_str}</span>
+                  <span style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#888;font-weight:500;">Hora</span><br>
+                  <span style="font-size:16px;color:#333;font-weight:600;">{time_str}</span>
                 </td>
               </tr>
               <tr>
