@@ -1109,6 +1109,11 @@ def public_reserve():
     except (ValueError, TypeError):
         return error_response('Número de comensales inválido (1-20)', 400)
 
+    if guests > 10:
+        return error_response(
+            'Grupos de más de 10 personas: contacta directamente con nosotros antes de reservar '
+            'para que podamos preparar el espacio adecuado. Tel: +34 689 135 630', 400)
+
     # Overbooking check: limit comes from DB setting (default 30)
     from models import AppSetting as _AS
     try:

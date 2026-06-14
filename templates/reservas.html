@@ -957,13 +957,18 @@ function buildForm(shift) {
 }
 
 function chg(shift, d) {
-    guests[shift] = Math.max(1, Math.min(20, guests[shift] + d));
+    const next = guests[shift] + d;
+    if (next > 10) {
+        showPopup('Grupos de más de 10 personas: contacta directamente con nosotros antes de reservar para que podamos preparar el espacio adecuado.<br><br>📞 <strong>+34 689 135 630</strong>', '👥');
+        return;
+    }
+    guests[shift] = Math.max(1, Math.min(10, next));
     const el = document.getElementById('gn_' + shift);
     if (el) el.textContent = guests[shift];
 }
 
 function showPopup(msg, icon) {
-    document.getElementById('popupMsg').textContent  = msg;
+    document.getElementById('popupMsg').innerHTML    = msg;
     document.getElementById('popupIcon').textContent = icon || '⚠️';
     document.getElementById('popupOverlay').classList.add('show');
 }
