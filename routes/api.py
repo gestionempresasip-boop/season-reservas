@@ -1174,4 +1174,18 @@ def public_reserve():
     except Exception:
         pass
 
+    try:
+        from services.email_service import send_confirmation_email
+        send_confirmation_email(
+            to_email=data.get('email', ''),
+            name=data['client_name'].strip(),
+            date_str=data['date'],
+            shift=data['shift'],
+            time_str=data['time'],
+            guests=guests,
+            notes=data.get('notes', ''),
+        )
+    except Exception:
+        pass
+
     return jsonify(r.to_dict()), 201
