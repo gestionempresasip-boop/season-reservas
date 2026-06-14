@@ -1375,7 +1375,7 @@ function _applyOptimistic(resId, newStatus) {
 }
 
 async function seatFromPlan(resId) {
-    _applyOptimistic(resId, 'seated');   // ← INSTANTE: mesa verde ya
+    _applyOptimistic(resId, 'seated');
     closeModal('modalTableDetail');
     showToast('Mesa sentada ✓', 'success');
     try {
@@ -1383,11 +1383,11 @@ async function seatFromPlan(resId) {
     } catch (e) {
         showToast('Error al sentar mesa', 'error');
     }
-    loadFloorPlan(); // sincroniza desde servidor (sin debounce de 500ms)
+    debouncedRefresh();
 }
 
 async function cancelFromPlan(resId) {
-    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
+    _applyOptimistic(resId, 'free');
     closeModal('modalTableDetail');
     showToast('Reserva cancelada', 'success');
     try {
@@ -1395,11 +1395,11 @@ async function cancelFromPlan(resId) {
     } catch (e) {
         showToast('Error al cancelar', 'error');
     }
-    loadFloorPlan();
+    debouncedRefresh();
 }
 
 async function completeFromPlan(resId) {
-    _applyOptimistic(resId, 'free');     // ← INSTANTE: mesa libre ya
+    _applyOptimistic(resId, 'free');
     closeModal('modalTableDetail');
     showToast('Mesa completada ✓', 'success');
     try {
@@ -1407,20 +1407,21 @@ async function completeFromPlan(resId) {
     } catch (e) {
         showToast('Error al completar', 'error');
     }
-    loadFloorPlan();
+    debouncedRefresh();
 }
 
 function deleteFromPlan(resId, name) {
     showConfirmPopup(`¿Eliminar definitivamente la reserva de ${name}?`, async () => {
         _applyOptimistic(resId, 'free');
+        if (typeof optimisticRemove === 'function') optimisticRemove(resId);
         closeModal('modalTableDetail');
+        showToast('Reserva eliminada');
         try {
             await apiDelete(`/api/reservations/${resId}/delete`);
-            showToast('Reserva eliminada');
         } catch (e) {
             showToast('Error al eliminar', 'error');
         }
-        loadFloorPlan();
+        debouncedRefresh();
     }, '🗑️');
 }
 

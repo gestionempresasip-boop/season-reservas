@@ -669,40 +669,37 @@ async function submitReservation(e) {
 // ── Quick Actions ───────────────────────────────
 
 async function quickSeat(resId) {
-    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'seated'); // instante
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'seated');
     showToast('Mesa sentada ✓', 'success');
     try { await apiPut(`/api/reservations/${resId}/seat`); } catch (e) { showToast('Error', 'error'); }
-    if (typeof loadFloorPlan === 'function') loadFloorPlan();
-    refreshAll();
+    debouncedRefresh();
 }
 
 async function quickComplete(resId) {
-    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free');
     showToast('Mesa completada ✓', 'success');
     try { await apiPut(`/api/reservations/${resId}/complete`); } catch (e) { showToast('Error', 'error'); }
-    if (typeof loadFloorPlan === 'function') loadFloorPlan();
-    refreshAll();
+    debouncedRefresh();
 }
 
 async function quickNoShow(resId) {
-    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free');
     showToast('Marcado como No Show', 'error');
     try { await apiPut(`/api/reservations/${resId}/noshow`); } catch (e) { showToast('Error', 'error'); }
-    if (typeof loadFloorPlan === 'function') loadFloorPlan();
-    refreshAll();
+    debouncedRefresh();
 }
 
 async function quickDelete(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
-    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free'); // instante
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'free');
+    if (typeof optimisticRemove === 'function') optimisticRemove(resId);
+    showToast('Reserva eliminada');
     try {
         await apiDelete(`/api/reservations/${resId}/delete`);
-        showToast('Reserva eliminada');
     } catch (error) {
         showToast('Error al eliminar reserva', 'error');
     }
-    if (typeof loadFloorPlan === 'function') loadFloorPlan();
-    refreshAll();
+    debouncedRefresh();
 }
 
 // ── Bulk Select ─────────────────────────────────

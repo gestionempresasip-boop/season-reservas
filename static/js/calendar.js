@@ -256,7 +256,7 @@ function renderAgendaCard(r) {
     const phone      = r.client_phone ? `· ${r.client_phone}` : '';
 
     return `
-    <div class="agenda-res-card" onclick="openEditReservation(${r.id})">
+    <div class="agenda-res-card" data-id="${r.id}" onclick="openEditReservation(${r.id})">
         <span class="agenda-res-dot" style="background:${color}"></span>
         <div class="agenda-res-body">
             <div class="agenda-res-top">
@@ -286,28 +286,28 @@ function _statusLabel(status) {
 
 async function agendaCancelRes(resId, name) {
     if (!confirm(`¿Cancelar la reserva de ${name}?`)) return;
+    if (typeof optimisticRemove === 'function') optimisticRemove(resId);
+    showToast('Reserva cancelada');
     try {
         await apiPut(`/api/reservations/${resId}`, { status: 'cancelled' });
-        showToast('Reserva cancelada');
-        agendaCache = {};
-        loadCalendar(true);
-        refreshAll();
     } catch(e) {
         showToast('Error al cancelar', 'error');
     }
+    agendaCache = {};
+    debouncedRefresh();
 }
 
 async function agendaDeleteRes(resId, name) {
     if (!confirm(`¿Eliminar definitivamente la reserva de ${name}?`)) return;
+    if (typeof optimisticRemove === 'function') optimisticRemove(resId);
+    showToast('Reserva eliminada');
     try {
         await apiDelete(`/api/reservations/${resId}/delete`);
-        showToast('Reserva eliminada');
-        agendaCache = {};
-        loadCalendar(true);
-        refreshAll();
     } catch(e) {
         showToast('Error al eliminar', 'error');
     }
+    agendaCache = {};
+    debouncedRefresh();
 }
 
 // Legacy

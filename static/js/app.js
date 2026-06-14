@@ -86,11 +86,32 @@ function refreshActiveView() {
     if (active.id === 'viewAgenda') loadCalendar();
 }
 
-// Debounced refresh: múltiples eventos socket en 100ms se agrupan en una sola llamada
+// Debounced refresh — coalesces rapid socket events and post-action syncs
 let _refreshTimer = null;
-function debouncedRefresh() {
+function debouncedRefresh(delay = 400) {
     if (_refreshTimer) clearTimeout(_refreshTimer);
-    _refreshTimer = setTimeout(() => { refreshAll(); }, 100);
+    _refreshTimer = setTimeout(() => { refreshAll(); }, delay);
+}
+
+// Quick optimistic list removal — removes reservation from DOM and allReservations without waiting for server
+function optimisticRemove(resId) {
+    if (typeof allReservations !== 'undefined') {
+        allReservations = allReservations.filter(r => r.id !== resId);
+    }
+    // Remove from reservation list DOM immediately
+    const card = document.querySelector(`[data-id="${resId}"]`);
+    if (card) {
+        card.style.transition = 'opacity 0.15s';
+        card.style.opacity = '0';
+        setTimeout(() => card.remove(), 150);
+    }
+    // Remove from agenda cards
+    const agendaCard = document.querySelector(`.agenda-res-card[data-id="${resId}"]`);
+    if (agendaCard) {
+        agendaCard.style.transition = 'opacity 0.15s';
+        agendaCard.style.opacity = '0';
+        setTimeout(() => agendaCard.remove(), 150);
+    }
 }
 
 // ── Date ────────────────────────────────────────
