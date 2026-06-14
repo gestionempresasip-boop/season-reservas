@@ -83,6 +83,8 @@ def create_app():
         'application/json', 'text/html', 'text/css', 'application/javascript'
     ]
     app.config['COMPRESS_MIN_SIZE'] = 200
+    # Cache static files for 1 year (safe because CSS/JS use ?v=XX versioned URLs)
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
 
     socketio = SocketIO(
         app,

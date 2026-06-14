@@ -805,20 +805,9 @@
         }
     </script>
     <script>
-        // Desregistrar Service Workers y limpiar toda la caché
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(reg => {
-                    reg.unregister();
-                    console.log('✓ Service Worker desregistrado');
-                });
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(names => {
-                names.forEach(name => caches.delete(name));
-                if (names.length) console.log('✓ Caché limpiado:', names.length, 'entradas');
-            });
+            navigator.serviceWorker.register('/static/js/service-worker.js')
+                .catch(() => {});
         }
     </script>
     <script>
