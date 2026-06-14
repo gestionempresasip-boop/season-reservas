@@ -126,6 +126,19 @@ def create_reservation(data: ReservationCreate):
         )
     except Exception:
         pass
+    try:
+        from services.email_service import send_confirmation_email
+        send_confirmation_email(
+            to_email  = reservation_data.get('email', ''),
+            name      = reservation_data.get('client_name', ''),
+            date_str  = reservation_data.get('date', ''),
+            shift     = reservation_data.get('shift', ''),
+            time_str  = reservation_data.get('time', ''),
+            guests    = reservation_data.get('guests', 1),
+            notes     = reservation_data.get('notes', ''),
+        )
+    except Exception:
+        pass
     return jsonify(r.to_dict()), 201
 
 
