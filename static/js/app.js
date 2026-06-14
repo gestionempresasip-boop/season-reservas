@@ -122,7 +122,7 @@ function updateDateDisplay() {
     if (display) display.textContent = shortLabel;
 
     // Keep any in-view date labels in sync
-    ['toolbarDateLabel', 'reservasDateLabel'].forEach(id => {
+    ['toolbarDateLabel', 'reservasDateLabel', 'dayViewDateLabel'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = shortLabel;
     });
