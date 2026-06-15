@@ -4,13 +4,16 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date as _date
 
+COPY_EMAIL = 'seasonreserva@gmail.com'
+
 
 def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, notes=''):
-    """Send reservation confirmation email via Gmail SMTP. Silent fail if not configured."""
+    """Send reservation confirmation email via Gmail SMTP. Always BCC COPY_EMAIL. Silent fail if not configured."""
     gmail_user = os.getenv('GMAIL_USER')
     gmail_pass = os.getenv('GMAIL_APP_PASSWORD')
-    if not (gmail_user and gmail_pass and to_email and '@' in to_email):
+    if not (gmail_user and gmail_pass):
         return False
+    client_has_email = bool(to_email and '@' in str(to_email))
     try:
         d = _date.fromisoformat(date_str)
         days_es = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
@@ -99,17 +102,21 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
 </html>
 """
 
+        recipients = [COPY_EMAIL]
+        if client_has_email:
+            recipients.insert(0, to_email)
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = f'✅ {name} · {turno_label} {time_str} — Season Benidorm · {fecha}'
         msg['From']    = f'Season Benidorm <{gmail_user}>'
-        msg['To']      = to_email
+        msg['To']      = to_email if client_has_email else COPY_EMAIL
         msg.attach(MIMEText(html, 'html', 'utf-8'))
 
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.ehlo()
             server.starttls()
             server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, to_email, msg.as_string())
+            server.sendmail(gmail_user, recipients, msg.as_string())
 
         return True
     except Exception as e:
