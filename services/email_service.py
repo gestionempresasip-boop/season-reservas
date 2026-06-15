@@ -4,11 +4,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date as _date
 
-
 COPY_EMAIL = 'seasonreserva@gmail.com'
 
+
 def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, notes=''):
-    """Send reservation confirmation email via Gmail SMTP. Silent fail if not configured."""
+    """Send reservation confirmation email via Gmail SMTP. Always BCC COPY_EMAIL. Silent fail if not configured."""
     gmail_user = os.getenv('GMAIL_USER')
     gmail_pass = os.getenv('GMAIL_APP_PASSWORD')
     if not (gmail_user and gmail_pass):
@@ -102,7 +102,6 @@ def send_confirmation_email(to_email, name, date_str, shift, time_str, guests, n
 </html>
 """
 
-        # Always send to COPY_EMAIL; also send to client if they provided an email
         recipients = [COPY_EMAIL]
         if client_has_email:
             recipients.insert(0, to_email)

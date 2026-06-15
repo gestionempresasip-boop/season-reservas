@@ -1142,11 +1142,11 @@ def public_reserve():
         if guests < 1 or guests > 20:
             raise ValueError
     except (ValueError, TypeError):
-        return error_response('Número de comensales inválido (1-20)', 400)
+        return error_response('Número de comensales inválido (1-8)', 400)
 
-    if guests > 10:
+    if guests > 8:
         return error_response(
-            'Grupos de más de 10 personas: contacta directamente con nosotros antes de reservar '
+            'Grupos de más de 8 personas: contacta directamente con nosotros antes de reservar '
             'para que podamos preparar el espacio adecuado. Tel: +34 689 135 630', 400)
 
     # Overbooking check: limit comes from DB setting (default 30)
