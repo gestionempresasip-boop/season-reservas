@@ -232,6 +232,7 @@ async function refreshAll() {
 
         if (data && data.reservations && typeof allReservations !== 'undefined') {
             allReservations = data.reservations;
+            renderFpResPanel(data.reservations, currentShift);
         }
 
         dashboardLoaded = true;
@@ -519,72 +520,80 @@ document.addEventListener('keypress', (e) => {
 });
 
 // ── Floor Plan: Reservations Side Panel ─────────────────
+// Fed directly from allReservations (already loaded by dashboard call).
+// Shows only the active shift. Confirmed = "Sentar" button. Seated = tachado.
 
-const STATUS_LABELS = {
-    confirmed: 'Confirmada',
-    seated: 'Sentada',
-    completed: 'Completada',
-    cancelled: 'Cancelada',
-    no_show: 'No Show',
-};
+function renderFpResPanel(reservations, shift) {
+    const listId   = shift === 'comida' ? 'fpResComidaList' : 'fpResCenaList';
+    const countId  = shift === 'comida' ? 'fpResComidaCount' : 'fpResCenaCount';
+    const otherListId  = shift === 'comida' ? 'fpResCenaList' : 'fpResComidaList';
+    const otherCountId = shift === 'comida' ? 'fpResCenaCount' : 'fpResComidaCount';
 
-async function loadFpResPanel() {
-    try {
-        const data = await apiGet(`/api/reservations/day?date=${currentDate}`);
-        renderFpResShift(data.comida || [], 'fpResComidaList', 'fpResComidaCount');
-        renderFpResShift(data.cena || [], 'fpResCenaList', 'fpResCenaCount');
-    } catch (e) {
-        console.warn('loadFpResPanel:', e?.message);
-    }
+    // Active shift
+    const visible = (reservations || []).filter(r => r.status !== 'cancelled' && r.status !== 'no_show');
+    _renderFpList(visible, listId, countId);
+
+    // Other shift placeholder
+    const otherList = document.getElementById(otherListId);
+    const otherCount = document.getElementById(otherCountId);
+    if (otherList) otherList.innerHTML = '<div class="fp-res-empty">Cambia de turno para ver</div>';
+    if (otherCount) otherCount.textContent = '—';
 }
 
-function renderFpResShift(reservations, listId, countId) {
-    const list = document.getElementById(listId);
+function _renderFpList(reservations, listId, countId) {
+    const list    = document.getElementById(listId);
     const countEl = document.getElementById(countId);
     if (!list) return;
 
-    const active = reservations.filter(r => r.status !== 'cancelled');
-    countEl.textContent = active.length;
+    countEl.textContent = reservations.length;
 
-    if (active.length === 0) {
-        list.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:12px">Sin reservas</div>';
+    if (reservations.length === 0) {
+        list.innerHTML = '<div class="fp-res-empty">Sin reservas</div>';
         return;
     }
 
-    const sorted = active.sort((a, b) => {
-        const order = { confirmed: 0, seated: 1, completed: 2, no_show: 3 };
+    // Confirmed first, then seated, then completed — within each group sort by time
+    const order = { confirmed: 0, seated: 1, completed: 2 };
+    const sorted = [...reservations].sort((a, b) => {
         const sa = order[a.status] ?? 9, sb = order[b.status] ?? 9;
         if (sa !== sb) return sa - sb;
         return (a.time || '').localeCompare(b.time || '');
     });
 
     list.innerHTML = sorted.map(r => {
-        const isSeated = r.status === 'seated' || r.status === 'completed';
-        const tableLabel = r.table_numbers && r.table_numbers.length
+        const isSeated    = r.status === 'seated' || r.status === 'completed';
+        const tableLabel  = r.table_numbers && r.table_numbers.length
             ? 'Mesa ' + r.table_numbers.join('+')
-            : 'Sin mesa';
-        const showSeatBtn = r.status === 'confirmed' && r.table_id;
+            : '<span style="color:#f59e0b">Sin mesa</span>';
+        const canSeat     = r.status === 'confirmed';
 
-        return `
-        <div class="fp-res-row ${isSeated ? 'is-seated' : ''}" data-res-id="${r.id}">
+        return `<div class="fp-res-row${isSeated ? ' is-seated' : ''}" data-res-id="${r.id}">
             <span class="fp-res-time">${r.time || '--:--'}</span>
             <div class="fp-res-info">
-                <div class="fp-res-name">${escapeHtml(r.client_name || 'Sin nombre')}</div>
+                <div class="fp-res-name">${_esc(r.client_name || 'Sin nombre')}</div>
                 <div class="fp-res-meta">${r.guests}p · ${tableLabel}</div>
             </div>
-            <span class="fp-res-badge fp-res-badge-${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
-            ${showSeatBtn
-                ? `<button class="fp-res-btn-seat" onclick="fpSeatReservation(${r.id}, this)">Sentar</button>`
-                : ''}
+            ${canSeat
+                ? `<button class="fp-res-btn-seat" onclick="fpSeatReservation(${r.id},this)">Sentar</button>`
+                : `<span class="fp-res-badge fp-res-badge-${r.status}">${_statusLabel(r.status)}</span>`}
         </div>`;
     }).join('');
 }
 
 async function fpSeatReservation(resId, btn) {
     btn.disabled = true;
-    btn.textContent = '...';
+    btn.textContent = '…';
     try {
         await apiPut(`/api/reservations/${resId}/seat`);
+        // Optimistic: mark row as seated immediately
+        const row = btn.closest('.fp-res-row');
+        if (row) {
+            row.classList.add('is-seated');
+            btn.replaceWith(Object.assign(document.createElement('span'), {
+                className: 'fp-res-badge fp-res-badge-seated',
+                textContent: 'Sentada'
+            }));
+        }
         refreshAll();
     } catch (e) {
         btn.disabled = false;
@@ -593,8 +602,12 @@ async function fpSeatReservation(resId, btn) {
     }
 }
 
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+function _statusLabel(s) {
+    return { confirmed:'Confirmada', seated:'Sentada', completed:'Terminada', no_show:'No show' }[s] || s;
 }
+function _esc(str) {
+    const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+}
+
+// Keep loadFpResPanel as no-op (data comes via renderFpResPanel from refreshAll)
+async function loadFpResPanel() {}
