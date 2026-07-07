@@ -232,8 +232,10 @@ async function refreshAll() {
 
         if (data && data.reservations && typeof allReservations !== 'undefined') {
             allReservations = data.reservations;
-            renderFpResPanel(data.reservations, currentShift);
         }
+
+        // Always refresh the floor-plan reservation panel (both shifts)
+        loadFpResPanel().catch(e => console.warn('FP res panel:', e?.message));
 
         dashboardLoaded = true;
         // If banner was visible, hide it now
@@ -261,7 +263,7 @@ async function refreshAll() {
                 loadFloorPlanPending().catch(e => console.warn('FP pending refresh:', e?.message));
             }
             if (active.id === 'viewPlano') {
-                loadFpResPanel().catch(e => console.warn('FP res panel:', e?.message));
+                loadFpResPanel().catch(e => console.warn('FP res panel retry:', e?.message));
             }
         }
     } catch (e) {
@@ -520,24 +522,16 @@ document.addEventListener('keypress', (e) => {
 });
 
 // ── Floor Plan: Reservations Side Panel ─────────────────
-// Fed directly from allReservations (already loaded by dashboard call).
-// Shows only the active shift. Confirmed = "Sentar" button. Seated = tachado.
+// Loads BOTH shifts for the day and shows confirmed reservations with "Sentar" button.
 
-function renderFpResPanel(reservations, shift) {
-    const listId   = shift === 'comida' ? 'fpResComidaList' : 'fpResCenaList';
-    const countId  = shift === 'comida' ? 'fpResComidaCount' : 'fpResCenaCount';
-    const otherListId  = shift === 'comida' ? 'fpResCenaList' : 'fpResComidaList';
-    const otherCountId = shift === 'comida' ? 'fpResCenaCount' : 'fpResComidaCount';
-
-    // Active shift
-    const visible = (reservations || []).filter(r => r.status !== 'cancelled' && r.status !== 'no_show');
-    _renderFpList(visible, listId, countId);
-
-    // Other shift placeholder
-    const otherList = document.getElementById(otherListId);
-    const otherCount = document.getElementById(otherCountId);
-    if (otherList) otherList.innerHTML = '<div class="fp-res-empty">Cambia de turno para ver</div>';
-    if (otherCount) otherCount.textContent = '—';
+async function loadFpResPanel() {
+    try {
+        const data = await apiGet(`/api/reservations/day?date=${currentDate}`);
+        _renderFpList(data.comida || [], 'fpResComidaList', 'fpResComidaCount');
+        _renderFpList(data.cena   || [], 'fpResCenaList',   'fpResCenaCount');
+    } catch(e) {
+        console.warn('FP res panel load error:', e?.message);
+    }
 }
 
 function _renderFpList(reservations, listId, countId) {
@@ -545,12 +539,11 @@ function _renderFpList(reservations, listId, countId) {
     const countEl = document.getElementById(countId);
     if (!list) return;
 
-    // Solo confirmadas pendientes de sentar
     const pending = [...reservations]
         .filter(r => r.status === 'confirmed')
         .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
-    countEl.textContent = pending.length;
+    if (countEl) countEl.textContent = pending.length;
 
     if (pending.length === 0) {
         list.innerHTML = '<div class="fp-res-empty">Sin reservas pendientes</div>';
@@ -560,7 +553,7 @@ function _renderFpList(reservations, listId, countId) {
     list.innerHTML = pending.map(r => {
         const tableLabel = r.table_numbers && r.table_numbers.length
             ? 'Mesa ' + r.table_numbers.join('+')
-            : '<span style="color:#f59e0b">Sin mesa asignada</span>';
+            : '<span style="color:#f59e0b">Sin mesa</span>';
 
         return `<div class="fp-res-row" data-res-id="${r.id}">
             <span class="fp-res-time">${r.time || '--:--'}</span>
@@ -576,31 +569,32 @@ function _renderFpList(reservations, listId, countId) {
 async function fpSeatReservation(resId, btn) {
     btn.disabled = true;
     btn.textContent = '…';
+
+    // Capture DOM references BEFORE detaching the row
+    const row     = btn.closest('.fp-res-row');
+    const list    = btn.closest('.fp-res-list');
+    const section = list ? list.closest('.fp-res-shift-section') : null;
+    const countEl = section ? section.querySelector('.fp-res-shift-count') : null;
+
+    // Remove row and update count immediately
+    if (row) row.remove();
+    if (countEl) countEl.textContent = Math.max(0, (parseInt(countEl.textContent) || 1) - 1);
+    if (list && !list.querySelector('.fp-res-row')) {
+        list.innerHTML = '<div class="fp-res-empty">Sin reservas pendientes</div>';
+    }
+
+    // Turn table green on the floor plan immediately
+    if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'seated');
+    if (typeof showToast === 'function') showToast('Mesa sentada ✓', 'success');
+
     try {
         await apiPut(`/api/reservations/${resId}/seat`);
-        // Optimistic: mark row as seated immediately
-        const row = btn.closest('.fp-res-row');
-        if (row) {
-            row.classList.add('is-seated');
-            btn.replaceWith(Object.assign(document.createElement('span'), {
-                className: 'fp-res-badge fp-res-badge-seated',
-                textContent: 'Sentada'
-            }));
-        }
-        refreshAll();
     } catch (e) {
-        btn.disabled = false;
-        btn.textContent = 'Sentar';
         if (typeof showToast === 'function') showToast('Error al sentar', 'error');
     }
+    debouncedRefresh();
 }
 
-function _statusLabel(s) {
-    return { confirmed:'Confirmada', seated:'Sentada', completed:'Terminada', no_show:'No show' }[s] || s;
-}
 function _esc(str) {
     const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
 }
-
-// Keep loadFpResPanel as no-op (data comes via renderFpResPanel from refreshAll)
-async function loadFpResPanel() {}
