@@ -293,8 +293,9 @@ body {
     border-radius: var(--radius-lg);
     padding: 16px;
     box-shadow: var(--shadow);
-    flex: 1;
+    flex: 1 1 0%;
     min-width: 0;
+    max-width: none;
 }
 
 /* ── Reservations side panel ── */
@@ -1441,8 +1442,14 @@ body {
     #viewPlano .floorplan-toolbar .btn-walkin { font-size: 12px; padding: 6px 10px; }
     #viewPlano .group-action-bar { flex-shrink: 0; }
     #viewPlano .edit-plan-bar { flex-shrink: 0; }
-    #viewPlano .floorplan-container {
+    #viewPlano .floorplan-split {
         flex: 1;
+        min-height: 0;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    #viewPlano .floorplan-container {
+        flex-shrink: 0;
         min-height: 0;
         padding: 8px;
         border-radius: 0;
@@ -1453,6 +1460,14 @@ body {
         align-items: center;
         justify-content: center;
     }
+    #viewPlano .fp-res-panel {
+        width: 100%;
+        max-height: none;
+        border-radius: 0;
+        box-shadow: none;
+        border-top: 1px solid var(--gray-200);
+    }
+    #viewPlano .fp-res-list { max-height: 30vh; }
     #floorplanSVG { max-height: none; height: 100%; width: 100%; }
 
     /* Bottom nav */
