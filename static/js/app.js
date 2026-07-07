@@ -545,37 +545,30 @@ function _renderFpList(reservations, listId, countId) {
     const countEl = document.getElementById(countId);
     if (!list) return;
 
-    countEl.textContent = reservations.length;
+    // Solo confirmadas pendientes de sentar
+    const pending = [...reservations]
+        .filter(r => r.status === 'confirmed')
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
-    if (reservations.length === 0) {
-        list.innerHTML = '<div class="fp-res-empty">Sin reservas</div>';
+    countEl.textContent = pending.length;
+
+    if (pending.length === 0) {
+        list.innerHTML = '<div class="fp-res-empty">Sin reservas pendientes</div>';
         return;
     }
 
-    // Confirmed first, then seated, then completed — within each group sort by time
-    const order = { confirmed: 0, seated: 1, completed: 2 };
-    const sorted = [...reservations].sort((a, b) => {
-        const sa = order[a.status] ?? 9, sb = order[b.status] ?? 9;
-        if (sa !== sb) return sa - sb;
-        return (a.time || '').localeCompare(b.time || '');
-    });
-
-    list.innerHTML = sorted.map(r => {
-        const isSeated    = r.status === 'seated' || r.status === 'completed';
-        const tableLabel  = r.table_numbers && r.table_numbers.length
+    list.innerHTML = pending.map(r => {
+        const tableLabel = r.table_numbers && r.table_numbers.length
             ? 'Mesa ' + r.table_numbers.join('+')
-            : '<span style="color:#f59e0b">Sin mesa</span>';
-        const canSeat     = r.status === 'confirmed';
+            : '<span style="color:#f59e0b">Sin mesa asignada</span>';
 
-        return `<div class="fp-res-row${isSeated ? ' is-seated' : ''}" data-res-id="${r.id}">
+        return `<div class="fp-res-row" data-res-id="${r.id}">
             <span class="fp-res-time">${r.time || '--:--'}</span>
             <div class="fp-res-info">
                 <div class="fp-res-name">${_esc(r.client_name || 'Sin nombre')}</div>
                 <div class="fp-res-meta">${r.guests}p · ${tableLabel}</div>
             </div>
-            ${canSeat
-                ? `<button class="fp-res-btn-seat" onclick="fpSeatReservation(${r.id},this)">Sentar</button>`
-                : `<span class="fp-res-badge fp-res-badge-${r.status}">${_statusLabel(r.status)}</span>`}
+            <button class="fp-res-btn-seat" onclick="fpSeatReservation(${r.id},this)">Sentar</button>
         </div>`;
     }).join('');
 }
