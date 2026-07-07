@@ -279,14 +279,150 @@ body {
     .web-res-btn { padding: 6px 10px; font-size: 11px; }
 }
 
+/* ── Floorplan + Reservations split layout ── */
+.floorplan-split {
+    display: flex;
+    gap: 16px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
 .floorplan-container {
     background: var(--white);
     border-radius: var(--radius-lg);
     padding: 16px;
     box-shadow: var(--shadow);
-    max-width: 1100px;
-    margin: 0 auto;
+    flex: 1;
+    min-width: 0;
 }
+
+/* ── Reservations side panel ── */
+.fp-res-panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    max-height: calc(100dvh - 56px - 70px - 52px - 72px - 32px);
+    display: flex;
+    flex-direction: column;
+}
+.fp-res-panel-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--gray-200);
+}
+.fp-res-panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0;
+}
+.fp-res-shift-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.fp-res-shift-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.fp-res-shift-comida {
+    background: #fffbeb;
+    color: #92400e;
+    border-bottom: 1px solid #fde68a;
+}
+.fp-res-shift-cena {
+    background: #eff6ff;
+    color: #1e40af;
+    border-top: 1px solid #bfdbfe;
+    border-bottom: 1px solid #bfdbfe;
+}
+.fp-res-shift-count {
+    background: rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 11px;
+}
+.fp-res-list {
+    overflow-y: auto;
+    padding: 4px 0;
+    max-height: 35vh;
+}
+
+/* Individual reservation row */
+.fp-res-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    transition: background 0.15s;
+}
+.fp-res-row:hover { background: var(--gray-50); }
+.fp-res-row.is-seated { opacity: 0.5; }
+.fp-res-row.is-seated .fp-res-name { text-decoration: line-through; }
+
+.fp-res-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-600);
+    min-width: 44px;
+}
+.fp-res-info {
+    flex: 1;
+    min-width: 0;
+}
+.fp-res-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fp-res-meta {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 1px;
+}
+.fp-res-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+.fp-res-badge-confirmed { background: #dbeafe; color: #1e40af; }
+.fp-res-badge-seated { background: #d1fae5; color: #065f46; }
+.fp-res-badge-completed { background: var(--gray-100); color: var(--gray-500); }
+.fp-res-badge-cancelled { background: #fee2e2; color: #991b1b; }
+.fp-res-badge-no_show { background: #fef3c7; color: #92400e; }
+
+.fp-res-btn-seat {
+    background: #1a8a7d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.fp-res-btn-seat:hover { background: #15746a; }
+.fp-res-btn-seat:disabled { background: var(--gray-300); cursor: default; }
 
 #floorplanSVG {
     width: 100%;
@@ -1246,6 +1382,16 @@ body {
     .stat-value { font-size: 24px; }
     .view { padding: 12px 16px; }
     .settings-grid { grid-template-columns: 1fr; }
+    .fp-res-panel { width: 260px; }
+}
+
+@media (max-width: 768px) {
+    .floorplan-split { flex-direction: column; }
+    .fp-res-panel {
+        width: 100%;
+        max-height: 50vh;
+    }
+    .fp-res-list { max-height: 25vh; }
 }
 
 /* ── Mobile (≤ 640px) ── */

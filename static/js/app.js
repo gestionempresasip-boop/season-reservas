@@ -259,6 +259,9 @@ async function refreshAll() {
             if (active.id === 'viewPlano' && typeof loadFloorPlanPending === 'function') {
                 loadFloorPlanPending().catch(e => console.warn('FP pending refresh:', e?.message));
             }
+            if (active.id === 'viewPlano') {
+                loadFpResPanel().catch(e => console.warn('FP res panel:', e?.message));
+            }
         }
     } catch (e) {
         // Secondary errors must NEVER show the connection banner
@@ -514,3 +517,84 @@ document.addEventListener('keypress', (e) => {
         }
     }
 });
+
+// ── Floor Plan: Reservations Side Panel ─────────────────
+
+const STATUS_LABELS = {
+    confirmed: 'Confirmada',
+    seated: 'Sentada',
+    completed: 'Completada',
+    cancelled: 'Cancelada',
+    no_show: 'No Show',
+};
+
+async function loadFpResPanel() {
+    try {
+        const data = await apiGet(`/api/reservations/day?date=${currentDate}`);
+        renderFpResShift(data.comida || [], 'fpResComidaList', 'fpResComidaCount');
+        renderFpResShift(data.cena || [], 'fpResCenaList', 'fpResCenaCount');
+    } catch (e) {
+        console.warn('loadFpResPanel:', e?.message);
+    }
+}
+
+function renderFpResShift(reservations, listId, countId) {
+    const list = document.getElementById(listId);
+    const countEl = document.getElementById(countId);
+    if (!list) return;
+
+    const active = reservations.filter(r => r.status !== 'cancelled');
+    countEl.textContent = active.length;
+
+    if (active.length === 0) {
+        list.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:12px">Sin reservas</div>';
+        return;
+    }
+
+    const sorted = active.sort((a, b) => {
+        const order = { confirmed: 0, seated: 1, completed: 2, no_show: 3 };
+        const sa = order[a.status] ?? 9, sb = order[b.status] ?? 9;
+        if (sa !== sb) return sa - sb;
+        return (a.time || '').localeCompare(b.time || '');
+    });
+
+    list.innerHTML = sorted.map(r => {
+        const isSeated = r.status === 'seated' || r.status === 'completed';
+        const tableLabel = r.table_numbers && r.table_numbers.length
+            ? 'Mesa ' + r.table_numbers.join('+')
+            : 'Sin mesa';
+        const showSeatBtn = r.status === 'confirmed' && r.table_id;
+
+        return `
+        <div class="fp-res-row ${isSeated ? 'is-seated' : ''}" data-res-id="${r.id}">
+            <span class="fp-res-time">${r.time || '--:--'}</span>
+            <div class="fp-res-info">
+                <div class="fp-res-name">${escapeHtml(r.client_name || 'Sin nombre')}</div>
+                <div class="fp-res-meta">${r.guests}p · ${tableLabel}</div>
+            </div>
+            <span class="fp-res-badge fp-res-badge-${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
+            ${showSeatBtn
+                ? `<button class="fp-res-btn-seat" onclick="fpSeatReservation(${r.id}, this)">Sentar</button>`
+                : ''}
+        </div>`;
+    }).join('');
+}
+
+async function fpSeatReservation(resId, btn) {
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+        await apiPut(`/api/reservations/${resId}/seat`);
+        refreshAll();
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Sentar';
+        if (typeof showToast === 'function') showToast('Error al sentar', 'error');
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}

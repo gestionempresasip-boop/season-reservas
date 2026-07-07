@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=33">
+    <link rel="stylesheet" href="/static/css/style.css?v=34">
     <link rel="stylesheet" href="/static/css/pro.css?v=47">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -164,38 +164,61 @@
             <!-- Pending unassigned reservations panel -->
             <div id="webReservationsPanel" class="fp-pending-panel" style="display:none"></div>
 
-            <div class="floorplan-container">
-                <svg id="floorplanSVG" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-                    <!-- Zona Exterior -->
-                    <rect x="1" y="1" width="98" height="28" rx="1.5" fill="#f0f7f5" stroke="#1a8a7d" stroke-width="0.3" stroke-dasharray="1,0.5"/>
-                    <text x="82" y="4" class="zone-label">ZONA EXTERIOR</text>
-                    <line x1="2" y1="3.5" x2="40" y2="3.5" stroke="#1a8a7d" stroke-width="0.15" stroke-dasharray="0.5,0.5"/>
-                    <text x="14" y="4.2" class="door-label">PUERTA ENTRADA RESTAURANTE</text>
+            <div class="floorplan-split">
+                <div class="floorplan-container">
+                    <svg id="floorplanSVG" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                        <!-- Zona Exterior -->
+                        <rect x="1" y="1" width="98" height="28" rx="1.5" fill="#f0f7f5" stroke="#1a8a7d" stroke-width="0.3" stroke-dasharray="1,0.5"/>
+                        <text x="82" y="4" class="zone-label">ZONA EXTERIOR</text>
+                        <line x1="2" y1="3.5" x2="40" y2="3.5" stroke="#1a8a7d" stroke-width="0.15" stroke-dasharray="0.5,0.5"/>
+                        <text x="14" y="4.2" class="door-label">PUERTA ENTRADA RESTAURANTE</text>
 
-                    <!-- Salon Principal -->
-                    <rect x="1" y="30" width="52" height="69" rx="1.5" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.3"/>
-                    <text x="5" y="33" class="zone-label">SAL&Oacute;N PRINCIPAL</text>
-                    <line x1="25" y1="29.5" x2="25" y2="31" stroke="#1a8a7d" stroke-width="0.15" stroke-dasharray="0.5,0.5"/>
-                    <text x="14" y="30.8" class="door-label">PUERTA ENTRADA SAL&Oacute;N</text>
+                        <!-- Salon Principal -->
+                        <rect x="1" y="30" width="52" height="69" rx="1.5" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.3"/>
+                        <text x="5" y="33" class="zone-label">SAL&Oacute;N PRINCIPAL</text>
+                        <line x1="25" y1="29.5" x2="25" y2="31" stroke="#1a8a7d" stroke-width="0.15" stroke-dasharray="0.5,0.5"/>
+                        <text x="14" y="30.8" class="door-label">PUERTA ENTRADA SAL&Oacute;N</text>
 
-                    <!-- Salon Interior -->
-                    <rect x="54" y="30" width="35" height="54" rx="1.5" fill="#faf8f3" stroke="#d0d0d0" stroke-width="0.3"/>
-                    <text x="58" y="33" class="zone-label">SAL&Oacute;N INTERIOR</text>
+                        <!-- Salon Interior -->
+                        <rect x="54" y="30" width="35" height="54" rx="1.5" fill="#faf8f3" stroke="#d0d0d0" stroke-width="0.3"/>
+                        <text x="58" y="33" class="zone-label">SAL&Oacute;N INTERIOR</text>
 
-                    <!-- Columnas indicator -->
-                    <text x="49" y="56" class="annotation">&larr; COLUMNAS</text>
+                        <!-- Columnas indicator -->
+                        <text x="49" y="56" class="annotation">&larr; COLUMNAS</text>
 
-                    <!-- CAVA -->
-                    <rect x="90" y="60" width="9" height="30" rx="1" fill="#f5f0e6" stroke="#c5b896" stroke-width="0.3"/>
-                    <text x="92.5" y="72" class="cava-letter">C</text>
-                    <text x="92.5" y="76" class="cava-letter">A</text>
-                    <text x="92.5" y="80" class="cava-letter">V</text>
-                    <text x="92.5" y="84" class="cava-letter">A</text>
+                        <!-- CAVA -->
+                        <rect x="90" y="60" width="9" height="30" rx="1" fill="#f5f0e6" stroke="#c5b896" stroke-width="0.3"/>
+                        <text x="92.5" y="72" class="cava-letter">C</text>
+                        <text x="92.5" y="76" class="cava-letter">A</text>
+                        <text x="92.5" y="80" class="cava-letter">V</text>
+                        <text x="92.5" y="84" class="cava-letter">A</text>
 
-                    <!-- Mesa Alta labels -->
-                    <text x="12" y="19.5" class="annotation">&larr; MESA ALTA</text>
-                    <text x="82" y="82" class="annotation">&larr; MESA ALTA</text>
-                </svg>
+                        <!-- Mesa Alta labels -->
+                        <text x="12" y="19.5" class="annotation">&larr; MESA ALTA</text>
+                        <text x="82" y="82" class="annotation">&larr; MESA ALTA</text>
+                    </svg>
+                </div>
+
+                <!-- Panel lateral: reservas del día -->
+                <div class="fp-res-panel" id="fpResPanel">
+                    <div class="fp-res-panel-header">
+                        <h3 class="fp-res-panel-title">Reservas del d&iacute;a</h3>
+                    </div>
+                    <div class="fp-res-shift-section" id="fpResComida">
+                        <div class="fp-res-shift-header fp-res-shift-comida">
+                            <span>&#9728;&#65039; COMIDA</span>
+                            <span class="fp-res-shift-count" id="fpResComidaCount">0</span>
+                        </div>
+                        <div class="fp-res-list" id="fpResComidaList"></div>
+                    </div>
+                    <div class="fp-res-shift-section" id="fpResCena">
+                        <div class="fp-res-shift-header fp-res-shift-cena">
+                            <span>&#127769; CENA</span>
+                            <span class="fp-res-shift-count" id="fpResCenaCount">0</span>
+                        </div>
+                        <div class="fp-res-list" id="fpResCenaList"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -875,7 +898,7 @@
     });
     </script>
     <script src="/static/js/auth.js?v=4"></script>
-    <script src="/static/js/app.js?v=34"></script>
+    <script src="/static/js/app.js?v=35"></script>
     <script src="/static/js/floorplan.js?v=44"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
