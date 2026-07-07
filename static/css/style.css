@@ -1469,7 +1469,7 @@ body {
         border-top: 1px solid var(--gray-200);
     }
     #viewPlano .fp-res-list { max-height: 30vh; }
-    #floorplanSVG { max-height: none; height: 100%; width: 100%; }
+    #floorplanSVG { max-height: none; height: auto; width: 100%; }
 
     /* Bottom nav */
     .nav-btn { min-width: 44px; padding: 4px 6px; }
