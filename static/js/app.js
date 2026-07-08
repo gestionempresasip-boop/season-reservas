@@ -527,11 +527,28 @@ document.addEventListener('keypress', (e) => {
 async function loadFpResPanel() {
     try {
         const data = await apiGet(`/api/reservations/day?date=${currentDate}`);
-        _renderFpList(data.comida || [], 'fpResComidaList', 'fpResComidaCount');
-        _renderFpList(data.cena   || [], 'fpResCenaList',   'fpResCenaCount');
+        const comida = data.comida || [];
+        const cena   = data.cena   || [];
+
+        // Desktop side panel
+        _renderFpList(comida, 'fpResComidaList', 'fpResComidaCount');
+        _renderFpList(cena,   'fpResCenaList',   'fpResCenaCount');
+
+        // Mobile bottom sheet
+        _renderFpList(comida, 'fpBsComidaList', 'fpBsComidaCount');
+        _renderFpList(cena,   'fpBsCenaList',   'fpBsCenaCount');
+
+        // Update total badge on bottom sheet handle
+        const total = [...comida, ...cena].filter(r => r.status === 'confirmed').length;
+        const bsBadge = document.getElementById('fpBsTotalCount');
+        if (bsBadge) bsBadge.textContent = total;
     } catch(e) {
         console.warn('FP res panel load error:', e?.message);
     }
+}
+
+function toggleFpBottomSheet() {
+    document.getElementById('fpBottomSheet')?.classList.toggle('fp-bs-open');
 }
 
 function _renderFpList(reservations, listId, countId) {
@@ -582,6 +599,9 @@ async function fpSeatReservation(resId, btn) {
     if (list && !list.querySelector('.fp-res-row')) {
         list.innerHTML = '<div class="fp-res-empty">Sin reservas pendientes</div>';
     }
+    // Update bottom sheet total badge
+    const bsBadge = document.getElementById('fpBsTotalCount');
+    if (bsBadge) bsBadge.textContent = Math.max(0, (parseInt(bsBadge.textContent) || 1) - 1);
 
     // Turn table green on the floor plan immediately
     if (typeof _applyOptimistic === 'function') _applyOptimistic(resId, 'seated');

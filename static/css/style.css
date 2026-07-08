@@ -430,6 +430,9 @@ body {
 .fp-res-btn-seat:hover { background: #15746a; }
 .fp-res-btn-seat:disabled { background: var(--gray-300); cursor: default; }
 
+/* Bottom sheet — hidden on desktop; mobile styles in @media (max-width: 640px) */
+.fp-bottom-sheet { display: none; }
+
 #floorplanSVG {
     width: 100%;
     height: auto;
@@ -1470,6 +1473,79 @@ body {
     }
     #viewPlano .fp-res-list { max-height: 30vh; }
     #floorplanSVG { max-height: none; height: auto; width: 100%; }
+
+    /* Hide static reservation panel — replaced by bottom sheet */
+    #viewPlano .fp-res-panel { display: none !important; }
+
+    /* ── Mobile bottom sheet ── */
+    .fp-bottom-sheet {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 72px;
+        max-height: 72vh;
+        background: var(--white);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -3px 20px rgba(0,0,0,0.13);
+        z-index: 99;
+        transform: translateY(calc(100% - 52px));
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .fp-bottom-sheet.fp-bs-open {
+        transform: translateY(0);
+    }
+    .fp-bs-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 16px 10px;
+        height: 52px;
+        flex-shrink: 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        position: relative;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.2s;
+        width: 100%;
+    }
+    .fp-bottom-sheet.fp-bs-open .fp-bs-handle {
+        border-bottom-color: var(--gray-200);
+    }
+    .fp-bs-pill {
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: var(--gray-300);
+        border-radius: 2px;
+    }
+    .fp-bs-handle-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-700);
+    }
+    .fp-bs-badge {
+        background: var(--teal);
+        color: #fff;
+        border-radius: 10px;
+        padding: 1px 9px;
+        font-size: 11px;
+        font-weight: 700;
+        min-width: 22px;
+        text-align: center;
+    }
+    .fp-bs-body {
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+    }
 
     /* Bottom nav */
     .nav-btn { min-width: 44px; padding: 4px 6px; }

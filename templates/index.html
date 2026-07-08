@@ -220,6 +220,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mobile-only: bottom sheet for pending reservations -->
+            <div id="fpBottomSheet" class="fp-bottom-sheet">
+                <button class="fp-bs-handle" onclick="toggleFpBottomSheet()" aria-label="Ver reservas pendientes">
+                    <div class="fp-bs-pill"></div>
+                    <span class="fp-bs-handle-title">Pendientes de sentar</span>
+                    <span class="fp-bs-badge" id="fpBsTotalCount">0</span>
+                </button>
+                <div class="fp-bs-body">
+                    <div class="fp-res-shift-section">
+                        <div class="fp-res-shift-header fp-res-shift-comida">
+                            <span>&#9728;&#65039; COMIDA</span>
+                            <span class="fp-res-shift-count" id="fpBsComidaCount">0</span>
+                        </div>
+                        <div class="fp-res-list" id="fpBsComidaList"></div>
+                    </div>
+                    <div class="fp-res-shift-section">
+                        <div class="fp-res-shift-header fp-res-shift-cena">
+                            <span>&#127769; CENA</span>
+                            <span class="fp-res-shift-count" id="fpBsCenaCount">0</span>
+                        </div>
+                        <div class="fp-res-list" id="fpBsCenaList"></div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- RESERVATIONS LIST VIEW -->
@@ -898,7 +923,7 @@
     });
     </script>
     <script src="/static/js/auth.js?v=4"></script>
-    <script src="/static/js/app.js?v=38"></script>
+    <script src="/static/js/app.js?v=39"></script>
     <script src="/static/js/floorplan.js?v=44"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
