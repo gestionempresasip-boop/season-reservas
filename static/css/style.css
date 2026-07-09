@@ -1380,8 +1380,14 @@ body {
 }
 
 /* ══════════════════════════════════════════════
-   RESPONSIVE — mobile / tablet
+   RESPONSIVE — dynamic scaling for all sizes
    ══════════════════════════════════════════════ */
+
+/* ── XL desktop (≥ 1400px) — prevent infinite stretch ── */
+@media (min-width: 1400px) {
+    .view:not(#viewPlano) { max-width: 1360px; margin: 0 auto; }
+    .floorplan-split { grid-template-columns: 1fr 320px; }
+}
 
 /* ── Tablet (≤ 900px) ── */
 @media (max-width: 900px) {
@@ -1391,28 +1397,68 @@ body {
     .stat-value { font-size: 24px; }
     .view { padding: 12px 16px; }
     .settings-grid { grid-template-columns: 1fr; }
-    .fp-res-panel { width: 260px; }
+    /* Narrower panel column — keeps 2-column grid */
+    .floorplan-split { grid-template-columns: 1fr 240px; }
+    .fp-res-panel { width: 240px; }
 }
 
-@media (max-width: 768px) {
-    .floorplan-split { flex-direction: column; }
-    .fp-res-panel {
-        width: 100%;
-        max-height: 50vh;
-    }
-    .fp-res-list { max-height: 25vh; }
-}
-
-/* ── Mobile (≤ 640px) ── */
-/* ── Hide search/picker on phones & narrow tablets ── */
+/* ── Narrow tablet (≤ 768px) — hide elements & stack floor plan ── */
 @media (max-width: 768px) {
     .global-search-wrapper { display: none; }
     .date-picker { display: none; }
     .user-badge-name { display: none; }
+    /* Fix: grid needs grid-template-columns, not flex-direction */
+    .floorplan-split { grid-template-columns: 1fr; }
+    .fp-res-panel { width: 100%; max-height: 50vh; }
+    .fp-res-list { max-height: 25vh; }
 }
 
+/* ── Landscape phones (wide & short, e.g. iPhone landscape) ── */
+@media (orientation: landscape) and (max-width: 960px) and (max-height: 600px) {
+    /* Compact header and stats */
+    .header { min-height: 44px; padding: 4px 12px; }
+    .logo-image { height: 28px; }
+    .stats-bar { padding: 3px 12px; gap: 12px; }
+    .stat-value { font-size: 16px; line-height: 1.2; }
+    .stat-sub { display: none; }
+    .stat-label { font-size: 7px; }
+
+    /* Show side panel instead of bottom sheet in landscape */
+    #viewPlano .fp-res-panel {
+        display: flex !important;
+        width: 210px !important;
+        max-height: calc(100dvh - 44px - 32px - 52px) !important;
+    }
+    .fp-bottom-sheet { display: none !important; }
+
+    /* Floor plan fills compact height */
+    #viewPlano.active {
+        display: flex !important;
+        flex-direction: column;
+        padding: 0;
+        height: calc(100dvh - 44px - 32px - 52px - env(safe-area-inset-bottom, 0px)) !important;
+        overflow: hidden;
+    }
+    #viewPlano .floorplan-split {
+        grid-template-columns: 1fr 210px !important;
+        flex: 1;
+        min-height: 0;
+    }
+    #viewPlano .floorplan-container { padding: 4px; border-radius: 0; }
+    #viewPlano .floorplan-toolbar { padding: 4px 8px; gap: 4px; flex-shrink: 0; flex-wrap: wrap; }
+    #viewPlano .floorplan-toolbar .btn-secondary,
+    #viewPlano .floorplan-toolbar .btn-walkin { font-size: 11px; padding: 4px 8px; }
+
+    /* Compact bottom nav */
+    .bottom-nav { padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px)); }
+    .nav-btn { padding: 2px 8px; }
+    .nav-icon { font-size: 16px; }
+    .nav-label { display: none; }
+}
+
+/* ── Mobile portrait (≤ 640px) ── */
 @media (max-width: 640px) {
-    /* Header: single compact row */
+    /* Header */
     .header { padding: 8px 12px; gap: 6px; }
     .logo-image { height: 34px; }
     .header-center { gap: 6px; }
@@ -1420,7 +1466,7 @@ body {
     .date-display { font-size: 12px; padding: 4px 8px; }
     .shift-btn { padding: 5px 10px; font-size: 11px; }
 
-    /* Stats bar */
+    /* Stats bar: horizontal scroll */
     .stats-bar {
         padding: 8px 12px; gap: 0;
         overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -1433,11 +1479,10 @@ body {
     .stat-value { font-size: 20px; }
     .stat-sub { font-size: 9px; }
 
-    /* Floor plan — ocultar leyenda (ahorra una fila) + mostrar nav de fecha en su lugar */
+    /* ── Floor plan ── */
     #viewPlano .legend-mini { display: none; }
     .toolbar-date-nav { display: flex !important; }
 
-    /* Floor plan — altura explícita para eliminar el espacio gris (flex propagation no fiable) */
     #viewPlano.active {
         display: flex !important;
         flex-direction: column;
@@ -1464,18 +1509,9 @@ body {
         align-items: center;
         justify-content: center;
     }
-    #viewPlano .fp-res-panel {
-        width: 100%;
-        max-height: none;
-        border-radius: 0;
-        box-shadow: none;
-        border-top: 1px solid var(--gray-200);
-    }
-    #viewPlano .fp-res-list { max-height: 30vh; }
-    #floorplanSVG { max-height: none; height: auto; width: 100%; }
-
-    /* Hide static reservation panel — replaced by bottom sheet */
+    /* Hide static panel — replaced by bottom sheet */
     #viewPlano .fp-res-panel { display: none !important; }
+    #floorplanSVG { max-height: none; height: auto; width: 100%; }
 
     /* ── Mobile bottom sheet ── */
     .fp-bottom-sheet {
@@ -1484,68 +1520,36 @@ body {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: 72px;
-        max-height: 72vh;
+        /* Sit above nav + safe-area so handle is fully visible */
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        max-height: 70vh;
         background: var(--white);
         border-radius: 16px 16px 0 0;
-        box-shadow: 0 -3px 20px rgba(0,0,0,0.13);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.14);
         z-index: 99;
         transform: translateY(calc(100% - 52px));
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .fp-bottom-sheet.fp-bs-open {
-        transform: translateY(0);
-    }
+    .fp-bottom-sheet.fp-bs-open { transform: translateY(0); }
     .fp-bs-handle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 14px 16px 10px;
-        height: 52px;
-        flex-shrink: 0;
-        border: none;
-        background: none;
-        cursor: pointer;
-        position: relative;
-        border-bottom: 1px solid transparent;
-        transition: border-color 0.2s;
-        width: 100%;
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px; padding: 14px 16px 10px; height: 52px;
+        flex-shrink: 0; border: none; background: none; cursor: pointer;
+        position: relative; border-bottom: 1px solid transparent;
+        transition: border-color 0.2s; width: 100%;
     }
-    .fp-bottom-sheet.fp-bs-open .fp-bs-handle {
-        border-bottom-color: var(--gray-200);
-    }
+    .fp-bottom-sheet.fp-bs-open .fp-bs-handle { border-bottom-color: var(--gray-200); }
     .fp-bs-pill {
-        position: absolute;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 36px;
-        height: 4px;
-        background: var(--gray-300);
-        border-radius: 2px;
+        position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+        width: 36px; height: 4px; background: var(--gray-300); border-radius: 2px;
     }
-    .fp-bs-handle-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--gray-700);
-    }
+    .fp-bs-handle-title { font-size: 13px; font-weight: 700; color: var(--gray-700); }
     .fp-bs-badge {
-        background: var(--teal);
-        color: #fff;
-        border-radius: 10px;
-        padding: 1px 9px;
-        font-size: 11px;
-        font-weight: 700;
-        min-width: 22px;
-        text-align: center;
+        background: var(--teal); color: #fff; border-radius: 10px;
+        padding: 1px 9px; font-size: 11px; font-weight: 700;
+        min-width: 22px; text-align: center;
     }
-    .fp-bs-body {
-        overflow-y: auto;
-        flex: 1;
-        min-height: 0;
-        -webkit-overflow-scrolling: touch;
-    }
+    .fp-bs-body { overflow-y: auto; flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; }
 
     /* Bottom nav */
     .nav-btn { min-width: 44px; padding: 4px 6px; }
@@ -1554,14 +1558,17 @@ body {
 
     /* Views */
     .view { padding: 10px 10px; }
+    .view-header { flex-wrap: wrap; gap: 8px; }
     .view-header h2 { font-size: 16px; }
     .form-row { flex-direction: column; gap: 0; }
     .clients-list { grid-template-columns: 1fr; }
     .reports-grid { grid-template-columns: 1fr; }
     .client-detail-panel { width: 100%; }
-    .reservation-card { flex-wrap: wrap; }
+    .reservation-card { flex-wrap: wrap; gap: 6px; }
+    .res-actions { flex-wrap: wrap; gap: 4px; }
     .legend-mini { gap: 8px; font-size: 11px; }
     .modal { width: 95vw; max-width: 95vw; margin: 8px; }
+    .filters-bar { flex-wrap: wrap; gap: 8px; }
 }
 
 /* ── Small phone (≤ 380px) ── */
@@ -1570,6 +1577,7 @@ body {
     .shift-btn { padding: 4px 7px; font-size: 10px; }
     .nav-btn { min-width: 38px; }
     .nav-label { display: none; }
+    .stat { min-width: 60px; }
 }
 
 /* Selector visual de mesas */
