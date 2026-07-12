@@ -483,14 +483,41 @@ body {
     transition: fill 0.2s, stroke 0.2s;
 }
 
+/* ── Círculo (mesas redondas del salón principal) ── */
+.table-circle {
+    fill: var(--teal);
+    stroke: var(--teal-dark);
+    stroke-width: 0.3;
+    transition: fill 0.2s, stroke 0.2s;
+}
+.table-group.shape-circle .table-number   { fill: #fff; }
+.table-group.shape-circle .table-capacity { fill: rgba(255,255,255,0.75); }
+.table-group.shape-circle .chair          { fill: #fff; opacity: 0.6; }
+
+/* ── Mesa alta (amarillo/dorado) ── */
+.table-alta {
+    fill: #f59e0b;
+    stroke: #d97706;
+    stroke-width: 0.4;
+    transition: fill 0.2s, stroke 0.2s;
+}
+.table-group.shape-alta .table-number     { fill: #fff; }
+.table-group.shape-alta .table-capacity   { fill: rgba(255,255,255,0.85); }
+.table-group.shape-alta .table-type-label { fill: rgba(255,255,255,0.9); }
+.table-group.shape-alta .chair            { fill: #fff; opacity: 0.55; }
+
 .table-group.status-confirmed .table-rect,
-.table-group.status-confirmed .table-rect-round {
+.table-group.status-confirmed .table-rect-round,
+.table-group.status-confirmed .table-circle,
+.table-group.status-confirmed .table-alta {
     fill: #f97316;
     stroke: #c2410c;
     stroke-width: 0.5;
 }
 .table-group.status-seated .table-rect,
-.table-group.status-seated .table-rect-round {
+.table-group.status-seated .table-rect-round,
+.table-group.status-seated .table-circle,
+.table-group.status-seated .table-alta {
     fill: #22c55e;
     stroke: #15803d;
     stroke-width: 0.5;
@@ -534,7 +561,9 @@ body {
 
 /* ── Blocked (frozen) table ── */
 .table-group.status-blocked .table-rect,
-.table-group.status-blocked .table-rect-round {
+.table-group.status-blocked .table-rect-round,
+.table-group.status-blocked .table-circle,
+.table-group.status-blocked .table-alta {
     fill: #e5e7eb;
     stroke: #9ca3af;
     stroke-width: 0.4;

@@ -16,26 +16,26 @@ let TABLE_DEFS = [
     { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 59, y: 11, shape: 'rect', w: 9, h: 7 },
     { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 70, y: 11, shape: 'rect', w: 9, h: 7 },
 
-    // SALON PRINCIPAL
-    { n: 1, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 37, shape: 'rect', w: 8, h: 7 },
-    { n: 2, cap: 2, type: 'normal', zone: 'sp', x: 20, y: 37, shape: 'rect', w: 7, h: 6 },
-    { n: 3, cap: 2, type: 'normal', zone: 'sp', x: 32, y: 37, shape: 'rect', w: 7, h: 6 },
-    { n: 6, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 49, shape: 'rect', w: 8, h: 7 },
-    { n: 4, cap: 4, type: 'normal', zone: 'sp', x: 22, y: 49, shape: 'rect', w: 8, h: 7 },
-    { n: 7, cap: 4, type: 'normal', zone: 'sp', x: 5, y: 60, shape: 'rect', w: 8, h: 7 },
-    { n: 8, cap: 4, type: 'normal', zone: 'sp', x: 17, y: 60, shape: 'rect', w: 8, h: 7 },
-    { n: 9, cap: 2, type: 'normal', zone: 'sp', x: 29, y: 60, shape: 'rect', w: 7, h: 6 },
-    { n: 10, cap: 2, type: 'normal', zone: 'sp', x: 39, y: 60, shape: 'rect', w: 7, h: 6 },
-    { n: 14, cap: 4, type: 'normal', zone: 'sp', x: 5, y: 71, shape: 'rect', w: 8, h: 7 },
-    { n: 12, cap: 4, type: 'normal', zone: 'sp', x: 19, y: 71, shape: 'rect', w: 8, h: 7 },
-    { n: 11, cap: 2, type: 'normal', zone: 'sp', x: 33, y: 71, shape: 'rect', w: 7, h: 6 },
-    { n: 15, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 81, shape: 'rect', w: 8, h: 7 },
-    { n: 16, cap: 4, type: 'normal', zone: 'sp', x: 20, y: 81, shape: 'rect', w: 8, h: 7 },
-    { n: 17, cap: 4, type: 'normal', zone: 'sp', x: 33, y: 81, shape: 'rect', w: 8, h: 7 },
-    { n: 22, cap: 4, type: 'normal', zone: 'sp', x: 5, y: 91, shape: 'rect', w: 8, h: 7 },
-    { n: 20, cap: 4, type: 'normal', zone: 'sp', x: 18, y: 91, shape: 'rect', w: 8, h: 7 },
-    { n: 19, cap: 2, type: 'normal', zone: 'sp', x: 31, y: 91, shape: 'rect', w: 7, h: 6 },
-    { n: 18, cap: 4, type: 'normal', zone: 'sp', x: 42, y: 91, shape: 'rect', w: 8, h: 7 },
+    // SALON PRINCIPAL — círculos (filas 1-4): 1,2,3,4,6,7,8,12,14 · rectángulos (filas 5-6)
+    { n: 1,  cap: 4, type: 'normal', zone: 'sp', x:  7, y: 36, shape: 'circle', w: 8, h: 8 },
+    { n: 2,  cap: 2, type: 'normal', zone: 'sp', x: 20, y: 36, shape: 'circle', w: 7, h: 7 },
+    { n: 3,  cap: 2, type: 'normal', zone: 'sp', x: 32, y: 36, shape: 'circle', w: 7, h: 7 },
+    { n: 6,  cap: 4, type: 'normal', zone: 'sp', x:  7, y: 48, shape: 'circle', w: 8, h: 8 },
+    { n: 4,  cap: 4, type: 'normal', zone: 'sp', x: 22, y: 48, shape: 'circle', w: 8, h: 8 },
+    { n: 7,  cap: 4, type: 'normal', zone: 'sp', x:  5, y: 59, shape: 'circle', w: 8, h: 8 },
+    { n: 8,  cap: 4, type: 'normal', zone: 'sp', x: 17, y: 59, shape: 'circle', w: 8, h: 8 },
+    { n: 9,  cap: 2, type: 'normal', zone: 'sp', x: 29, y: 60, shape: 'rect',   w: 7, h: 6 },
+    { n: 10, cap: 2, type: 'normal', zone: 'sp', x: 39, y: 60, shape: 'rect',   w: 7, h: 6 },
+    { n: 14, cap: 4, type: 'normal', zone: 'sp', x:  5, y: 70, shape: 'circle', w: 8, h: 8 },
+    { n: 12, cap: 4, type: 'normal', zone: 'sp', x: 19, y: 70, shape: 'circle', w: 8, h: 8 },
+    { n: 11, cap: 2, type: 'normal', zone: 'sp', x: 33, y: 71, shape: 'rect',   w: 7, h: 6 },
+    { n: 15, cap: 4, type: 'normal', zone: 'sp', x:  7, y: 81, shape: 'rect',   w: 8, h: 7 },
+    { n: 16, cap: 4, type: 'normal', zone: 'sp', x: 20, y: 81, shape: 'rect',   w: 8, h: 7 },
+    { n: 17, cap: 4, type: 'normal', zone: 'sp', x: 33, y: 81, shape: 'rect',   w: 8, h: 7 },
+    { n: 22, cap: 4, type: 'normal', zone: 'sp', x:  5, y: 91, shape: 'rect',   w: 8, h: 7 },
+    { n: 20, cap: 4, type: 'normal', zone: 'sp', x: 18, y: 91, shape: 'rect',   w: 8, h: 7 },
+    { n: 19, cap: 2, type: 'normal', zone: 'sp', x: 31, y: 91, shape: 'rect',   w: 7, h: 6 },
+    { n: 18, cap: 4, type: 'normal', zone: 'sp', x: 42, y: 91, shape: 'rect',   w: 8, h: 7 },
 
     // SALON INTERIOR
     { n: 30, cap: 4, type: 'normal', zone: 'si', x: 58, y: 37, shape: 'rect', w: 8, h: 7 },
@@ -46,8 +46,8 @@ let TABLE_DEFS = [
 ];
 
 // Apply saved positions/capacities from localStorage
-// v4 = exterior fila única (70,50,52,54,56,58,60,62 en una sola fila)
-const _TABLE_DEFS_VERSION = 'v4';
+// v5 = círculos para mesas 1,2,3,4,6,7,8,12,14 (Salón Principal)
+const _TABLE_DEFS_VERSION = 'v5';
 (function _applySavedTableDefs() {
     try {
         if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {
@@ -869,18 +869,29 @@ function renderFloorPlan() {
         const cx = def.x + def.w / 2;
         const cy = def.y + def.h / 2;
 
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', def.x);
-        rect.setAttribute('y', def.y);
-        rect.setAttribute('width', def.w);
-        rect.setAttribute('height', def.h);
-        rect.setAttribute('rx', '1');
-        rect.classList.add('table-rect');
-        if (groupInfo) {
-            rect.setAttribute('stroke', groupInfo.color);
-            rect.setAttribute('stroke-width', '0.5');
+        let tableShape;
+        if (def.shape === 'circle') {
+            g.classList.add('shape-circle');
+            tableShape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            tableShape.setAttribute('cx', cx);
+            tableShape.setAttribute('cy', cy);
+            tableShape.setAttribute('r', Math.min(def.w, def.h) / 2);
+            tableShape.classList.add('table-circle');
+        } else {
+            tableShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            tableShape.setAttribute('x', def.x);
+            tableShape.setAttribute('y', def.y);
+            tableShape.setAttribute('width', def.w);
+            tableShape.setAttribute('height', def.h);
+            tableShape.setAttribute('rx', '1');
+            tableShape.classList.add(def.type === 'alta' ? 'table-alta' : 'table-rect');
         }
-        g.appendChild(rect);
+        if (def.type === 'alta') g.classList.add('shape-alta');
+        if (groupInfo) {
+            tableShape.setAttribute('stroke', groupInfo.color);
+            tableShape.setAttribute('stroke-width', '0.5');
+        }
+        g.appendChild(tableShape);
 
         drawChairs(g, def);
 
@@ -1023,7 +1034,24 @@ function drawChairs(g, def) {
 }
 
 function getChairPositions(def) {
-    const { x, y, w, h, cap } = def;
+    const { x, y, w, h, cap, shape } = def;
+
+    if (shape === 'circle') {
+        const r = Math.min(w, h) / 2;
+        const cxc = x + w / 2;
+        const cyc = y + h / 2;
+        const outerR = r + 1.5;
+        let angles;
+        if      (cap <= 2) angles = [0, 180];
+        else if (cap === 4) angles = [45, 135, 225, 315];
+        else if (cap === 6) angles = [0, 60, 120, 180, 240, 300];
+        else                angles = [0, 45, 90, 135, 180, 225, 270, 315];
+        return angles.map(deg => {
+            const rad = (deg - 90) * Math.PI / 180;
+            return [cxc + outerR * Math.cos(rad), cyc + outerR * Math.sin(rad)];
+        });
+    }
+
     const positions = [];
     const pad = 1.4;
 
