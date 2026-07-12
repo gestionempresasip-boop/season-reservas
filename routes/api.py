@@ -26,9 +26,9 @@ def require_login():
         return jsonify({'error': 'No autenticado', 'code': 'UNAUTHENTICATED'}), 401
 
 
-def notify():
+def notify(date_str=None, shift=None):
     from app import broadcast_update, cache_invalidate
-    cache_invalidate()  # Clear cache when data changes
+    cache_invalidate(date_str, shift)
     broadcast_update()
 
 
@@ -112,7 +112,7 @@ def create_reservation(data: ReservationCreate):
     if raw.get('force_past'):
         reservation_data['force_past'] = True
     r = res_svc.create_reservation(reservation_data)
-    notify()
+    notify(reservation_data.get('date'), reservation_data.get('shift'))
     try:
         from services.whatsapp import send_confirmation_whatsapp
         send_confirmation_whatsapp(
@@ -172,7 +172,7 @@ def update_reservation(rid):
         update_dict['date'] = raw['date']
 
     r = res_svc.update_reservation(rid, update_dict)
-    notify()
+    notify(r.date.isoformat(), r.shift)
     return jsonify(r.to_dict())
 
 
@@ -181,7 +181,7 @@ def update_reservation(rid):
 def cancel_reservation(rid):
     """Cancel a reservation (mark as cancelled)."""
     r = res_svc.cancel_reservation(rid)
-    notify()
+    notify(r.date.isoformat(), r.shift)
     return jsonify(r.to_dict())
 
 
@@ -225,7 +225,7 @@ def seat_reservation(rid):
         table_id = request.json.get('table_id')
 
     r = res_svc.seat_reservation(rid, table_id)
-    notify()
+    notify(r.date.isoformat(), r.shift)
     return jsonify(r.to_dict())
 
 
@@ -234,7 +234,7 @@ def seat_reservation(rid):
 def complete_reservation(rid):
     """Mark reservation as completed."""
     r = res_svc.complete_reservation(rid)
-    notify()
+    notify(r.date.isoformat(), r.shift)
     return jsonify(r.to_dict())
 
 
@@ -243,7 +243,7 @@ def complete_reservation(rid):
 def mark_no_show(rid):
     """Mark reservation as no-show."""
     r = res_svc.mark_no_show(rid)
-    notify()
+    notify(r.date.isoformat(), r.shift)
     return jsonify(r.to_dict())
 
 
@@ -482,34 +482,34 @@ def quick_status():
 
 @api.route('/dashboard', methods=['GET'])
 def dashboard():
-    """Single endpoint: stats + table status + reservations in one call (cached 2s)."""
+    """Stats + table status + reservations in one call. 2 queries total (was 4)."""
     from app import cache_get, cache_set
     d = request.args.get('date', date.today().isoformat())
     shift = request.args.get('shift', 'comida')
     cache_key = f'dashboard:{d}:{shift}'
 
-    cached = cache_get(cache_key, max_age=15)
+    cached = cache_get(cache_key, max_age=30)
     if cached:
         return jsonify(cached)
 
     target = date.fromisoformat(d)
-    stats = res_svc.get_shift_stats(target, shift)
-    tables = res_svc.get_table_status(target, shift)
-    reservations = [r.to_dict() for r in res_svc.get_all_reservations_for_date(target, shift)]
 
-    # Slim down table data for mobile (only essential fields)
-    # Skip special entries like _unassigned (no 'id' field)
+    # Query 1: all reservations for the shift (eager-loaded, no N+1)
+    all_res = res_svc.get_all_reservations_for_date(target, shift)
+    reservations = [r.to_dict() for r in all_res]
+
+    # Derive stats from already-loaded data — no extra query
+    stats = res_svc.stats_from_reservations(reservations)
+
+    # Query 2: table status (reuses same reservations internally via eager load)
+    tables = res_svc.get_table_status(target, shift)
     slim_tables = [
         {'id': t['id'], 'number': t['number'], 'status': t['status'],
          'blocked': t.get('blocked', False), 'reservation': t.get('reservation')}
         for t in tables if 'id' in t
     ]
 
-    result = {
-        'stats': stats,
-        'tables': slim_tables,
-        'reservations': reservations,
-    }
+    result = {'stats': stats, 'tables': slim_tables, 'reservations': reservations}
     cache_set(cache_key, result)
     return jsonify(result)
 

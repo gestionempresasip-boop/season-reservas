@@ -292,11 +292,19 @@ def cache_set(key, data):
     """Set cache value with timestamp."""
     _cache[key] = {'data': data, 'ts': time.time()}
 
-def cache_invalidate():
-    """Clear all cache."""
+def cache_invalidate(date_str=None, shift=None):
+    """Clear cache. If date_str+shift given, only clear relevant keys; else clear all."""
     global _cache_version
     _cache_version += 1
-    _cache.clear()
+    if date_str and shift:
+        # Only evict keys that contain this date and shift (fast path)
+        keys_to_drop = [k for k in list(_cache.keys()) if date_str in k and shift in k]
+        # Also drop keys that don't depend on shift (reports, unassigned)
+        keys_to_drop += [k for k in list(_cache.keys()) if k.startswith(('reports', 'unassigned'))]
+        for k in keys_to_drop:
+            _cache.pop(k, None)
+    else:
+        _cache.clear()
 
 
 def broadcast_update(event_type='reservation_changed'):

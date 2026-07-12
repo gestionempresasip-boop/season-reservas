@@ -174,6 +174,10 @@ function setShift(shift) {
 
 // ── Navigation ──────────────────────────────────
 
+// Track last-loaded timestamp per view to skip redundant fetches
+const _viewLastLoaded = {};
+const VIEW_STALE_MS = 20000; // re-fetch only if data > 20s old
+
 function initNavigation() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -183,10 +187,21 @@ function initNavigation() {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
 
-            if (viewId === 'viewReservas') loadReservationsList();
-            if (viewId === 'viewEspera') loadWaitlist();
-            if (viewId === 'viewClientes') loadClientsList();
-            if (viewId === 'viewAgenda') loadCalendar();
+            const now = Date.now();
+            const fresh = (now - (_viewLastLoaded[viewId] || 0)) < VIEW_STALE_MS;
+
+            if (viewId === 'viewReservas') {
+                // Use in-memory data if fresh — no network round-trip
+                if (fresh && typeof allReservations !== 'undefined' && allReservations.length >= 0) {
+                    if (typeof renderReservationsList === 'function') renderReservationsList(allReservations);
+                } else {
+                    loadReservationsList();
+                }
+                _viewLastLoaded[viewId] = now;
+            }
+            if (viewId === 'viewEspera') { if (!fresh) loadWaitlist(); _viewLastLoaded[viewId] = now; }
+            if (viewId === 'viewClientes') { if (!fresh) loadClientsList(); _viewLastLoaded[viewId] = now; }
+            if (viewId === 'viewAgenda') { if (!fresh) loadCalendar(); _viewLastLoaded[viewId] = now; }
             if (viewId === 'viewInformes') initReportDates();
             if (viewId === 'viewAjustes' && typeof loadUsersPanel === 'function') loadUsersPanel();
         });

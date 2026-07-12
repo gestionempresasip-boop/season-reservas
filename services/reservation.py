@@ -5,6 +5,14 @@ Supports combined reservations (multiple tables per reservation).
 from datetime import date, datetime, timedelta
 from models import db, Reservation, Table, Client
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
+
+# Reusable eager-load options: loads table + extra_tables in the same query,
+# avoiding N+1 on to_dict() calls that touch self.table.number / self.extra_tables
+_RES_EAGER = [
+    joinedload(Reservation.table),
+    joinedload(Reservation.extra_tables),
+]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -13,7 +21,7 @@ from sqlalchemy import func, or_
 
 def get_reservations(target_date, shift):
     """Get confirmed and seated reservations for a date and shift."""
-    return Reservation.query.filter(
+    return Reservation.query.options(*_RES_EAGER).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
         Reservation.status.in_(['confirmed', 'seated'])
@@ -22,7 +30,7 @@ def get_reservations(target_date, shift):
 
 def get_all_reservations_for_date(target_date, shift):
     """Get ALL reservations for a date and shift (all statuses)."""
-    return Reservation.query.filter(
+    return Reservation.query.options(*_RES_EAGER).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
     ).order_by(Reservation.time).all()
@@ -30,7 +38,7 @@ def get_all_reservations_for_date(target_date, shift):
 
 def get_active_reservations_for_shift(target_date, shift, exclude_id=None):
     """Active (confirmed/seated) reservations for a shift, optionally excluding one ID."""
-    q = Reservation.query.filter(
+    q = Reservation.query.options(*_RES_EAGER).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
         Reservation.status.in_(['confirmed', 'seated'])
@@ -442,6 +450,22 @@ def get_shift_stats(target_date, shift):
         'occupancy': occupancy,
         'seated': row.seated,
         'pending': row.confirmed,
+    }
+
+
+def stats_from_reservations(reservations):
+    """Compute shift stats from an already-loaded list — zero extra queries."""
+    from config.settings import MAX_CAPACITY
+    active = [r for r in reservations if r.get('status') in ('confirmed', 'seated', 'completed')]
+    total_guests = sum(r.get('guests', 0) for r in active)
+    occupancy = round(total_guests / MAX_CAPACITY * 100, 1) if total_guests else 0
+    return {
+        'reservations': len(active),
+        'guests': total_guests,
+        'max_capacity': MAX_CAPACITY,
+        'occupancy': occupancy,
+        'seated': sum(1 for r in active if r.get('status') == 'seated'),
+        'pending': sum(1 for r in active if r.get('status') == 'confirmed'),
     }
 
 
