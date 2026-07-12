@@ -59,6 +59,17 @@ def create_app():
             db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
         app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
+        # Connection pooling for remote Postgres (Supabase). Without this, an idle
+        # connection dropped by the DB/pooler forces a slow reconnect on the next
+        # request. pre_ping validates connections; recycle refreshes before the
+        # typical idle timeout. Sized for gunicorn gthread (2 workers × 4 threads).
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 280,
+            'pool_size': 5,
+            'max_overflow': 5,
+        }
+
     # ──────────────────────────────────────────────────────────────────────
     # SESSION CONFIGURATION
     # ──────────────────────────────────────────────────────────────────────

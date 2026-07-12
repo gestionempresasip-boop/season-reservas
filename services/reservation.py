@@ -409,15 +409,25 @@ def find_available_tables(target_date, shift, guests=1, time_str=None, duration_
         occupied = get_occupied_table_ids(target_date, shift, exclude_reservation_id)
         return [t for t in all_tables if t.id not in occupied]
 
-    # Time-aware mode: check conflicts per table
-    available = []
-    for t in all_tables:
-        conflicts = check_table_conflicts(
-            target_date, shift, time_str, duration_minutes, [t.id], exclude_reservation_id
-        )
-        if not conflicts:
-            available.append(t)
-    return available
+    # Time-aware mode: load active reservations ONCE, check overlaps in memory
+    # (was 1 query per table — an N+1 that hit remote Postgres ~30x per call).
+    active = get_active_reservations_for_shift(target_date, shift, exclude_reservation_id)
+    req_start = _time_to_minutes(time_str)
+    req_dur = duration_minutes or 120
+
+    # Build set of table_ids that are busy at the requested time window
+    busy_table_ids = set()
+    for r in active:
+        r_start = _time_to_minutes(r.time)
+        r_dur = r.duration_minutes or 120
+        if not _reservations_overlap(req_start, req_dur, r_start, r_dur):
+            continue
+        if r.table_id:
+            busy_table_ids.add(r.table_id)
+        for t in (r.extra_tables or []):
+            busy_table_ids.add(t.id)
+
+    return [t for t in all_tables if t.id not in busy_table_ids]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
