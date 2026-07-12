@@ -19,7 +19,7 @@ let TABLE_DEFS = [
     // SALON PRINCIPAL
     { n: 1, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 37, shape: 'rect', w: 8, h: 7 },
     { n: 2, cap: 2, type: 'normal', zone: 'sp', x: 20, y: 37, shape: 'rect', w: 7, h: 6 },
-    { n: 3, cap: 6, type: 'normal', zone: 'sp', x: 32, y: 37, shape: 'rect', w: 10, h: 7 },
+    { n: 3, cap: 2, type: 'normal', zone: 'sp', x: 32, y: 37, shape: 'rect', w: 7, h: 6 },
     { n: 6, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 49, shape: 'rect', w: 8, h: 7 },
     { n: 4, cap: 4, type: 'normal', zone: 'sp', x: 22, y: 49, shape: 'rect', w: 8, h: 7 },
     { n: 7, cap: 4, type: 'normal', zone: 'sp', x: 5, y: 60, shape: 'rect', w: 8, h: 7 },
@@ -35,19 +35,25 @@ let TABLE_DEFS = [
     { n: 22, cap: 4, type: 'normal', zone: 'sp', x: 5, y: 91, shape: 'rect', w: 8, h: 7 },
     { n: 20, cap: 4, type: 'normal', zone: 'sp', x: 18, y: 91, shape: 'rect', w: 8, h: 7 },
     { n: 19, cap: 2, type: 'normal', zone: 'sp', x: 31, y: 91, shape: 'rect', w: 7, h: 6 },
-    { n: 18, cap: 6, type: 'normal', zone: 'sp', x: 42, y: 91, shape: 'rect', w: 10, h: 7 },
+    { n: 18, cap: 4, type: 'normal', zone: 'sp', x: 42, y: 91, shape: 'rect', w: 8, h: 7 },
 
     // SALON INTERIOR
     { n: 30, cap: 4, type: 'normal', zone: 'si', x: 58, y: 37, shape: 'rect', w: 8, h: 7 },
-    { n: 82, cap: 4, type: 'normal', zone: 'si', x: 72, y: 37, shape: 'rect', w: 8, h: 7 },
+    { n: 32, cap: 4, type: 'normal', zone: 'si', x: 72, y: 37, shape: 'rect', w: 8, h: 7 },
     { n: 34, cap: 4, type: 'normal', zone: 'si', x: 62, y: 50, shape: 'rect', w: 8, h: 7 },
     { n: 36, cap: 4, type: 'normal', zone: 'si', x: 65, y: 65, shape: 'rect', w: 8, h: 7 },
     { n: 40, cap: 8, type: 'alta', zone: 'si', x: 66, y: 82, shape: 'rect', w: 16, h: 7 },
 ];
 
 // Apply saved positions/capacities from localStorage
+// v2 = plano Jul-2026 (mesa 82→32). Clear stale cache from previous layout.
+const _TABLE_DEFS_VERSION = 'v2';
 (function _applySavedTableDefs() {
     try {
+        if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {
+            localStorage.removeItem('season_table_defs');
+            localStorage.setItem('season_table_defs_version', _TABLE_DEFS_VERSION);
+        }
         const saved = localStorage.getItem('season_table_defs');
         if (saved) {
             const patches = JSON.parse(saved);

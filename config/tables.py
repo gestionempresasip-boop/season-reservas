@@ -30,7 +30,7 @@ DEFAULT_TABLES = [
     # ─────────────────────────────────────────────────────────────────────
     {'number': 1, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 10, 'pos_y': 36},
     {'number': 2, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 36},
-    {'number': 3, 'zone': 'salon_principal', 'capacity': 6, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 36},
+    {'number': 3, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 36},
     {'number': 6, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 10, 'pos_y': 47},
     {'number': 4, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 25, 'pos_y': 47},
     {'number': 7, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 8, 'pos_y': 58},
@@ -46,13 +46,13 @@ DEFAULT_TABLES = [
     {'number': 22, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 8, 'pos_y': 91},
     {'number': 20, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 91},
     {'number': 19, 'zone': 'salon_principal', 'capacity': 2, 'table_type': 'normal', 'pos_x': 35, 'pos_y': 91},
-    {'number': 18, 'zone': 'salon_principal', 'capacity': 6, 'table_type': 'normal', 'pos_x': 46, 'pos_y': 91},
+    {'number': 18, 'zone': 'salon_principal', 'capacity': 4, 'table_type': 'normal', 'pos_x': 46, 'pos_y': 91},
 
     # ─────────────────────────────────────────────────────────────────────
     # SALÓN INTERIOR (5 tables, 24 capacity)
     # ─────────────────────────────────────────────────────────────────────
     {'number': 30, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 62, 'pos_y': 36},
-    {'number': 82, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 75, 'pos_y': 36},
+    {'number': 32, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 75, 'pos_y': 36},
     {'number': 34, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 65, 'pos_y': 50},
     {'number': 36, 'zone': 'salon_interior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 68, 'pos_y': 66},
     {'number': 40, 'zone': 'salon_interior', 'capacity': 8, 'table_type': 'alta', 'pos_x': 75, 'pos_y': 85},
