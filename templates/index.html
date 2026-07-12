@@ -135,8 +135,8 @@
         <section class="view active" id="viewPlano">
             <div class="floorplan-toolbar">
                 <button class="btn-secondary btn-sm" id="btnGroupMode" onclick="toggleGroupMode()" title="Selecciona varias mesas para hacer una reserva combinada">🔗 Agrupar mesas</button>
-                <button class="btn-secondary btn-sm" onclick="openNewReservationModal()">+ Nueva reserva</button>
-                <button class="btn-walkin btn-sm" onclick="openWalkInModal()">🚶 Walk-in</button>
+                <button class="btn-secondary btn-sm" onclick="guardedNewReservation()">+ Nueva reserva</button>
+                <button class="btn-walkin btn-sm" onclick="guardedWalkIn()">🚶 Walk-in</button>
                 <button class="btn-secondary btn-sm" id="btnEditPlan" onclick="toggleEditMode()" title="Mueve las mesas y ajusta sus capacidades">✏️ Editar plano</button>
                 <div class="legend-mini">
                     <span class="lm-item"><span class="lm-color free"></span>Libre</span>
@@ -279,7 +279,7 @@
                 <div class="day-view-actions">
                     <button class="btn-secondary btn-sm" onclick="exportReservationsCSV()" title="Exportar a CSV/Excel">📥 Exportar</button>
                     <button class="btn-secondary btn-sm" id="btnSelectMode" onclick="toggleSelectMode()">☑ Seleccionar</button>
-                    <button class="btn-primary" onclick="openNewReservationModal()">+ Nueva Reserva</button>
+                    <button class="btn-primary" onclick="guardedNewReservation()">+ Nueva Reserva</button>
                 </div>
             </div>
             <!-- Filters -->
@@ -933,7 +933,7 @@
     });
     </script>
     <script src="/static/js/auth.js?v=4"></script>
-    <script src="/static/js/app.js?v=40"></script>
+    <script src="/static/js/app.js?v=41"></script>
     <script src="/static/js/floorplan.js?v=44"></script>
     <script src="/static/js/reservations.js?v=29"></script>
     <script src="/static/js/clients.js?v=24"></script>
