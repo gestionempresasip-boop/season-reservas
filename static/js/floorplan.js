@@ -574,6 +574,7 @@ function reserveGroup() {
         showToast('No se pudieron resolver IDs de mesas', 'error');
         return;
     }
+    if (!_reservationGuard()) return;
     openNewReservationModal(tableIds);
     // Exit group mode
     groupMode = false;
@@ -698,6 +699,7 @@ function qoChangeGuests(delta) {
 }
 
 async function quickOccupyConfirm() {
+    if (!_walkInGuard()) { closeQuickOccupy(); return; }
     const td = tableDataMap[_qoTableNumber];
     if (!td) return;
 
@@ -1245,6 +1247,7 @@ function qopChange(delta, maxCap) {
 }
 
 async function quickOccupyFromModal(tableId, tableNumber) {
+    if (!_walkInGuard()) return;
     const guests = _qopGuests || 2;
     closeModal('modalTableDetail');
 
@@ -1484,7 +1487,7 @@ function editReservationFromPlan(resId) {
 
 function newReservationForTable(tableNumber, tableId) {
     closeModal('modalTableDetail');
-    openNewReservationModal([tableId]);
+    if (_reservationGuard()) openNewReservationModal([tableId]);
 }
 
 // ── Inline reservation editing ────────────────────

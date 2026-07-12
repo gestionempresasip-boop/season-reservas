@@ -653,29 +653,41 @@ function _popupHorario(icono, titulo, msg) {
     openModal('modalHorarioCerrado');
 }
 
-// Guarda para Walk-in — llamada directamente desde los botones HTML
-function guardedWalkIn() {
+// ── Helpers de guardia horaria (usados también desde floorplan.js) ──────────
+
+// Devuelve true si walk-in está permitido; muestra popup y devuelve false si no
+function _walkInGuard() {
     const m = _minutoActual();
     if (m > CIERRE_CENA_MIN) {
         _popupHorario('🌙', 'Restaurante cerrado',
             'Son más de las 22:30 h. El servicio de hoy ha terminado.\nPuedes registrar reservas para días futuros desde la sección Reservas.');
-        return;
+        return false;
     }
     if (m > CIERRE_COMIDA_MIN && currentShift === 'comida') {
         _popupHorario('🍽️', 'Servicio de comida cerrado',
             'Estás en el turno de COMIDA pero ya son más de las 16:00 h.\nCambia el turno a CENA (botón arriba) para hacer un walk-in de cena.');
-        return;
+        return false;
     }
-    openWalkInModal();
+    return true;
 }
 
-// Guarda para Nueva Reserva — llamada directamente desde los botones HTML
-function guardedNewReservation(tableIds) {
+// Devuelve true si nueva reserva está permitida; muestra popup y devuelve false si no
+function _reservationGuard() {
     const m = _minutoActual();
     if (m > CIERRE_CENA_MIN) {
         _popupHorario('🌙', 'Restaurante cerrado',
             'Son más de las 22:30 h. El servicio de hoy ha terminado.\nPuedes registrar reservas para días futuros.');
-        return;
+        return false;
     }
-    openNewReservationModal(tableIds);
+    return true;
+}
+
+// Guarda para Walk-in — llamada directamente desde los botones HTML
+function guardedWalkIn() {
+    if (_walkInGuard()) openWalkInModal();
+}
+
+// Guarda para Nueva Reserva — llamada directamente desde los botones HTML
+function guardedNewReservation(tableIds) {
+    if (_reservationGuard()) openNewReservationModal(tableIds);
 }
