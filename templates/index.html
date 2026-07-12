@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=38">
+    <link rel="stylesheet" href="/static/css/style.css?v=39">
     <link rel="stylesheet" href="/static/css/pro.css?v=47">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -544,6 +544,16 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL: Servicio cerrado (horario) -->
+    <div class="modal-overlay hidden" id="modalHorarioCerrado">
+        <div class="modal modal-horario">
+            <div class="modal-horario-icon" id="modalHorarioIcon">🌙</div>
+            <h3 class="modal-horario-title" id="modalHorarioTitle">Servicio cerrado</h3>
+            <p class="modal-horario-msg" id="modalHorarioMsg">El servicio de este turno ha finalizado.</p>
+            <button class="btn-primary modal-horario-btn" onclick="closeModal('modalHorarioCerrado')">Entendido</button>
+        </div>
+    </div>
 
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav">

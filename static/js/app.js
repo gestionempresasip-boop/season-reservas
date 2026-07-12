@@ -618,3 +618,68 @@ async function fpSeatReservation(resId, btn) {
 function _esc(str) {
     const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
 }
+
+// ── Validación horaria ────────────────────────────────────
+// Reglas:
+//   > 16:00  → walk-in bloqueado (comida cerrada)
+//   > 22:30  → walk-in Y nueva reserva bloqueados (restaurante cerrado)
+
+const CIERRE_COMIDA_MIN = 16 * 60;       // 16:00 en minutos
+const CIERRE_CENA_MIN   = 22 * 60 + 30; // 22:30 en minutos
+
+function _minutoActual() {
+    const n = new Date(); return n.getHours() * 60 + n.getMinutes();
+}
+
+function _popupHorario(icono, titulo, msg) {
+    document.getElementById('modalHorarioIcon').textContent  = icono;
+    document.getElementById('modalHorarioTitle').textContent = titulo;
+    document.getElementById('modalHorarioMsg').textContent   = msg;
+    openModal('modalHorarioCerrado');
+}
+
+function checkHorarioWalkIn() {
+    const m = _minutoActual();
+    if (m > CIERRE_CENA_MIN) {
+        _popupHorario('🌙', 'Restaurante cerrado',
+            'Son más de las 22:30 h. El servicio de hoy ha terminado. Puedes registrar reservas para días futuros desde la sección Reservas.');
+        return false;
+    }
+    if (m > CIERRE_COMIDA_MIN && currentShift === 'comida') {
+        _popupHorario('🍽️', 'Servicio de comida cerrado',
+            'El servicio de comida termina a las 16:00 h. Cambia el turno a CENA para hacer un walk-in de cena.');
+        return false;
+    }
+    return true;
+}
+
+function checkHorarioReserva() {
+    const m = _minutoActual();
+    if (m > CIERRE_CENA_MIN) {
+        _popupHorario('🌙', 'Restaurante cerrado',
+            'Son más de las 22:30 h. El servicio de hoy ha terminado. Puedes registrar reservas para días futuros.');
+        return false;
+    }
+    return true;
+}
+
+// Envolvemos las funciones originales una vez que estén cargadas
+(function _wrapHorario() {
+    const _init = () => {
+        if (typeof openWalkInModal === 'function' && typeof openNewReservationModal === 'function') {
+            const _origWI  = openWalkInModal;
+            const _origNR  = openNewReservationModal;
+            window.openWalkInModal = function(...args) {
+                if (!checkHorarioWalkIn()) return;
+                _origWI.apply(this, args);
+            };
+            window.openNewReservationModal = function(...args) {
+                if (!checkHorarioReserva()) return;
+                _origNR.apply(this, args);
+            };
+        } else {
+            setTimeout(_init, 300);
+        }
+    };
+    document.addEventListener('DOMContentLoaded', () => setTimeout(_init, 500));
+})();

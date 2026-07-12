@@ -926,6 +926,36 @@ body {
 }
 .modal-sm { max-width: 400px; }
 
+/* ── Horario cerrado popup ── */
+.modal-horario {
+    max-width: 360px;
+    text-align: center;
+    padding: 36px 28px 28px;
+}
+.modal-horario-icon {
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 16px;
+}
+.modal-horario-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 10px;
+}
+.modal-horario-msg {
+    font-size: 14px;
+    color: var(--gray-500);
+    line-height: 1.6;
+    margin: 0 0 24px;
+}
+.modal-horario-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
