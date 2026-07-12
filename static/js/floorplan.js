@@ -7,14 +7,14 @@
 
 let TABLE_DEFS = [
     // ZONA EXTERIOR — fila única: 70, 50, 52, 54, 56, 58, 60, 62
-    { n: 70, cap: 2, type: 'alta',   zone: 'ext', x:  2, y: 11, shape: 'rect', w: 9, h: 7 },
-    { n: 50, cap: 2, type: 'normal', zone: 'ext', x: 13, y: 12, shape: 'rect', w: 7, h: 5 },
-    { n: 52, cap: 2, type: 'normal', zone: 'ext', x: 22, y: 12, shape: 'rect', w: 7, h: 5 },
-    { n: 54, cap: 2, type: 'normal', zone: 'ext', x: 31, y: 12, shape: 'rect', w: 7, h: 5 },
-    { n: 56, cap: 2, type: 'normal', zone: 'ext', x: 40, y: 12, shape: 'rect', w: 7, h: 5 },
-    { n: 58, cap: 2, type: 'normal', zone: 'ext', x: 49, y: 12, shape: 'rect', w: 7, h: 5 },
-    { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 59, y: 11, shape: 'rect', w: 9, h: 7 },
-    { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 70, y: 11, shape: 'rect', w: 9, h: 7 },
+    { n: 70, cap: 2, type: 'alta',   zone: 'ext', x:  1, y: 5, shape: 'rect', w: 12, h: 18 },
+    { n: 50, cap: 2, type: 'normal', zone: 'ext', x: 14, y: 6, shape: 'rect', w: 11, h: 16 },
+    { n: 52, cap: 2, type: 'normal', zone: 'ext', x: 26, y: 6, shape: 'rect', w: 11, h: 16 },
+    { n: 54, cap: 2, type: 'normal', zone: 'ext', x: 38, y: 6, shape: 'rect', w: 11, h: 16 },
+    { n: 56, cap: 2, type: 'normal', zone: 'ext', x: 50, y: 6, shape: 'rect', w: 11, h: 16 },
+    { n: 58, cap: 2, type: 'normal', zone: 'ext', x: 62, y: 6, shape: 'rect', w: 11, h: 16 },
+    { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 74, y: 5, shape: 'rect', w: 12, h: 18 },
+    { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 87, y: 5, shape: 'rect', w: 12, h: 18 },
 
     // SALON PRINCIPAL
     { n: 1,  cap: 4, type: 'normal', zone: 'sp', x:  6, y: 35, shape: 'rect', w: 10, h: 8 },
@@ -46,8 +46,8 @@ let TABLE_DEFS = [
 ];
 
 // Apply saved positions/capacities from localStorage
-// v6 = estilo tarjeta+badge igual al PDF (todos rect, badge círculo interior)
-const _TABLE_DEFS_VERSION = 'v6';
+// v7 = exterior mesas más grandes (h:16-18) para mejor legibilidad
+const _TABLE_DEFS_VERSION = 'v7';
 (function _applySavedTableDefs() {
     try {
         if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {

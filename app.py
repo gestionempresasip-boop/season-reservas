@@ -268,12 +268,12 @@ def _initialize_app():
                     db.session.rollback()
                     _logger_instance.warning(f'⚠️ Sync plano: {_sync_e}')
 
-                # ─── Exterior positions Jul-2026: single-row layout ───────
-                _EXT_POS_KEY = 'ext_positions_v4'
+                # ─── Exterior positions v7: mesas más grandes ─────────────
+                _EXT_POS_KEY = 'ext_positions_v7'
                 if not AppSetting.get(_EXT_POS_KEY):
                     _EXT_NEW = {
-                        70: ( 2, 11), 50: (13, 12), 52: (22, 12), 54: (31, 12),
-                        56: (40, 12), 58: (49, 12), 60: (59, 11), 62: (70, 11),
+                        70: ( 1,  5), 50: (14,  6), 52: (26,  6), 54: (38,  6),
+                        56: (50,  6), 58: (62,  6), 60: (74,  5), 62: (87,  5),
                     }
                     try:
                         for _num, (_px, _py) in _EXT_NEW.items():
