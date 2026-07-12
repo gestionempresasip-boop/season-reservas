@@ -22,12 +22,6 @@ services:
         generateValue: true
       - key: WHATSAPP_NUMBER
         value: "689135630"
-      - key: TWILIO_ACCOUNT_SID
-        sync: false
-      - key: TWILIO_AUTH_TOKEN
-        sync: false
-      - key: TWILIO_WHATSAPP_NUMBER
-        sync: false
       - key: RENDER
         value: "true"
       - key: PYTHON_VERSION

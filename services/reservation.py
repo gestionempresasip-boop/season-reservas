@@ -2,6 +2,7 @@
 Reservation service - business logic for reservations.
 Supports combined reservations (multiple tables per reservation).
 """
+import json
 from datetime import date, datetime, timedelta
 from models import db, Reservation, Table, Client
 from sqlalchemy import func, or_
@@ -127,8 +128,6 @@ def _resolve_table_ids(data):
     if 'table_ids' in data and data['table_ids']:
         ids = data['table_ids']
         if isinstance(ids, str):
-            # "1,2,3" or "[1,2]"
-            import json
             try:
                 ids = json.loads(ids)
             except Exception:
@@ -176,18 +175,19 @@ def create_reservation(data):
     table_ids = _resolve_table_ids(data)
     duration = int(data.get('duration_minutes', 120) or 120)
 
+    # Load tables once — reused for conflict check, capacity check, and assignment
+    tables = Table.query.filter(Table.id.in_(table_ids)).all() if table_ids else []
+
     # Conflict check
     if table_ids:
         conflicts = check_table_conflicts(
             res_date, data['shift'], data['time'], duration, table_ids
         )
         if conflicts:
-            conflict_tables = list(set([c['table_id'] for c in conflicts]))
             tables_str = ', '.join(str(c['conflicting_reservation'].get('table_number') or c['table_id']) for c in conflicts[:3])
             raise ValueError(f'Mesa(s) ya reservada(s) a esa hora: {tables_str}')
 
         # Capacity check — allows up to 2 extra chairs per table
-        tables = Table.query.filter(Table.id.in_(table_ids)).all()
         total_cap = sum(t.capacity for t in tables)
         guests = int(data['guests'])
         max_with_extra = total_cap + 2 * len(tables)
@@ -228,9 +228,8 @@ def create_reservation(data):
     db.session.add(reservation)
     db.session.flush()
 
-    # Attach extra tables (all in table_ids - the primary is also added for unified queries)
-    if table_ids:
-        tables = Table.query.filter(Table.id.in_(table_ids)).all()
+    # Attach extra tables (already loaded above — no extra query)
+    if tables:
         reservation.extra_tables = tables
 
     db.session.commit()

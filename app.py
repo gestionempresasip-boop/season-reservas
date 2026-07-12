@@ -93,6 +93,7 @@ def create_app():
     socketio = SocketIO(
         app,
         cors_allowed_origins='*',
+        async_mode='threading',  # match production (gunicorn gthread); avoids eventlet hang locally
         transport=['polling'],
         engineio_logger=False,
         socketio_logger=False
@@ -167,10 +168,8 @@ def _initialize_app():
 
     # ─── Register blueprints (after app is created) ──────────────────────
     from routes.api import api
-    from routes.whatsapp import whatsapp_bp
     from routes.auth import auth_bp
     _app_instance.register_blueprint(api)
-    _app_instance.register_blueprint(whatsapp_bp)
     _app_instance.register_blueprint(auth_bp)
 
     # ─── Register main routes ────────────────────────────────────────────
@@ -356,7 +355,6 @@ def cache_invalidate(date_str=None, shift=None):
 def broadcast_update(event_type='reservation_changed'):
     """Broadcast update to all connected clients."""
     try:
-        cache_invalidate()
         _app, _logger, _socketio = _initialize_app()
         _socketio.emit(event_type, {'ts': time.time()})
         _logger.debug(f'Broadcasted {event_type}')

@@ -647,20 +647,36 @@ async function submitReservation(e) {
         source: document.getElementById('resSource').value,
         notes: document.getElementById('resNotes').value,
         table_ids: selectedTableIds.length > 0 ? selectedTableIds : null,
-        table_id: null,  // explicit: managed via table_ids
+        table_id: null,
         duration_minutes: parseInt(document.getElementById('resDuration')?.value || 120),
     };
 
     try {
+        let saved;
         if (editId) {
-            await apiPut(`/api/reservations/${editId}`, data);
+            saved = await apiPut(`/api/reservations/${editId}`, data);
             showToast('Reserva actualizada', 'success');
         } else {
-            await apiPost('/api/reservations', data);
+            saved = await apiPost('/api/reservations', data);
             showToast(selectedTableIds.length > 1 ? `Reserva creada con ${selectedTableIds.length} mesas` : 'Reserva creada', 'success');
         }
         closeModal('modalReservation');
-        if (typeof loadFloorPlan === 'function') loadFloorPlan(); // no-await: async en segundo plano
+
+        // ── Optimistic update: inject saved reservation into local list immediately ──
+        // No waiting for socket/refreshAll — the API already returned the full object.
+        if (saved) {
+            if (editId) {
+                const idx = allReservations.findIndex(r => r.id === saved.id);
+                if (idx >= 0) allReservations[idx] = saved; else allReservations.push(saved);
+            } else {
+                allReservations.push(saved);
+            }
+            _dayData[saved.shift] = allReservations.filter(r => r.shift === saved.shift);
+            applyDayFilters();
+        }
+
+        // Sync floor plan in background (no-await)
+        if (typeof loadFloorPlan === 'function') loadFloorPlan();
     } catch (error) {
         showToast(error.message || 'Error al guardar reserva', 'error');
     }

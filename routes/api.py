@@ -3,6 +3,7 @@ REST API for Season restaurant reservation system.
 """
 import csv
 import io
+import threading
 from flask import Blueprint, request, jsonify, current_app, Response, session
 from datetime import date, timedelta, datetime
 from services import reservation as res_svc
@@ -12,6 +13,26 @@ from models import db, Reservation, Waitlist, Table
 from utils.validators import ReservationCreate, ReservationUpdate, ClientCreate, ClientUpdate
 from utils.decorators import validate_and_handle, handle_errors
 from utils.errors import error_response, success_response
+
+
+def _send_email_async(app, reservation_data):
+    """Fire-and-forget: send confirmation email in a background thread."""
+    def _run():
+        with app.app_context():
+            try:
+                from services.email_service import send_confirmation_email
+                send_confirmation_email(
+                    to_email=reservation_data.get('email', ''),
+                    name=reservation_data.get('client_name', ''),
+                    date_str=reservation_data.get('date', ''),
+                    shift=reservation_data.get('shift', ''),
+                    time_str=reservation_data.get('time', ''),
+                    guests=reservation_data.get('guests', 1),
+                    notes=reservation_data.get('notes', ''),
+                )
+            except Exception:
+                pass
+    threading.Thread(target=_run, daemon=True).start()
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -113,32 +134,7 @@ def create_reservation(data: ReservationCreate):
         reservation_data['force_past'] = True
     r = res_svc.create_reservation(reservation_data)
     notify(reservation_data.get('date'), reservation_data.get('shift'))
-    try:
-        from services.whatsapp import send_confirmation_whatsapp
-        send_confirmation_whatsapp(
-            to_phone  = reservation_data.get('client_phone', ''),
-            name      = reservation_data.get('client_name', ''),
-            date_str  = reservation_data.get('date', ''),
-            shift     = reservation_data.get('shift', ''),
-            time_str  = reservation_data.get('time', ''),
-            guests    = reservation_data.get('guests', 1),
-            notes     = reservation_data.get('notes', ''),
-        )
-    except Exception:
-        pass
-    try:
-        from services.email_service import send_confirmation_email
-        send_confirmation_email(
-            to_email  = reservation_data.get('email', ''),
-            name      = reservation_data.get('client_name', ''),
-            date_str  = reservation_data.get('date', ''),
-            shift     = reservation_data.get('shift', ''),
-            time_str  = reservation_data.get('time', ''),
-            guests    = reservation_data.get('guests', 1),
-            notes     = reservation_data.get('notes', ''),
-        )
-    except Exception:
-        pass
+    _send_email_async(current_app._get_current_object(), reservation_data)
     return jsonify(r.to_dict()), 201
 
 
@@ -1191,31 +1187,19 @@ def public_reserve():
         except Exception:
             client = None
 
-    r = res_svc.create_reservation({
+    pub_data = {
         'date': data['date'],
         'shift': data['shift'],
         'time': data['time'],
         'guests': guests,
         'client_name': data['client_name'].strip(),
         'client_phone': data['client_phone'].strip(),
+        'email': data.get('email', ''),
         'notes': data.get('notes', ''),
         'source': 'web',
         'client_id': client.id if client else None,
-    })
+    }
+    r = res_svc.create_reservation(pub_data)
     notify()
-
-    try:
-        from services.email_service import send_confirmation_email
-        send_confirmation_email(
-            to_email=data.get('email', ''),
-            name=data['client_name'].strip(),
-            date_str=data['date'],
-            shift=data['shift'],
-            time_str=data['time'],
-            guests=guests,
-            notes=data.get('notes', ''),
-        )
-    except Exception:
-        pass
-
+    _send_email_async(current_app._get_current_object(), pub_data)
     return jsonify(r.to_dict()), 201

@@ -466,48 +466,6 @@
                         <span>19:00 - 23:00</span>
                     </div>
                 </div>
-                <div class="settings-card">
-                    <h3>WhatsApp Bot</h3>
-                    <p class="settings-desc">El bot de WhatsApp recibe reservas autom&aacute;ticamente. Los clientes escriben <strong>RESERVAR</strong> y siguen el flujo guiado.</p>
-                    <div class="setting-row">
-                        <label>Estado:</label>
-                        <span class="badge badge-green">Activo</span>
-                    </div>
-                    <div class="setting-row">
-                        <label>N&uacute;mero:</label>
-                        <strong>+{{ whatsapp_number }}</strong>
-                    </div>
-                    <div class="setting-row">
-                        <label>Enlace para web:</label>
-                        <code id="waLink">https://wa.me/{{ whatsapp_number }}?text=RESERVAR</code>
-                    </div>
-                    <div class="setting-row">
-                        <label>Endpoint:</label>
-                        <code>/api/whatsapp/webhook</code>
-                    </div>
-                    <div style="margin:12px 0;">
-                        <button class="btn-primary btn-sm" onclick="copyWaLink()" style="background:#25D366">Copiar enlace WhatsApp</button>
-                        <button class="btn-secondary btn-sm" onclick="window.open(document.getElementById('waLink').textContent)">Abrir WhatsApp</button>
-                    </div>
-                    <div class="setting-row">
-                        <label>P&aacute;gina reservas clientes:</label>
-                        <a href="/reservar" target="_blank" style="color:var(--teal); font-weight:600;">/reservar</a>
-                    </div>
-                    <div class="setting-row">
-                        <label>P&aacute;gina reservas v2:</label>
-                        <a href="/reservas" target="_blank" style="color:var(--teal); font-weight:600;">/reservas</a>
-                    </div>
-                    <h4>Probar WhatsApp Bot</h4>
-                    <div class="whatsapp-test">
-                        <div class="wa-chat" id="waChatMessages">
-                            <div class="wa-msg wa-bot">Hola! Bienvenido a Season. Escribe RESERVAR para hacer una reserva.</div>
-                        </div>
-                        <div class="wa-input-row">
-                            <input type="text" id="waTestInput" placeholder="Escribe un mensaje..." class="search-input">
-                            <button class="btn-primary" onclick="sendWaTest()">Enviar</button>
-                        </div>
-                    </div>
-                </div>
                 <!-- Users management (admin only) -->
                 <div class="settings-card" id="adminUsersLink" style="display:none">
                     <h3>👥 Gestión de Usuarios</h3>
