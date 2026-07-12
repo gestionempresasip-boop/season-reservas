@@ -223,6 +223,8 @@ def _initialize_app():
                 for sql in [
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
+                    'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_w FLOAT',
+                    'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_h FLOAT',
                 ]:
                     try:
                         db.session.execute(_text(sql))

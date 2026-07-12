@@ -171,6 +171,8 @@ let _editDrag = null; // { defIdx, offX, offY }
 let _editDidDrag = false; // true if mouse moved during drag (prevents click-to-edit after drag)
 let _editCapTableNumber = null;
 let _editCapValue = 4;
+let _editWValue = 10;
+let _editHValue = 8;
 
 function toggleEditMode() {
     _editMode = !_editMode;
@@ -372,54 +374,84 @@ function confirmDeleteTable(tableNumber) {
 function openCapacityEditor(tableNumber) {
     const def = TABLE_DEFS.find(d => d.n === tableNumber);
     if (!def) return;
-    // Use DB value if available, fallback to TABLE_DEFS
     const td = tableDataMap[tableNumber];
-    const currentCap = (td?.capacity ?? def.cap) || def.cap;
-    const currentType = (td?.table_type ?? def.type) || def.type;
+    const currentCap  = (td?.capacity   ?? def.cap)  || def.cap;
+    const currentType = (td?.table_type ?? def.type)  || def.type;
+    const currentW    = Math.round(def.w);
+    const currentH    = Math.round(def.h);
 
     _editCapTableNumber = tableNumber;
     _editCapValue = currentCap;
+    _editWValue   = currentW;
+    _editHValue   = currentH;
 
-    const title = document.getElementById('tableDetailTitle');
+    const title   = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
-    title.textContent = `✏️ Configurar Mesa ${tableNumber}`;
+    title.textContent = `✏️ Mesa ${tableNumber}`;
+
+    const radioStyle = (v, cur) =>
+        `flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid ${cur===v?'#1a8a7d':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${cur===v?'#f0fdf9':'#fff'}`;
+    const radioOnChange = `document.querySelectorAll('[name=editType]').forEach(r=>{r.parentElement.style.borderColor=r.checked?'#1a8a7d':'#e5e7eb';r.parentElement.style.background=r.checked?'#f0fdf9':'#fff'})`;
+
     content.innerHTML = `
-        <div style="background:#fff3cd;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:16px">
-            ✏️ Modo edición — cambia la capacidad y guarda
+        <div style="background:#fff3cd;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:14px">
+            ✏️ Modo edición — arrastra para mover, edita aquí y guarda
         </div>
 
-        <div style="margin-bottom:16px">
-            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
-                Comensales (capacidad de la mesa)
-            </label>
-            <div style="display:flex;align-items:center;gap:12px">
-                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px" onclick="editCapChange(-1)">−</button>
+        <!-- Capacidad -->
+        <div style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Comensales</label>
+            <div style="display:flex;align-items:center;gap:10px">
+                <button class="qo-cnt-btn" style="width:36px;height:36px;font-size:18px" onclick="editCapChange(-1)">−</button>
                 <input type="number" id="editCapInput" value="${currentCap}" min="1" max="20"
-                    style="width:70px;text-align:center;font-size:24px;font-weight:800;border:2px solid #1a8a7d;border-radius:10px;padding:6px;color:#1a8a7d"
-                    oninput="_editCapValue=Math.max(1,Math.min(20,+this.value||1));document.getElementById('editCapVal').textContent=_editCapValue">
-                <button class="qo-cnt-btn" style="width:40px;height:40px;font-size:20px" onclick="editCapChange(1)">+</button>
+                    style="width:60px;text-align:center;font-size:22px;font-weight:800;border:2px solid #1a8a7d;border-radius:10px;padding:4px;color:#1a8a7d"
+                    oninput="_editCapValue=Math.max(1,Math.min(20,+this.value||1))">
+                <button class="qo-cnt-btn" style="width:36px;height:36px;font-size:18px" onclick="editCapChange(1)">+</button>
                 <span style="color:#6b7280;font-size:13px">personas</span>
             </div>
-            <span style="font-size:11px;color:#9ca3af" id="editCapVal" style="display:none">${currentCap}</span>
         </div>
 
-        <div style="margin-bottom:20px">
-            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Tipo de mesa</label>
+        <!-- Tipo -->
+        <div style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Tipo</label>
             <div style="display:flex;gap:8px">
-                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid ${currentType==='normal'?'#1a8a7d':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${currentType==='normal'?'#f0fdf9':'#fff'}">
-                    <input type="radio" name="editType" value="normal" ${currentType==='normal'?'checked':''} onchange="document.querySelectorAll('[name=editType]').forEach((r,i)=>{r.parentElement.style.borderColor=r.checked?'#1a8a7d':'#e5e7eb';r.parentElement.style.background=r.checked?'#f0fdf9':'#fff'})">
+                <label style="${radioStyle('normal',currentType)}">
+                    <input type="radio" name="editType" value="normal" ${currentType==='normal'?'checked':''} onchange="${radioOnChange}">
                     🪑 Normal
                 </label>
-                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid ${currentType==='alta'?'#1a8a7d':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${currentType==='alta'?'#f0fdf9':'#fff'}">
-                    <input type="radio" name="editType" value="alta" ${currentType==='alta'?'checked':''} onchange="document.querySelectorAll('[name=editType]').forEach((r,i)=>{r.parentElement.style.borderColor=r.checked?'#1a8a7d':'#e5e7eb';r.parentElement.style.background=r.checked?'#f0fdf9':'#fff'})">
+                <label style="${radioStyle('alta',currentType)}">
+                    <input type="radio" name="editType" value="alta" ${currentType==='alta'?'checked':''} onchange="${radioOnChange}">
                     🍽️ Alta
                 </label>
             </div>
         </div>
 
+        <!-- Tamaño -->
+        <div style="margin-bottom:18px">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:10px">Tamaño de la mesa</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="font-size:12px;color:#6b7280;min-width:38px">Ancho</span>
+                <button class="qo-cnt-btn" style="width:30px;height:30px;font-size:16px" onclick="editSizeChange('w',-1)">−</button>
+                <input type="range" id="editWInput" min="5" max="30" step="1" value="${currentW}"
+                    style="flex:1;accent-color:#1a8a7d"
+                    oninput="_editWValue=+this.value;document.getElementById('editWVal').textContent=this.value;_livePreviewSize(${tableNumber})">
+                <button class="qo-cnt-btn" style="width:30px;height:30px;font-size:16px" onclick="editSizeChange('w',1)">+</button>
+                <span id="editWVal" style="font-size:13px;font-weight:700;color:#1a8a7d;min-width:20px">${currentW}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:12px;color:#6b7280;min-width:38px">Alto</span>
+                <button class="qo-cnt-btn" style="width:30px;height:30px;font-size:16px" onclick="editSizeChange('h',-1)">−</button>
+                <input type="range" id="editHInput" min="5" max="30" step="1" value="${currentH}"
+                    style="flex:1;accent-color:#1a8a7d"
+                    oninput="_editHValue=+this.value;document.getElementById('editHVal').textContent=this.value;_livePreviewSize(${tableNumber})">
+                <button class="qo-cnt-btn" style="width:30px;height:30px;font-size:16px" onclick="editSizeChange('h',1)">+</button>
+                <span id="editHVal" style="font-size:13px;font-weight:700;color:#1a8a7d;min-width:20px">${currentH}</span>
+            </div>
+        </div>
+
         <div style="display:flex;gap:8px">
-            <button class="btn-primary" style="flex:1;padding:13px" onclick="saveCapacityEdit(${tableNumber})">
-                💾 Guardar cambios
+            <button class="btn-primary" style="flex:1;padding:12px" onclick="saveCapacityEdit(${tableNumber})">
+                💾 Guardar
             </button>
             <button class="btn-secondary" style="flex:1" onclick="closeModal('modalTableDetail')">Cancelar</button>
         </div>
@@ -431,40 +463,72 @@ function editCapChange(delta) {
     _editCapValue = Math.max(1, Math.min(20, _editCapValue + delta));
     const inp = document.getElementById('editCapInput');
     if (inp) inp.value = _editCapValue;
-    const el = document.getElementById('editCapVal');
-    if (el) el.textContent = _editCapValue;
+}
+
+function editSizeChange(axis, delta) {
+    if (axis === 'w') {
+        _editWValue = Math.max(5, Math.min(30, _editWValue + delta));
+        const el = document.getElementById('editWInput');
+        const lbl = document.getElementById('editWVal');
+        if (el) el.value = _editWValue;
+        if (lbl) lbl.textContent = _editWValue;
+    } else {
+        _editHValue = Math.max(5, Math.min(30, _editHValue + delta));
+        const el = document.getElementById('editHInput');
+        const lbl = document.getElementById('editHVal');
+        if (el) el.value = _editHValue;
+        if (lbl) lbl.textContent = _editHValue;
+    }
+    _livePreviewSize(_editCapTableNumber);
+}
+
+function _livePreviewSize(tableNumber) {
+    const def = TABLE_DEFS.find(d => d.n === tableNumber);
+    if (!def) return;
+    def.w = _editWValue;
+    def.h = _editHValue;
+    renderFloorPlan();
 }
 
 async function saveCapacityEdit(tableNumber) {
     const def = TABLE_DEFS.find(d => d.n === tableNumber);
     if (!def) return;
-    // Read from typed input first (user may have typed a number directly)
+
     const inp = document.getElementById('editCapInput');
     if (inp) _editCapValue = Math.max(1, Math.min(20, parseInt(inp.value) || _editCapValue));
-    const newCap = _editCapValue;
+    const newCap  = _editCapValue;
+    const newW    = _editWValue;
+    const newH    = _editHValue;
     const typeRadio = document.querySelector('input[name="editType"]:checked');
     const newType = typeRadio ? typeRadio.value : def.type;
 
     // Update in-memory TABLE_DEFS immediately
-    def.cap = newCap;
+    def.cap  = newCap;
     def.type = newType;
+    def.w    = newW;
+    def.h    = newH;
 
-    // Also update tableDataMap so the modal reflects the new value right away
     if (tableDataMap[tableNumber]) {
-        tableDataMap[tableNumber] = { ...tableDataMap[tableNumber], capacity: newCap, table_type: newType };
+        tableDataMap[tableNumber] = {
+            ...tableDataMap[tableNumber],
+            capacity: newCap, table_type: newType,
+            svg_w: newW, svg_h: newH,
+        };
     }
 
     closeModal('modalTableDetail');
     renderFloorPlan();
     showToast(`Mesa ${tableNumber} · ${newCap}p guardando…`, 'success');
 
-    // Persist to DB via API
     const td = tableDataMap[tableNumber];
     const tableId = td?.id;
     if (tableId) {
         try {
-            await apiPut(`/api/tables/${tableId}`, { capacity: newCap, table_type: newType });
-            showToast(`Mesa ${tableNumber} · ${newCap}p actualizada ✓`, 'success');
+            await apiPut(`/api/tables/${tableId}`, {
+                capacity: newCap, table_type: newType,
+                svg_w: newW, svg_h: newH,
+            });
+            showToast(`Mesa ${tableNumber} actualizada ✓`, 'success');
         } catch (e) {
             showToast(`Mesa ${tableNumber} guardada localmente (error API)`, 'error');
         }
@@ -491,9 +555,11 @@ async function loadFloorPlan() {
         tableDataMap[t.number] = t;
         const def = TABLE_DEFS.find(d => d.n === t.number);
         if (def) {
-            // Sync positions & capacity from DB (non-zero values override hardcoded defaults)
+            // Sync positions, size & capacity from DB (non-zero values override hardcoded defaults)
             if (t.pos_x) def.x = t.pos_x;
             if (t.pos_y) def.y = t.pos_y;
+            if (t.svg_w) def.w = t.svg_w;
+            if (t.svg_h) def.h = t.svg_h;
             if (t.capacity) def.cap = t.capacity;
             if (t.table_type) def.type = t.table_type;
             if (t.zone) def.zone = t.zone;

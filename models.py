@@ -74,6 +74,10 @@ class Table(db.Model):
     pos_x = db.Column(db.Float, default=0)
     pos_y = db.Column(db.Float, default=0)
 
+    # Size (SVG units, optional — JS uses TABLE_DEFS defaults when null)
+    svg_w = db.Column(db.Float, nullable=True)
+    svg_h = db.Column(db.Float, nullable=True)
+
     # Status
     active = db.Column(db.Boolean, default=True, index=True)
     blocked = db.Column(db.Boolean, default=False, nullable=False)
@@ -91,6 +95,8 @@ class Table(db.Model):
             'table_type': self.table_type,
             'pos_x': self.pos_x,
             'pos_y': self.pos_y,
+            'svg_w': self.svg_w,
+            'svg_h': self.svg_h,
             'active': self.active,
             'blocked': self.blocked,
         }

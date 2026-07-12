@@ -336,6 +336,10 @@ def update_table(tid):
         t.pos_x = float(data['pos_x'])
     if 'pos_y' in data:
         t.pos_y = float(data['pos_y'])
+    if 'svg_w' in data:
+        t.svg_w = float(data['svg_w']) if data['svg_w'] is not None else None
+    if 'svg_h' in data:
+        t.svg_h = float(data['svg_h']) if data['svg_h'] is not None else None
     if 'blocked' in data:
         t.blocked = bool(data['blocked'])
     db.session.commit()
