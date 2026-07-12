@@ -7,12 +7,13 @@ from models import db, Reservation, Table, Client
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
-# Reusable eager-load options: loads table + extra_tables in the same query,
-# avoiding N+1 on to_dict() calls that touch self.table.number / self.extra_tables
-_RES_EAGER = [
-    joinedload(Reservation.table),
-    joinedload(Reservation.extra_tables),
-]
+# NOTE: _res_eager() is a function (not a module-level list) because SQLAlchemy 2.0
+# configures backrefs lazily — Reservation.table doesn't exist at import time.
+def _res_eager():
+    return [
+        joinedload(Reservation.table),
+        joinedload(Reservation.extra_tables),
+    ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -21,7 +22,7 @@ _RES_EAGER = [
 
 def get_reservations(target_date, shift):
     """Get confirmed and seated reservations for a date and shift."""
-    return Reservation.query.options(*_RES_EAGER).filter(
+    return Reservation.query.options(*_res_eager()).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
         Reservation.status.in_(['confirmed', 'seated'])
@@ -30,7 +31,7 @@ def get_reservations(target_date, shift):
 
 def get_all_reservations_for_date(target_date, shift):
     """Get ALL reservations for a date and shift (all statuses)."""
-    return Reservation.query.options(*_RES_EAGER).filter(
+    return Reservation.query.options(*_res_eager()).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
     ).order_by(Reservation.time).all()
@@ -38,7 +39,7 @@ def get_all_reservations_for_date(target_date, shift):
 
 def get_active_reservations_for_shift(target_date, shift, exclude_id=None):
     """Active (confirmed/seated) reservations for a shift, optionally excluding one ID."""
-    q = Reservation.query.options(*_RES_EAGER).filter(
+    q = Reservation.query.options(*_res_eager()).filter(
         Reservation.date == target_date,
         Reservation.shift == shift,
         Reservation.status.in_(['confirmed', 'seated'])

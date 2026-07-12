@@ -224,7 +224,7 @@ def _initialize_app():
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
                     # Plano actualizado Jul-2026: mesa 82→32, capacidades mesa 3 y 18
-                    'UPDATE tables SET number = 32 WHERE number = 82',
+                    'UPDATE tables SET number = 32 WHERE number = 82 AND NOT EXISTS (SELECT 1 FROM tables WHERE number = 32)',
                     'UPDATE tables SET capacity = 2 WHERE number = 3',
                     'UPDATE tables SET capacity = 4 WHERE number = 18',
                 ]
