@@ -268,6 +268,26 @@ def _initialize_app():
                     db.session.rollback()
                     _logger_instance.warning(f'⚠️ Sync plano: {_sync_e}')
 
+                # ─── Exterior positions Jul-2026: single-row layout ───────
+                _EXT_POS_KEY = 'ext_positions_v4'
+                if not AppSetting.get(_EXT_POS_KEY):
+                    _EXT_NEW = {
+                        70: ( 2, 11), 50: (13, 12), 52: (22, 12), 54: (31, 12),
+                        56: (40, 12), 58: (49, 12), 60: (59, 11), 62: (70, 11),
+                    }
+                    try:
+                        for _num, (_px, _py) in _EXT_NEW.items():
+                            _t = Table.query.filter_by(number=_num).first()
+                            if _t:
+                                _t.pos_x = _px
+                                _t.pos_y = _py
+                        db.session.commit()
+                        AppSetting.set(_EXT_POS_KEY, 'done')
+                        _logger_instance.info('✅ Exterior positions updated to single-row v4')
+                    except Exception as _ep_e:
+                        db.session.rollback()
+                        _logger_instance.warning(f'⚠️ Exterior positions migration: {_ep_e}')
+
                 # Create default admin user if no users exist
                 from models import User
                 if User.query.count() == 0:

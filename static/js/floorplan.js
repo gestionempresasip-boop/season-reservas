@@ -6,15 +6,15 @@
    ═══════════════════════════════════════════════ */
 
 let TABLE_DEFS = [
-    // ZONA EXTERIOR
-    { n: 50, cap: 2, type: 'normal', zone: 'ext', x: 33, y: 10, shape: 'rect', w: 7, h: 5 },
-    { n: 52, cap: 2, type: 'normal', zone: 'ext', x: 43, y: 10, shape: 'rect', w: 7, h: 5 },
-    { n: 54, cap: 2, type: 'normal', zone: 'ext', x: 53, y: 10, shape: 'rect', w: 7, h: 5 },
-    { n: 56, cap: 2, type: 'normal', zone: 'ext', x: 63, y: 10, shape: 'rect', w: 7, h: 5 },
-    { n: 58, cap: 2, type: 'normal', zone: 'ext', x: 76, y: 14, shape: 'rect', w: 5, h: 7 },
-    { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 38, y: 19, shape: 'rect', w: 8, h: 6 },
-    { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 53, y: 19, shape: 'rect', w: 8, h: 6 },
-    { n: 70, cap: 2, type: 'alta', zone: 'ext', x: 14, y: 14, shape: 'rect', w: 7, h: 5 },
+    // ZONA EXTERIOR — fila única: 70, 50, 52, 54, 56, 58, 60, 62
+    { n: 70, cap: 2, type: 'alta',   zone: 'ext', x:  2, y: 11, shape: 'rect', w: 9, h: 7 },
+    { n: 50, cap: 2, type: 'normal', zone: 'ext', x: 13, y: 12, shape: 'rect', w: 7, h: 5 },
+    { n: 52, cap: 2, type: 'normal', zone: 'ext', x: 22, y: 12, shape: 'rect', w: 7, h: 5 },
+    { n: 54, cap: 2, type: 'normal', zone: 'ext', x: 31, y: 12, shape: 'rect', w: 7, h: 5 },
+    { n: 56, cap: 2, type: 'normal', zone: 'ext', x: 40, y: 12, shape: 'rect', w: 7, h: 5 },
+    { n: 58, cap: 2, type: 'normal', zone: 'ext', x: 49, y: 12, shape: 'rect', w: 7, h: 5 },
+    { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 59, y: 11, shape: 'rect', w: 9, h: 7 },
+    { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 70, y: 11, shape: 'rect', w: 9, h: 7 },
 
     // SALON PRINCIPAL
     { n: 1, cap: 4, type: 'normal', zone: 'sp', x: 7, y: 37, shape: 'rect', w: 8, h: 7 },
@@ -46,8 +46,8 @@ let TABLE_DEFS = [
 ];
 
 // Apply saved positions/capacities from localStorage
-// v3 = plano Jul-2026 forzar recarga (mesa 32, BARRA, cap mesa 3=2p, 18=4p)
-const _TABLE_DEFS_VERSION = 'v3';
+// v4 = exterior fila única (70,50,52,54,56,58,60,62 en una sola fila)
+const _TABLE_DEFS_VERSION = 'v4';
 (function _applySavedTableDefs() {
     try {
         if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {

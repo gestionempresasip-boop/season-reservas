@@ -16,14 +16,14 @@ DEFAULT_TABLES = [
     # ─────────────────────────────────────────────────────────────────────
     # ZONA EXTERIOR (8 tables, 22 capacity)
     # ─────────────────────────────────────────────────────────────────────
-    {'number': 50, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 33, 'pos_y': 8},
-    {'number': 52, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 43, 'pos_y': 8},
-    {'number': 54, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 53, 'pos_y': 8},
-    {'number': 56, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 63, 'pos_y': 8},
-    {'number': 58, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 73, 'pos_y': 12},
-    {'number': 60, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 53, 'pos_y': 20},
-    {'number': 62, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 38, 'pos_y': 20},
-    {'number': 70, 'zone': 'exterior', 'capacity': 2, 'table_type': 'alta', 'pos_x': 18, 'pos_y': 14},
+    {'number': 70, 'zone': 'exterior', 'capacity': 2, 'table_type': 'alta',   'pos_x':  2, 'pos_y': 11},
+    {'number': 50, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 13, 'pos_y': 12},
+    {'number': 52, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 22, 'pos_y': 12},
+    {'number': 54, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 31, 'pos_y': 12},
+    {'number': 56, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 40, 'pos_y': 12},
+    {'number': 58, 'zone': 'exterior', 'capacity': 2, 'table_type': 'normal', 'pos_x': 49, 'pos_y': 12},
+    {'number': 60, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 59, 'pos_y': 11},
+    {'number': 62, 'zone': 'exterior', 'capacity': 4, 'table_type': 'normal', 'pos_x': 70, 'pos_y': 11},
 
     # ─────────────────────────────────────────────────────────────────────
     # SALÓN PRINCIPAL (22 tables, 92 capacity)
