@@ -219,16 +219,11 @@ def _initialize_app():
                 from sqlalchemy import text as _text
                 db.create_all()
 
-                # ─── Migrations (safe ALTER TABLE for PostgreSQL) ───
-                migrations = [
+                # ─── Column migrations ───
+                for sql in [
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
-                    # Plano actualizado Jul-2026: mesa 82→32, capacidades mesa 3 y 18
-                    'UPDATE tables SET number = 32 WHERE number = 82 AND NOT EXISTS (SELECT 1 FROM tables WHERE number = 32)',
-                    'UPDATE tables SET capacity = 2 WHERE number = 3',
-                    'UPDATE tables SET capacity = 4 WHERE number = 18',
-                ]
-                for sql in migrations:
+                ]:
                     try:
                         db.session.execute(_text(sql))
                         db.session.commit()
@@ -247,6 +242,31 @@ def _initialize_app():
                     _logger_instance.info(f'✅ Initialized {len(DEFAULT_TABLES)} restaurant tables')
                 else:
                     _logger_instance.info(f'⚠️  Tables already exist ({Table.query.count()})')
+
+                # ─── Plano Jul-2026: sync Python-level (runs always) ─────
+                try:
+                    mesa_82 = Table.query.filter_by(number=82).first()
+                    mesa_32 = Table.query.filter_by(number=32).first()
+                    if mesa_82 and not mesa_32:
+                        # Rename 82 → 32
+                        mesa_82.number = 32
+                        db.session.commit()
+                        _logger_instance.info('✅ Mesa 82 renombrada a 32')
+                    elif mesa_82 and mesa_32:
+                        # Ambas existen — eliminar duplicado 82
+                        db.session.delete(mesa_82)
+                        db.session.commit()
+                        _logger_instance.info('✅ Duplicado mesa 82 eliminado (ya existe 32)')
+
+                    for num, cap in {3: 2, 18: 4}.items():
+                        t = Table.query.filter_by(number=num).first()
+                        if t and t.capacity != cap:
+                            t.capacity = cap
+                            _logger_instance.info(f'✅ Mesa {num} capacidad → {cap}p')
+                    db.session.commit()
+                except Exception as _sync_e:
+                    db.session.rollback()
+                    _logger_instance.warning(f'⚠️ Sync plano: {_sync_e}')
 
                 # Create default admin user if no users exist
                 from models import User

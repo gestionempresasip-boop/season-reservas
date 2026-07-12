@@ -46,8 +46,8 @@ let TABLE_DEFS = [
 ];
 
 // Apply saved positions/capacities from localStorage
-// v2 = plano Jul-2026 (mesa 82→32). Clear stale cache from previous layout.
-const _TABLE_DEFS_VERSION = 'v2';
+// v3 = plano Jul-2026 forzar recarga (mesa 32, BARRA, cap mesa 3=2p, 18=4p)
+const _TABLE_DEFS_VERSION = 'v3';
 (function _applySavedTableDefs() {
     try {
         if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {
