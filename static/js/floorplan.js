@@ -16,26 +16,26 @@ let TABLE_DEFS = [
     { n: 60, cap: 4, type: 'normal', zone: 'ext', x: 59, y: 11, shape: 'rect', w: 9, h: 7 },
     { n: 62, cap: 4, type: 'normal', zone: 'ext', x: 70, y: 11, shape: 'rect', w: 9, h: 7 },
 
-    // SALON PRINCIPAL — círculos (filas 1-4): 1,2,3,4,6,7,8,12,14 · rectángulos (filas 5-6)
-    { n: 1,  cap: 4, type: 'normal', zone: 'sp', x:  7, y: 36, shape: 'circle', w: 8, h: 8 },
-    { n: 2,  cap: 2, type: 'normal', zone: 'sp', x: 20, y: 36, shape: 'circle', w: 7, h: 7 },
-    { n: 3,  cap: 2, type: 'normal', zone: 'sp', x: 32, y: 36, shape: 'circle', w: 7, h: 7 },
-    { n: 6,  cap: 4, type: 'normal', zone: 'sp', x:  7, y: 48, shape: 'circle', w: 8, h: 8 },
-    { n: 4,  cap: 4, type: 'normal', zone: 'sp', x: 22, y: 48, shape: 'circle', w: 8, h: 8 },
-    { n: 7,  cap: 4, type: 'normal', zone: 'sp', x:  5, y: 59, shape: 'circle', w: 8, h: 8 },
-    { n: 8,  cap: 4, type: 'normal', zone: 'sp', x: 17, y: 59, shape: 'circle', w: 8, h: 8 },
-    { n: 9,  cap: 2, type: 'normal', zone: 'sp', x: 29, y: 60, shape: 'rect',   w: 7, h: 6 },
-    { n: 10, cap: 2, type: 'normal', zone: 'sp', x: 39, y: 60, shape: 'rect',   w: 7, h: 6 },
-    { n: 14, cap: 4, type: 'normal', zone: 'sp', x:  5, y: 70, shape: 'circle', w: 8, h: 8 },
-    { n: 12, cap: 4, type: 'normal', zone: 'sp', x: 19, y: 70, shape: 'circle', w: 8, h: 8 },
-    { n: 11, cap: 2, type: 'normal', zone: 'sp', x: 33, y: 71, shape: 'rect',   w: 7, h: 6 },
-    { n: 15, cap: 4, type: 'normal', zone: 'sp', x:  7, y: 81, shape: 'rect',   w: 8, h: 7 },
-    { n: 16, cap: 4, type: 'normal', zone: 'sp', x: 20, y: 81, shape: 'rect',   w: 8, h: 7 },
-    { n: 17, cap: 4, type: 'normal', zone: 'sp', x: 33, y: 81, shape: 'rect',   w: 8, h: 7 },
-    { n: 22, cap: 4, type: 'normal', zone: 'sp', x:  5, y: 91, shape: 'rect',   w: 8, h: 7 },
-    { n: 20, cap: 4, type: 'normal', zone: 'sp', x: 18, y: 91, shape: 'rect',   w: 8, h: 7 },
-    { n: 19, cap: 2, type: 'normal', zone: 'sp', x: 31, y: 91, shape: 'rect',   w: 7, h: 6 },
-    { n: 18, cap: 4, type: 'normal', zone: 'sp', x: 42, y: 91, shape: 'rect',   w: 8, h: 7 },
+    // SALON PRINCIPAL
+    { n: 1,  cap: 4, type: 'normal', zone: 'sp', x:  6, y: 35, shape: 'rect', w: 10, h: 8 },
+    { n: 2,  cap: 2, type: 'normal', zone: 'sp', x: 19, y: 35, shape: 'rect', w:  9, h: 8 },
+    { n: 3,  cap: 2, type: 'normal', zone: 'sp', x: 31, y: 35, shape: 'rect', w:  9, h: 8 },
+    { n: 6,  cap: 4, type: 'normal', zone: 'sp', x:  6, y: 46, shape: 'rect', w: 10, h: 8 },
+    { n: 4,  cap: 4, type: 'normal', zone: 'sp', x: 20, y: 46, shape: 'rect', w: 10, h: 8 },
+    { n: 7,  cap: 4, type: 'normal', zone: 'sp', x:  4, y: 57, shape: 'rect', w: 10, h: 8 },
+    { n: 8,  cap: 4, type: 'normal', zone: 'sp', x: 16, y: 57, shape: 'rect', w: 10, h: 8 },
+    { n: 9,  cap: 2, type: 'normal', zone: 'sp', x: 28, y: 57, shape: 'rect', w:  9, h: 8 },
+    { n: 10, cap: 2, type: 'normal', zone: 'sp', x: 39, y: 57, shape: 'rect', w:  9, h: 8 },
+    { n: 14, cap: 4, type: 'normal', zone: 'sp', x:  4, y: 68, shape: 'rect', w: 10, h: 8 },
+    { n: 12, cap: 4, type: 'normal', zone: 'sp', x: 16, y: 68, shape: 'rect', w: 10, h: 8 },
+    { n: 11, cap: 2, type: 'normal', zone: 'sp', x: 28, y: 68, shape: 'rect', w:  9, h: 8 },
+    { n: 15, cap: 4, type: 'normal', zone: 'sp', x:  4, y: 79, shape: 'rect', w: 10, h: 8 },
+    { n: 16, cap: 4, type: 'normal', zone: 'sp', x: 16, y: 79, shape: 'rect', w: 10, h: 8 },
+    { n: 17, cap: 4, type: 'normal', zone: 'sp', x: 28, y: 79, shape: 'rect', w: 10, h: 8 },
+    { n: 22, cap: 4, type: 'normal', zone: 'sp', x:  4, y: 90, shape: 'rect', w: 10, h: 8 },
+    { n: 20, cap: 4, type: 'normal', zone: 'sp', x: 16, y: 90, shape: 'rect', w: 10, h: 8 },
+    { n: 19, cap: 2, type: 'normal', zone: 'sp', x: 28, y: 90, shape: 'rect', w:  9, h: 8 },
+    { n: 18, cap: 4, type: 'normal', zone: 'sp', x: 39, y: 90, shape: 'rect', w: 10, h: 8 },
 
     // SALON INTERIOR
     { n: 30, cap: 4, type: 'normal', zone: 'si', x: 58, y: 37, shape: 'rect', w: 8, h: 7 },
@@ -46,8 +46,8 @@ let TABLE_DEFS = [
 ];
 
 // Apply saved positions/capacities from localStorage
-// v5 = círculos para mesas 1,2,3,4,6,7,8,12,14 (Salón Principal)
-const _TABLE_DEFS_VERSION = 'v5';
+// v6 = estilo tarjeta+badge igual al PDF (todos rect, badge círculo interior)
+const _TABLE_DEFS_VERSION = 'v6';
 (function _applySavedTableDefs() {
     try {
         if (localStorage.getItem('season_table_defs_version') !== _TABLE_DEFS_VERSION) {
@@ -868,82 +868,83 @@ function renderFloorPlan() {
 
         const cx = def.x + def.w / 2;
         const cy = def.y + def.h / 2;
+        const isAlta = def.type === 'alta';
+        if (isAlta) g.classList.add('shape-alta');
 
-        let tableShape;
-        if (def.shape === 'circle') {
-            g.classList.add('shape-circle');
-            tableShape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            tableShape.setAttribute('cx', cx);
-            tableShape.setAttribute('cy', cy);
-            tableShape.setAttribute('r', Math.min(def.w, def.h) / 2);
-            tableShape.classList.add('table-circle');
-        } else {
-            tableShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            tableShape.setAttribute('x', def.x);
-            tableShape.setAttribute('y', def.y);
-            tableShape.setAttribute('width', def.w);
-            tableShape.setAttribute('height', def.h);
-            tableShape.setAttribute('rx', '1');
-            tableShape.classList.add(def.type === 'alta' ? 'table-alta' : 'table-rect');
-        }
-        if (def.type === 'alta') g.classList.add('shape-alta');
+        // ── Tarjeta (rect) ──────────────────────────────────────────
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', def.x);
+        rect.setAttribute('y', def.y);
+        rect.setAttribute('width', def.w);
+        rect.setAttribute('height', def.h);
+        rect.setAttribute('rx', '1.2');
+        rect.classList.add(isAlta ? 'table-alta' : 'table-rect');
         if (groupInfo) {
-            tableShape.setAttribute('stroke', groupInfo.color);
-            tableShape.setAttribute('stroke-width', '0.5');
+            rect.setAttribute('stroke', groupInfo.color);
+            rect.setAttribute('stroke-width', '0.5');
         }
-        g.appendChild(tableShape);
+        g.appendChild(rect);
+
+        // ── Badge circular (esquina sup-izq) ────────────────────────
+        const badgeR = Math.min(def.w, def.h) * 0.30;
+        const badgeCx = def.x + badgeR + 0.7;
+        const badgeCy = def.y + badgeR + 0.7;
+        const badge = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        badge.setAttribute('cx', badgeCx);
+        badge.setAttribute('cy', badgeCy);
+        badge.setAttribute('r', badgeR);
+        badge.classList.add('table-badge');
+        if (groupInfo) badge.setAttribute('fill', groupInfo.color);
+        g.appendChild(badge);
 
         drawChairs(g, def);
 
+        // ── Número (dentro del badge) ────────────────────────────────
         const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        num.setAttribute('x', cx);
-        num.setAttribute('y', cy - 0.5);
+        num.setAttribute('x', badgeCx);
+        num.setAttribute('y', badgeCy);
         num.classList.add('table-number');
         num.textContent = def.n;
         g.appendChild(num);
 
+        // ── Capacidad (dcha-arriba de la tarjeta) ───────────────────
         const capLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        capLabel.setAttribute('x', cx);
-        capLabel.setAttribute('y', cy + 2.3);
+        capLabel.setAttribute('x', def.x + def.w - 0.8);
+        capLabel.setAttribute('y', def.y + 2.6);
         capLabel.classList.add('table-capacity');
-        capLabel.textContent = def.cap + 'p';
+        capLabel.setAttribute('text-anchor', 'end');
+        capLabel.textContent = (isAlta ? 'alta · ' : '') + def.cap + 'p';
         g.appendChild(capLabel);
 
-        // Blocked overlay: lock icon + diagonal stripes
+        // ── Bloqueada ────────────────────────────────────────────────
         if (td.blocked) {
             const lockText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             lockText.setAttribute('x', cx);
-            lockText.setAttribute('y', def.y + def.h - 1.2);
+            lockText.setAttribute('y', cy + 1);
             lockText.setAttribute('text-anchor', 'middle');
             lockText.setAttribute('font-size', '3');
             lockText.textContent = '🔒';
             g.appendChild(lockText);
         }
 
-        if (def.type === 'alta') {
-            const altaLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            altaLabel.setAttribute('x', cx);
-            altaLabel.setAttribute('y', def.y - 0.8);
-            altaLabel.classList.add('table-type-label');
-            altaLabel.textContent = 'alta';
-            g.appendChild(altaLabel);
-        }
-
+        // ── Reserva: nombre y hora ───────────────────────────────────
         if (td.reservation) {
             const r = td.reservation;
             const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            nameText.setAttribute('x', cx);
-            nameText.setAttribute('y', def.y + def.h + 2);
+            nameText.setAttribute('x', def.x + def.w - 0.8);
+            nameText.setAttribute('y', def.y + def.h - 3.2);
             nameText.classList.add('table-client-name');
-            nameText.textContent = r.client_name.length > 12
-                ? r.client_name.substring(0, 11) + '…'
+            nameText.setAttribute('text-anchor', 'end');
+            nameText.textContent = r.client_name.length > 10
+                ? r.client_name.substring(0, 9) + '…'
                 : r.client_name;
             g.appendChild(nameText);
 
             const timeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            timeText.setAttribute('x', cx);
-            timeText.setAttribute('y', def.y + def.h + 3.8);
+            timeText.setAttribute('x', def.x + def.w - 0.8);
+            timeText.setAttribute('y', def.y + def.h - 1.4);
             timeText.classList.add('table-time-label');
+            timeText.setAttribute('text-anchor', 'end');
             timeText.textContent = r.time + ' · ' + r.guests + 'p';
             g.appendChild(timeText);
         }
