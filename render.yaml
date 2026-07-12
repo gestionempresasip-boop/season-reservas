@@ -6,6 +6,7 @@ services:
     name: season-reservas
     runtime: python
     plan: standard
+    region: frankfurt   # EU Central — región más cercana a España que ofrece Render
     pythonVersion: "3.11.9"
 
     buildCommand: pip install -r requirements.txt
