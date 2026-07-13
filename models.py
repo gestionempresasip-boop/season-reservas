@@ -5,7 +5,10 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
 
-db = SQLAlchemy()
+# expire_on_commit=False: tras commit() SQLAlchemy NO expira los atributos ya
+# cargados, así que r.to_dict() no dispara un aluvión de SELECTs de recarga
+# contra la BD remota (Frankfurt). Es el mayor ahorro de latencia al guardar.
+db = SQLAlchemy(session_options={'expire_on_commit': False})
 
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'season-v9';
+const CACHE_NAME = 'season-v10';
 const STATIC_ASSETS = [
   '/static/css/style.css?v=33',
   '/static/css/pro.css?v=47',
   '/static/js/auth.js?v=4',
   '/static/js/app.js?v=34',
   '/static/js/floorplan.js?v=44',
-  '/static/js/reservations.js?v=29',
+  '/static/js/reservations.js?v=30',
   '/static/js/clients.js?v=24',
   '/static/js/waitlist.js?v=24',
   '/static/js/calendar.js?v=27',

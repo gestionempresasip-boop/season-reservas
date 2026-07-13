@@ -208,8 +208,9 @@ def create_reservation(data):
             db.session.add(client)
             db.session.flush()
 
-    # Primary table = first one
+    # Primary table = first requested id (find its already-loaded object)
     primary_table_id = table_ids[0] if table_ids else None
+    primary_table = next((t for t in tables if t.id == primary_table_id), None)
 
     reservation = Reservation(
         client_id=client.id if client else None,
@@ -226,9 +227,12 @@ def create_reservation(data):
         duration_minutes=duration,
     )
     db.session.add(reservation)
-    db.session.flush()
 
-    # Attach extra tables (already loaded above — no extra query)
+    # Populate relationships from already-loaded objects so the subsequent
+    # to_dict() needs ZERO extra queries (no lazy-load of table/extra_tables).
+    # No flush() here — the INSERT is folded into the single commit round-trip.
+    if primary_table is not None:
+        reservation.table = primary_table
     if tables:
         reservation.extra_tables = tables
 
@@ -242,6 +246,7 @@ def update_reservation(reservation_id, data):
 
     # Handle table changes
     table_ids = None
+    tables = None  # loaded once, reused for conflict/capacity check AND assignment
     if 'table_ids' in data or 'table_id' in data:
         table_ids = _resolve_table_ids(data)
 
@@ -266,7 +271,7 @@ def update_reservation(reservation_id, data):
                 raise ValueError(f'Mesa(s) ya reservada(s) a esa hora: {tables_str}')
 
             # Capacity check — same rule as create: up to +2 extra chairs per table
-            tables = Table.query.filter(Table.id.in_(table_ids)).all()
+            tables = Table.query.filter(Table.id.in_(table_ids)).all()  # reused below
             total_cap = sum(t.capacity for t in tables)
             max_with_extra = total_cap + 2 * len(tables)
             guests = int(data.get('guests', reservation.guests))
@@ -298,9 +303,13 @@ def update_reservation(reservation_id, data):
     if table_ids is not None:
         reservation.table_id = table_ids[0] if table_ids else None
         if table_ids:
-            tables = Table.query.filter(Table.id.in_(table_ids)).all()
+            # Reuse tables loaded during the capacity check (no second query)
+            if tables is None:
+                tables = Table.query.filter(Table.id.in_(table_ids)).all()
+            reservation.table = next((t for t in tables if t.id == reservation.table_id), None)
             reservation.extra_tables = tables
         else:
+            reservation.table = None
             reservation.extra_tables = []
 
     db.session.commit()

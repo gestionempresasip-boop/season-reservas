@@ -651,35 +651,83 @@ async function submitReservation(e) {
         duration_minutes: parseInt(document.getElementById('resDuration')?.value || 120),
     };
 
-    try {
-        let saved;
-        if (editId) {
-            saved = await apiPut(`/api/reservations/${editId}`, data);
-            showToast('Reserva actualizada', 'success');
-        } else {
-            saved = await apiPost('/api/reservations', data);
-            showToast(selectedTableIds.length > 1 ? `Reserva creada con ${selectedTableIds.length} mesas` : 'Reserva creada', 'success');
-        }
-        closeModal('modalReservation');
+    // ── Optimistic INSTANT UI ────────────────────────────────────────────
+    // Update the list, close the modal and toast BEFORE the network request,
+    // so saving feels instant regardless of DB round-trip latency (Frankfurt).
+    // The real server object reconciles the row on success; on error we roll
+    // back and tell the user it was NOT saved.
+    const optimistic = _buildOptimisticReservation(data, editId);
+    const tempId = optimistic.id;
+    const prevAll = allReservations.slice();
 
-        // ── Optimistic update: inject saved reservation into local list immediately ──
-        // No waiting for socket/refreshAll — the API already returned the full object.
-        if (saved) {
-            if (editId) {
-                const idx = allReservations.findIndex(r => r.id === saved.id);
-                if (idx >= 0) allReservations[idx] = saved; else allReservations.push(saved);
-            } else {
-                allReservations.push(saved);
-            }
-            _dayData[saved.shift] = allReservations.filter(r => r.shift === saved.shift);
-            applyDayFilters();
-        }
+    if (editId) {
+        const idx = allReservations.findIndex(r => r.id === Number(editId));
+        if (idx >= 0) allReservations[idx] = optimistic; else allReservations.push(optimistic);
+    } else {
+        allReservations.push(optimistic);
+    }
+    _dayData[optimistic.shift] = allReservations.filter(r => r.shift === optimistic.shift);
+    applyDayFilters();
+    closeModal('modalReservation');
+    showToast(
+        editId ? 'Reserva actualizada'
+               : (selectedTableIds.length > 1 ? `Reserva creada con ${selectedTableIds.length} mesas` : 'Reserva creada'),
+        'success'
+    );
+
+    try {
+        const saved = editId
+            ? await apiPut(`/api/reservations/${editId}`, data)
+            : await apiPost('/api/reservations', data);
+
+        // Reconcile the optimistic row with the authoritative server object
+        const i = allReservations.findIndex(r => r.id === tempId);
+        if (i >= 0) allReservations[i] = saved; else allReservations.push(saved);
+        _dayData[saved.shift] = allReservations.filter(r => r.shift === saved.shift);
+        applyDayFilters();
 
         // Sync floor plan in background (no-await)
         if (typeof loadFloorPlan === 'function') loadFloorPlan();
     } catch (error) {
-        showToast(error.message || 'Error al guardar reserva', 'error');
+        // Roll back the optimistic change — the reservation was NOT saved
+        allReservations = prevAll;
+        _dayData.comida = allReservations.filter(r => r.shift === 'comida');
+        _dayData.cena = allReservations.filter(r => r.shift === 'cena');
+        applyDayFilters();
+        if (typeof loadFloorPlan === 'function') loadFloorPlan();
+        showToast(error.message || 'No se pudo guardar la reserva', 'error');
     }
+}
+
+/** Build a provisional reservation object from the form data + table cache,
+ *  shaped like the API's to_dict() so the list can render it instantly. */
+function _buildOptimisticReservation(data, editId) {
+    const ids = (data.table_ids || []).map(Number);
+    const infos = ids.map(id => (typeof getTableInfo === 'function' ? getTableInfo(id) : null)).filter(Boolean);
+    const numbers = infos.map(i => i.number);
+    const totalCap = infos.reduce((s, i) => s + (i.capacity || 0), 0);
+    const base = editId ? (allReservations.find(r => r.id === Number(editId)) || {}) : {};
+    return {
+        ...base,
+        id: editId ? Number(editId) : `tmp_${Date.now()}`,
+        _optimistic: true,
+        client_name: data.client_name,
+        client_phone: data.client_phone,
+        date: data.date,
+        shift: data.shift,
+        time: data.time,
+        guests: data.guests,
+        source: data.source,
+        notes: data.notes,
+        status: base.status || 'confirmed',
+        table_id: ids[0] || null,
+        table_ids: ids,
+        table_number: numbers[0] || null,
+        table_numbers: numbers,
+        is_grouped: ids.length > 1,
+        total_capacity: totalCap,
+        duration_minutes: data.duration_minutes,
+    };
 }
 
 // ── Quick Actions ───────────────────────────────
