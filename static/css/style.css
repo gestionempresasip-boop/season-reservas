@@ -518,29 +518,29 @@ body {
     text-anchor: middle;
 }
 
-/* ── Status: confirmed / reservada (ROJO CHILLÓN) ── */
+/* ── Status: confirmed / reservada (CORAL CHILLÓN) ── */
 .table-group.status-confirmed .table-rect,
 .table-group.status-confirmed .table-rect-round,
 .table-group.status-confirmed .table-circle,
 .table-group.status-confirmed .table-alta {
-    fill: #ff1e1e;
-    stroke: #a80000;
+    fill: #ff3d24;
+    stroke: #b32410;
     stroke-width: 0.6;
 }
-.table-group.status-confirmed .table-badge { fill: #b30000; }
-.table-group.status-confirmed .table-capacity { fill: #b30000; }
+.table-group.status-confirmed .table-badge { fill: #b32410; }
+.table-group.status-confirmed .table-capacity { fill: #b32410; }
 
-/* ── Status: seated / sentada (AZUL CHILLÓN) ── */
+/* ── Status: seated / sentada (TURQUESA CHILLÓN) ── */
 .table-group.status-seated .table-rect,
 .table-group.status-seated .table-rect-round,
 .table-group.status-seated .table-circle,
 .table-group.status-seated .table-alta {
-    fill: #1a6dff;
-    stroke: #0a3aa8;
+    fill: #05c7ae;
+    stroke: #00695c;
     stroke-width: 0.6;
 }
-.table-group.status-seated .table-badge { fill: #0a3aa8; }
-.table-group.status-seated .table-capacity { fill: #0a3aa8; }
+.table-group.status-seated .table-badge { fill: #00695c; }
+.table-group.status-seated .table-capacity { fill: #00695c; }
 
 .chair {
     fill: var(--teal);
