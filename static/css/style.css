@@ -518,29 +518,29 @@ body {
     text-anchor: middle;
 }
 
-/* ── Status: confirmed (naranja) ── */
+/* ── Status: confirmed / reservada (ROJO CHILLÓN) ── */
 .table-group.status-confirmed .table-rect,
 .table-group.status-confirmed .table-rect-round,
 .table-group.status-confirmed .table-circle,
 .table-group.status-confirmed .table-alta {
-    fill: #fff7ed;
-    stroke: #c2410c;
-    stroke-width: 0.5;
+    fill: #ff1e1e;
+    stroke: #a80000;
+    stroke-width: 0.6;
 }
-.table-group.status-confirmed .table-badge { fill: #f97316; }
-.table-group.status-confirmed .table-capacity { fill: #c2410c; }
+.table-group.status-confirmed .table-badge { fill: #b30000; }
+.table-group.status-confirmed .table-capacity { fill: #b30000; }
 
-/* ── Status: seated (verde) ── */
+/* ── Status: seated / sentada (AZUL CHILLÓN) ── */
 .table-group.status-seated .table-rect,
 .table-group.status-seated .table-rect-round,
 .table-group.status-seated .table-circle,
 .table-group.status-seated .table-alta {
-    fill: #f0fdf4;
-    stroke: #15803d;
-    stroke-width: 0.5;
+    fill: #1a6dff;
+    stroke: #0a3aa8;
+    stroke-width: 0.6;
 }
-.table-group.status-seated .table-badge { fill: #22c55e; }
-.table-group.status-seated .table-capacity { fill: #15803d; }
+.table-group.status-seated .table-badge { fill: #0a3aa8; }
+.table-group.status-seated .table-capacity { fill: #0a3aa8; }
 
 .chair {
     fill: var(--teal);
