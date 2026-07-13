@@ -81,6 +81,13 @@ class Table(db.Model):
     svg_w = db.Column(db.Float, nullable=True)
     svg_h = db.Column(db.Float, nullable=True)
 
+    # Shape: 'rect' (rectangular), 'square' (cuadrada), 'circle' (redonda)
+    shape = db.Column(db.String(10), default='rect')
+    # Sofá para esquineras sin sillas: tipo '' | 'straight' (recto) | 'L' (esquinero)
+    sofa_type = db.Column(db.String(10), default='')
+    # Posición del sofá: recto -> top|bottom|left|right ; L -> tl|tr|bl|br
+    sofa_side = db.Column(db.String(10), default='')
+
     # Status
     active = db.Column(db.Boolean, default=True, index=True)
     blocked = db.Column(db.Boolean, default=False, nullable=False)
@@ -100,6 +107,9 @@ class Table(db.Model):
             'pos_y': self.pos_y,
             'svg_w': self.svg_w,
             'svg_h': self.svg_h,
+            'shape': self.shape or 'rect',
+            'sofa_type': self.sofa_type or '',
+            'sofa_side': self.sofa_side or '',
             'active': self.active,
             'blocked': self.blocked,
         }

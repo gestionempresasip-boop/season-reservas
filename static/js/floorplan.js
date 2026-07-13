@@ -173,6 +173,9 @@ let _editCapTableNumber = null;
 let _editCapValue = 4;
 let _editWValue = 10;
 let _editHValue = 8;
+let _editShape = 'rect';       // 'rect' | 'square' | 'circle'
+let _editSofaType = '';        // '' | 'straight' | 'L'
+let _editSofaSide = '';        // recto: top|bottom|left|right ; L: tl|tr|bl|br
 
 function toggleEditMode() {
     _editMode = !_editMode;
@@ -190,7 +193,11 @@ async function saveEditPlan() {
     // Save to localStorage (fast cache)
     const patches = {};
     TABLE_DEFS.forEach(def => {
-        patches[def.n] = { x: def.x, y: def.y, w: def.w, h: def.h, cap: def.cap, type: def.type };
+        patches[def.n] = {
+            x: def.x, y: def.y, w: def.w, h: def.h, cap: def.cap, type: def.type,
+            shape: def.shape || 'rect',
+            sofa_type: def.sofa_type || '', sofa_side: def.sofa_side || '',
+        };
     });
     localStorage.setItem('season_table_defs', JSON.stringify(patches));
     showToast('Guardando plano…', 'success');
@@ -384,6 +391,9 @@ function openCapacityEditor(tableNumber) {
     _editCapValue = currentCap;
     _editWValue   = currentW;
     _editHValue   = currentH;
+    _editShape    = (td?.shape ?? def.shape) || 'rect';
+    _editSofaType = (td?.sofa_type ?? def.sofa_type) || '';
+    _editSofaSide = (td?.sofa_side ?? def.sofa_side) || '';
 
     const title   = document.getElementById('tableDetailTitle');
     const content = document.getElementById('tableDetailContent');
@@ -426,6 +436,9 @@ function openCapacityEditor(tableNumber) {
             </div>
         </div>
 
+        <!-- Forma y sofá -->
+        <div id="shapeSofaControls" style="margin-bottom:14px"></div>
+
         <!-- Tamaño -->
         <div style="margin-bottom:18px">
             <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:10px">Tamaño de la mesa</label>
@@ -457,6 +470,65 @@ function openCapacityEditor(tableNumber) {
         </div>
     `;
     openModal('modalTableDetail');
+    _renderShapeSofaControls();
+}
+
+// ── Forma y sofá (controles del editor de mesa) ──────────────────
+function _pill(active) {
+    return `flex:1;text-align:center;padding:8px 5px;border:2px solid ${active ? '#1a8a7d' : '#e5e7eb'};`
+        + `border-radius:10px;cursor:pointer;background:${active ? '#f0fdf9' : '#fff'};`
+        + `font-size:12px;font-weight:600;color:${active ? '#1a8a7d' : '#374151'};user-select:none`;
+}
+
+function _renderShapeSofaControls() {
+    const cont = document.getElementById('shapeSofaControls');
+    if (!cont) return;
+    const shapes = [['rect', '▭ Rectangular'], ['square', '◻ Cuadrada'], ['circle', '⬤ Redonda']];
+    const sofas  = [['', 'Sin sofá'], ['straight', 'Sofá recto'], ['L', 'Esquinero L']];
+    const sides  = _editSofaType === 'L'
+        ? [['tl', 'Sup-izq'], ['tr', 'Sup-dcha'], ['bl', 'Inf-izq'], ['br', 'Inf-dcha']]
+        : [['top', 'Arriba'], ['bottom', 'Abajo'], ['left', 'Izquierda'], ['right', 'Derecha']];
+
+    const shapeBtns = shapes.map(([v, lbl]) =>
+        `<div style="${_pill(_editShape === v)}" onclick="_setEditShape('${v}')">${lbl}</div>`).join('');
+    const sofaBtns = sofas.map(([v, lbl]) =>
+        `<div style="${_pill(_editSofaType === v)}" onclick="_setEditSofaType('${v}')">${lbl}</div>`).join('');
+    const sideBtns = _editSofaType
+        ? `<div style="display:flex;gap:6px;margin-top:8px">` + sides.map(([v, lbl]) =>
+            `<div style="${_pill(_editSofaSide === v)}" onclick="_setEditSofaSide('${v}')">${lbl}</div>`).join('') + `</div>`
+        : '';
+
+    cont.innerHTML = `
+        <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Forma</label>
+        <div style="display:flex;gap:6px;margin-bottom:14px">${shapeBtns}</div>
+        <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Sofá (esquineras sin sillas)</label>
+        <div style="display:flex;gap:6px">${sofaBtns}</div>
+        ${sideBtns}
+    `;
+}
+
+function _setEditShape(s) {
+    _editShape = s;
+    const def = TABLE_DEFS.find(d => d.n === _editCapTableNumber);
+    if (def) { def.shape = s; renderFloorPlan(); }
+    _renderShapeSofaControls();
+}
+
+function _setEditSofaType(t) {
+    _editSofaType = t;
+    if (t === '') _editSofaSide = '';
+    else if (t === 'straight' && !['top', 'bottom', 'left', 'right'].includes(_editSofaSide)) _editSofaSide = 'bottom';
+    else if (t === 'L' && !['tl', 'tr', 'bl', 'br'].includes(_editSofaSide)) _editSofaSide = 'bl';
+    const def = TABLE_DEFS.find(d => d.n === _editCapTableNumber);
+    if (def) { def.sofa_type = _editSofaType; def.sofa_side = _editSofaSide; renderFloorPlan(); }
+    _renderShapeSofaControls();
+}
+
+function _setEditSofaSide(s) {
+    _editSofaSide = s;
+    const def = TABLE_DEFS.find(d => d.n === _editCapTableNumber);
+    if (def) { def.sofa_side = s; renderFloorPlan(); }
+    _renderShapeSofaControls();
 }
 
 function editCapChange(delta) {
@@ -507,12 +579,16 @@ async function saveCapacityEdit(tableNumber) {
     def.type = newType;
     def.w    = newW;
     def.h    = newH;
+    def.shape = _editShape;
+    def.sofa_type = _editSofaType;
+    def.sofa_side = _editSofaSide;
 
     if (tableDataMap[tableNumber]) {
         tableDataMap[tableNumber] = {
             ...tableDataMap[tableNumber],
             capacity: newCap, table_type: newType,
             svg_w: newW, svg_h: newH,
+            shape: _editShape, sofa_type: _editSofaType, sofa_side: _editSofaSide,
         };
     }
 
@@ -527,6 +603,7 @@ async function saveCapacityEdit(tableNumber) {
             await apiPut(`/api/tables/${tableId}`, {
                 capacity: newCap, table_type: newType,
                 svg_w: newW, svg_h: newH,
+                shape: _editShape, sofa_type: _editSofaType, sofa_side: _editSofaSide,
             });
             showToast(`Mesa ${tableNumber} actualizada ✓`, 'success');
         } catch (e) {
@@ -563,6 +640,9 @@ async function loadFloorPlan() {
             if (t.capacity) def.cap = t.capacity;
             if (t.table_type) def.type = t.table_type;
             if (t.zone) def.zone = t.zone;
+            if (t.shape) def.shape = t.shape;
+            def.sofa_type = t.sofa_type || '';
+            def.sofa_side = t.sofa_side || '';
         } else {
             // Table exists in DB but not in TABLE_DEFS (created via UI) → add it
             const sz = _tableSizeFromCap(t.capacity || 4);
@@ -570,7 +650,8 @@ async function loadFloorPlan() {
                 n: t.number, cap: t.capacity || 4,
                 type: t.table_type || 'normal', zone: t.zone || 'sp',
                 x: t.pos_x || 50, y: t.pos_y || 50,
-                shape: 'rect', w: sz.w, h: sz.h,
+                shape: t.shape || 'rect', w: t.svg_w || sz.w, h: t.svg_h || sz.h,
+                sofa_type: t.sofa_type || '', sofa_side: t.sofa_side || '',
             });
         }
     });
@@ -916,6 +997,14 @@ function renderFloorPlan() {
 
     TABLE_DEFS.forEach(def => {
         const td = tableDataMap[def.n] || {};
+        // Fuera de modo edición, la forma/sofá de la BD manda (el primario
+        // /api/dashboard no fusiona en TABLE_DEFS). En edición NO se fusiona
+        // para no pisar el preview en vivo que ya escribe en def.
+        if (!_editMode) {
+            if (td.shape) def.shape = td.shape;
+            if (td.sofa_type !== undefined) def.sofa_type = td.sofa_type;
+            if (td.sofa_side !== undefined) def.sofa_side = td.sofa_side;
+        }
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.classList.add('table-group');
         if (td.status && td.status !== 'free') {
@@ -937,24 +1026,38 @@ function renderFloorPlan() {
         const isAlta = def.type === 'alta';
         if (isAlta) g.classList.add('shape-alta');
 
-        // ── Tarjeta (rect) ──────────────────────────────────────────
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', def.x);
-        rect.setAttribute('y', def.y);
-        rect.setAttribute('width', def.w);
-        rect.setAttribute('height', def.h);
-        rect.setAttribute('rx', '1.2');
-        rect.classList.add(isAlta ? 'table-alta' : 'table-rect');
+        // ── Sofá (detrás de la tarjeta, para esquineras sin sillas) ──
+        if (def.sofa_type) drawSofa(g, def);
+
+        // ── Tarjeta (según forma: rect / cuadrada / redonda) ────────
+        const shp = def.shape || 'rect';
+        let rect;
+        if (shp === 'circle') {
+            rect = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            rect.setAttribute('cx', cx);
+            rect.setAttribute('cy', cy);
+            rect.setAttribute('rx', def.w / 2);
+            rect.setAttribute('ry', def.h / 2);
+            rect.classList.add(isAlta ? 'table-alta' : 'table-circle');
+        } else {
+            rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', def.x);
+            rect.setAttribute('y', def.y);
+            rect.setAttribute('width', def.w);
+            rect.setAttribute('height', def.h);
+            rect.setAttribute('rx', shp === 'square' ? '0.6' : '1.2');
+            rect.classList.add(isAlta ? 'table-alta' : 'table-rect');
+        }
         if (groupInfo) {
             rect.setAttribute('stroke', groupInfo.color);
             rect.setAttribute('stroke-width', '0.5');
         }
         g.appendChild(rect);
 
-        // ── Badge circular (esquina sup-izq) ────────────────────────
+        // ── Badge circular (esquina sup-izq; centrado si es redonda) ─
         const badgeR = Math.min(def.w, def.h) * 0.30;
-        const badgeCx = def.x + badgeR + 0.7;
-        const badgeCy = def.y + badgeR + 0.7;
+        const badgeCx = shp === 'circle' ? cx : def.x + badgeR + 0.7;
+        const badgeCy = shp === 'circle' ? cy : def.y + badgeR + 0.7;
         const badge = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         badge.setAttribute('cx', badgeCx);
         badge.setAttribute('cy', badgeCy);
@@ -963,7 +1066,7 @@ function renderFloorPlan() {
         if (groupInfo) badge.setAttribute('fill', groupInfo.color);
         g.appendChild(badge);
 
-        drawChairs(g, def);
+        if (!def.sofa_type) drawChairs(g, def);
 
         // ── Número (dentro del badge) ────────────────────────────────
         const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1084,6 +1187,43 @@ function renderFloorPlan() {
         });
 
         svg.appendChild(g);
+    });
+}
+
+function drawSofa(g, def) {
+    // Dibuja un sofá (banqueta) recto o esquinero en L, en el lado/esquina elegido.
+    const { x, y, w, h } = def;
+    const th = 2.4;    // grosor del sofá
+    const gap = 0.2;   // separación de la mesa
+    const rects = [];
+    const R = (rx, ry, rw, rh) => rects.push([rx, ry, rw, rh]);
+
+    if (def.sofa_type === 'straight') {
+        const side = def.sofa_side || 'bottom';
+        if (side === 'top')         R(x, y - th - gap, w, th);
+        else if (side === 'bottom') R(x, y + h + gap, w, th);
+        else if (side === 'left')   R(x - th - gap, y, th, h);
+        else if (side === 'right')  R(x + w + gap, y, th, h);
+    } else {
+        // Esquinero en L: dos banquetas que se unen en una esquina
+        const corner = def.sofa_side || 'bl';
+        const armW = w * 0.62, armH = h * 0.62;
+        const rightX = x + w - armW, bottomY = y + h - armH;
+        if (corner === 'tl')      { R(x, y - th - gap, armW, th);       R(x - th - gap, y, th, armH); }
+        else if (corner === 'tr') { R(rightX, y - th - gap, armW, th);  R(x + w + gap, y, th, armH); }
+        else if (corner === 'bl') { R(x, y + h + gap, armW, th);        R(x - th - gap, bottomY, th, armH); }
+        else if (corner === 'br') { R(rightX, y + h + gap, armW, th);   R(x + w + gap, bottomY, th, armH); }
+    }
+
+    rects.forEach(([rx, ry, rw, rh]) => {
+        const s = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        s.setAttribute('x', rx);
+        s.setAttribute('y', ry);
+        s.setAttribute('width', rw);
+        s.setAttribute('height', rh);
+        s.setAttribute('rx', '0.8');
+        s.classList.add('table-sofa');
+        g.appendChild(s);
     });
 }
 

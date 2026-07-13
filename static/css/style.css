@@ -477,6 +477,10 @@ body {
     transition: fill 0.2s, stroke 0.2s;
 }
 .table-rect-round { fill: var(--white); stroke: var(--teal); stroke-width: 0.35; }
+.table-circle { fill: var(--white); stroke: var(--teal); stroke-width: 0.35; transition: fill 0.2s, stroke 0.2s; }
+
+/* ── Sofá / banqueta (esquineras sin sillas) ── */
+.table-sofa { fill: #a1887f; stroke: #6d4c41; stroke-width: 0.25; }
 
 /* ── Mesa alta (amarillo/dorado) ── */
 .table-alta {

@@ -284,9 +284,13 @@ def create_table():
     table_type = data.get('table_type', 'normal')
     pos_x = float(data.get('pos_x', 50))
     pos_y = float(data.get('pos_y', 50))
+    shape = data.get('shape', 'rect')
+    if shape not in ('rect', 'square', 'circle'):
+        shape = 'rect'
     t = Table(
         number=number, capacity=capacity, zone=zone,
         table_type=table_type, pos_x=pos_x, pos_y=pos_y,
+        shape=shape, sofa_type='', sofa_side='',
         active=True, blocked=False,
     )
     db.session.add(t)
@@ -336,6 +340,12 @@ def update_table(tid):
         t.svg_w = float(data['svg_w']) if data['svg_w'] is not None else None
     if 'svg_h' in data:
         t.svg_h = float(data['svg_h']) if data['svg_h'] is not None else None
+    if 'shape' in data and data['shape'] in ('rect', 'square', 'circle'):
+        t.shape = data['shape']
+    if 'sofa_type' in data and data['sofa_type'] in ('', 'straight', 'L'):
+        t.sofa_type = data['sofa_type']
+    if 'sofa_side' in data:
+        t.sofa_side = (data['sofa_side'] or '')[:10]
     if 'blocked' in data:
         t.blocked = bool(data['blocked'])
     db.session.commit()
@@ -505,7 +515,9 @@ def dashboard():
     tables = res_svc.get_table_status(target, shift)
     slim_tables = [
         {'id': t['id'], 'number': t['number'], 'status': t['status'],
-         'blocked': t.get('blocked', False), 'reservation': t.get('reservation')}
+         'blocked': t.get('blocked', False), 'reservation': t.get('reservation'),
+         'shape': t.get('shape', 'rect'),
+         'sofa_type': t.get('sofa_type', ''), 'sofa_side': t.get('sofa_side', '')}
         for t in tables if 'id' in t
     ]
 

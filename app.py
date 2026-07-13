@@ -235,6 +235,9 @@ def _initialize_app():
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_w FLOAT',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_h FLOAT',
+                    "ALTER TABLE tables ADD COLUMN IF NOT EXISTS shape VARCHAR(10) DEFAULT 'rect'",
+                    "ALTER TABLE tables ADD COLUMN IF NOT EXISTS sofa_type VARCHAR(10) DEFAULT ''",
+                    "ALTER TABLE tables ADD COLUMN IF NOT EXISTS sofa_side VARCHAR(10) DEFAULT ''",
                 ]:
                     try:
                         db.session.execute(_text(sql))
