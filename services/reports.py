@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 from sqlalchemy import func, case, extract
 from models import db, Reservation, Client, Table
 

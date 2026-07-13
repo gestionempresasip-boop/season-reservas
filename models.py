@@ -2,7 +2,7 @@
 Database models for Season restaurant reservation system.
 """
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, date
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # expire_on_commit=False: tras commit() SQLAlchemy NO expira los atributos ya

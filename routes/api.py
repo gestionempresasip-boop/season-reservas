@@ -12,7 +12,7 @@ from services import reports as rpt_svc
 from models import db, Reservation, Waitlist, Table
 from utils.validators import ReservationCreate, ReservationUpdate, ClientCreate, ClientUpdate
 from utils.decorators import validate_and_handle, handle_errors
-from utils.errors import error_response, success_response
+from utils.errors import error_response
 
 
 def _send_email_async(app, reservation_data):
@@ -886,8 +886,6 @@ def export_report_xlsx():
     # ── Styles ──────────────────────────────────
     header_font = Font(bold=True, color='FFFFFF', size=11)
     header_fill = PatternFill('solid', fgColor='1A8A7D')
-    subheader_fill = PatternFill('solid', fgColor='E8F5F3')
-    subheader_font = Font(bold=True, color='1A8A7D', size=10)
     center = Alignment(horizontal='center', vertical='center')
     thin = Side(style='thin', color='D1D5DB')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)

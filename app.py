@@ -321,7 +321,7 @@ def _initialize_app():
     @_app_instance.before_request
     def before_request_handler():
         """Before request handler - initialize DB and handle errors."""
-        from flask import request as flask_request, jsonify
+        from flask import request as flask_request
         # Skip health check - it should always work
         if flask_request.path == '/api/health':
             return
@@ -386,7 +386,6 @@ class LazyFlaskApp:
 
     def __call__(self, environ, start_response):
         """WSGI callable - initialize app on first call."""
-        global _app_instance
         if _app_instance is None:
             _initialize_app()
         # Delegate to the real Flask app

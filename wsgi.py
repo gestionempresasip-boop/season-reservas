@@ -2,7 +2,6 @@
 WSGI entry point for Render deployment - handles lazy app initialization.
 This is necessary to prevent database connections during build phase.
 """
-import sys
 import os
 
 # Global app instance - initialized on first request only

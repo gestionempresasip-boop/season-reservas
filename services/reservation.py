@@ -3,7 +3,7 @@ Reservation service - business logic for reservations.
 Supports combined reservations (multiple tables per reservation).
 """
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from models import db, Reservation, Table, Client
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
