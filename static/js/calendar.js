@@ -446,6 +446,3 @@ async function agendaBulkDelete() {
 }
 
 // Legacy
-function viewDayReservationDetail(resId) {
-    if (typeof openEditReservation === 'function') openEditReservation(resId);
-}

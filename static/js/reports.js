@@ -724,8 +724,3 @@ async function sendWaTest() {
 
 document.getElementById('waTestInput')?.addEventListener('keydown', e => { if (e.key==='Enter') sendWaTest(); });
 
-function copyWaLink() {
-    const link = document.getElementById('waLink')?.textContent;
-    if (!link) return;
-    navigator.clipboard.writeText(link).then(() => showToast('Enlace copiado', 'success')).catch(() => prompt('Copia:', link));
-}

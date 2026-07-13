@@ -951,44 +951,6 @@ function handleTableClick(tableNumber) {
 let _qoGuests = 2;
 let _qoTableNumber = null;
 
-function showQuickOccupyPopover(tableNumber) {
-    _qoTableNumber = tableNumber;
-    const td = tableDataMap[tableNumber];
-    if (!td) return;
-
-    _qoGuests = Math.min(2, td.capacity || 2);
-
-    // Position popover near the table in the SVG
-    const svg = document.getElementById('floorplanSVG');
-    const def = (typeof TABLE_DEFS !== 'undefined') ? TABLE_DEFS.find(d => d.n === tableNumber) : null;
-    let popX = 50, popY = 50; // defaults (%)
-
-    if (def && svg) {
-        const svgRect = svg.getBoundingClientRect();
-        const vb = svg.viewBox.baseVal;
-        // Convert SVG coords to page coords
-        const svgCenterX = def.x + def.w / 2;
-        const svgCenterY = def.y + def.h / 2;
-        const scaleX = svgRect.width / vb.width;
-        const scaleY = svgRect.height / vb.height;
-        const pageX = svgRect.left + svgCenterX * scaleX;
-        const pageY = svgRect.top + svgCenterY * scaleY + window.scrollY;
-
-        const pop = document.getElementById('quickOccupyPopover');
-        pop.style.left = (pageX - 90) + 'px';
-        pop.style.top = (pageY - 140) + 'px';
-        pop.style.right = 'auto';
-    }
-
-    renderQuickOccupyPopover(td);
-    const pop = document.getElementById('quickOccupyPopover');
-    pop.classList.remove('hidden');
-
-    // Close on outside click
-    setTimeout(() => {
-        document.addEventListener('click', _closeQoOnOutside, { once: false });
-    }, 10);
-}
 
 function _closeQoOnOutside(e) {
     const pop = document.getElementById('quickOccupyPopover');
@@ -1822,9 +1784,6 @@ async function moveReservationToTable(resId, newTableId, newTableNumber, oldTabl
 }
 
 // Keep old name as alias for backward compatibility with any remaining calls
-async function moveWalkInToTable(resId, newTableId, newTableNumber, oldTableNumber) {
-    return moveReservationToTable(resId, newTableId, newTableNumber, oldTableNumber);
-}
 
 // ── Quick Free Table ────────────────────────────
 
@@ -1918,10 +1877,6 @@ function deleteFromPlan(resId, name) {
     }, '🗑️');
 }
 
-function editReservationFromPlan(resId) {
-    closeModal('modalTableDetail');
-    openEditReservation(resId);
-}
 
 function newReservationForTable(tableNumber, tableId) {
     closeModal('modalTableDetail');
@@ -1932,15 +1887,7 @@ function newReservationForTable(tableNumber, tableId) {
 
 let _ieGuests = 1;
 
-function ieGuestsChange(delta, hardMax) {
-    _ieGuests = Math.max(1, Math.min(hardMax, _ieGuests + delta));
-    const el = document.getElementById('ieGuestsVal');
-    if (el) el.textContent = _ieGuests;
-}
 
-async function saveInlineReservation(resId, tableNumber) {
-    return saveInlineReservationV2(resId, tableNumber);
-}
 
 async function saveInlineReservationV2(resId, tableNumber) {
     const name   = document.getElementById(`ieResName_${resId}`)?.value.trim();

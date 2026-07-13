@@ -877,16 +877,6 @@ async function assignReservationToTable(reservationId, tableId) {
     refreshAll();
 }
 
-async function assignReservationToTables(reservationId, tableIds) {
-    try {
-        await apiPut(`/api/reservations/${reservationId}/assign-tables`, { table_ids: tableIds });
-        showToast(`${tableIds.length} mesas asignadas`, 'success');
-    } catch (e) {
-        showToast(e.message || 'Error al asignar mesas', 'error');
-    }
-    if (typeof loadFloorPlan === 'function') loadFloorPlan();
-    refreshAll();
-}
 
 // ── Client Autocomplete ─────────────────────────
 

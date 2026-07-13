@@ -77,14 +77,6 @@ function updateSyncStatus(isConnected) {
     }
 }
 
-function refreshActiveView() {
-    const active = document.querySelector('.view.active');
-    if (!active) return;
-    if (active.id === 'viewReservas') loadReservationsList();
-    if (active.id === 'viewEspera') loadWaitlist();
-    if (active.id === 'viewClientes') loadClientsList();
-    if (active.id === 'viewAgenda') loadCalendar();
-}
 
 // Debounced refresh — coalesces rapid socket events and post-action syncs
 let _refreshTimer = null;

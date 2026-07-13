@@ -1,15 +1,15 @@
-const CACHE_NAME = 'season-v15';
+const CACHE_NAME = 'season-v16';
 const STATIC_ASSETS = [
   '/static/css/style.css?v=43',
   '/static/css/pro.css?v=49',
   '/static/js/auth.js?v=4',
   '/static/js/app.js?v=34',
-  '/static/js/floorplan.js?v=55',
-  '/static/js/reservations.js?v=30',
+  '/static/js/floorplan.js?v=56',
+  '/static/js/reservations.js?v=31',
   '/static/js/clients.js?v=24',
   '/static/js/waitlist.js?v=24',
-  '/static/js/calendar.js?v=27',
-  '/static/js/reports.js?v=34',
+  '/static/js/calendar.js?v=28',
+  '/static/js/reports.js?v=35',
   '/static/images/season-logo.png',
 ];
 
