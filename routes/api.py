@@ -517,7 +517,9 @@ def dashboard():
         {'id': t['id'], 'number': t['number'], 'status': t['status'],
          'blocked': t.get('blocked', False), 'reservation': t.get('reservation'),
          'shape': t.get('shape', 'rect'),
-         'sofa_type': t.get('sofa_type', ''), 'sofa_side': t.get('sofa_side', '')}
+         'sofa_type': t.get('sofa_type', ''), 'sofa_side': t.get('sofa_side', ''),
+         'table_type': t.get('table_type', 'normal'),
+         'svg_w': t.get('svg_w'), 'svg_h': t.get('svg_h')}
         for t in tables if 'id' in t
     ]
 

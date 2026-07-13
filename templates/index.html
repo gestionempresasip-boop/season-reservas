@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=42">
+    <link rel="stylesheet" href="/static/css/style.css?v=43">
     <link rel="stylesheet" href="/static/css/pro.css?v=49">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -156,6 +156,9 @@
                 <span>✏️ Arrastra mesas · toca para editar · ✕ rojo para eliminar</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                     <button class="btn-secondary btn-sm" style="background:#f0fdf9;border-color:#1a8a7d;color:#1a8a7d;font-weight:600" onclick="showAddTableModal()">➕ Nueva mesa</button>
+                    <button class="btn-secondary btn-sm" id="btnMultiSelect" onclick="toggleMultiSelectMode()">☑ Selección múltiple</button>
+                    <button class="btn-primary btn-sm hidden" id="btnBulkEdit" onclick="openBulkEditModal()">✏️ Editar (0)</button>
+                    <button class="btn-secondary btn-sm hidden" id="btnBulkClear" onclick="clearMultiSelect()">Quitar selección</button>
                     <button class="btn-primary btn-sm" onclick="saveEditPlan()">💾 Guardar plano</button>
                     <button class="btn-secondary btn-sm" onclick="resetEditPlan()">↺ Restaurar</button>
                     <button class="btn-secondary btn-sm" onclick="toggleEditMode()">✕ Salir</button>
@@ -893,7 +896,7 @@
     </script>
     <script src="/static/js/auth.js?v=4"></script>
     <script src="/static/js/app.js?v=42"></script>
-    <script src="/static/js/floorplan.js?v=54"></script>
+    <script src="/static/js/floorplan.js?v=55"></script>
     <script src="/static/js/reservations.js?v=30"></script>
     <script src="/static/js/clients.js?v=24"></script>
     <script src="/static/js/waitlist.js?v=24"></script>

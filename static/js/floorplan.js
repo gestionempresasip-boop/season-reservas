@@ -177,6 +177,18 @@ let _editShape = 'rect';       // 'rect' | 'square' | 'circle'
 let _editSofaType = '';        // '' | 'straight' | 'L'
 let _editSofaSide = '';        // recto: top|bottom|left|right ; L: tl|tr|bl|br
 
+// ── Selección múltiple en modo edición (editar varias mesas a la vez) ──
+let _multiSelectMode = false;
+let _multiSelected = new Set();  // números de mesa seleccionados
+// Staging de la edición en lote ('' o 'keep' = sin cambios)
+let _bulkShape = '';
+let _bulkType = '';
+let _bulkSofa = 'keep';        // 'keep' | '' | 'straight' | 'L'
+let _bulkSofaSide = 'bottom';
+let _bulkApplySize = false;
+let _bulkW = 10;
+let _bulkH = 8;
+
 function toggleEditMode() {
     _editMode = !_editMode;
     const btn = document.getElementById('btnEditPlan');
@@ -185,7 +197,15 @@ function toggleEditMode() {
     if (bar) bar.classList.toggle('hidden', !_editMode);
     const svg = document.getElementById('floorplanSVG');
     if (svg) svg.style.cursor = _editMode ? 'grab' : '';
-    if (!_editMode) _editDrag = null;
+    if (!_editMode) {
+        _editDrag = null;
+        // Al salir de edición, apaga la selección múltiple
+        _multiSelectMode = false;
+        _multiSelected.clear();
+        const msBtn = document.getElementById('btnMultiSelect');
+        if (msBtn) msBtn.classList.remove('active');
+        _updateMultiBar();
+    }
     renderFloorPlan();
 }
 
@@ -529,6 +549,182 @@ function _setEditSofaSide(s) {
     const def = TABLE_DEFS.find(d => d.n === _editCapTableNumber);
     if (def) { def.sofa_side = s; renderFloorPlan(); }
     _renderShapeSofaControls();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SELECCIÓN MÚLTIPLE + EDICIÓN EN LOTE
+// ══════════════════════════════════════════════════════════════════
+
+function toggleMultiSelectMode() {
+    _multiSelectMode = !_multiSelectMode;
+    if (!_multiSelectMode) _multiSelected.clear();
+    const btn = document.getElementById('btnMultiSelect');
+    if (btn) btn.classList.toggle('active', _multiSelectMode);
+    _updateMultiBar();
+    renderFloorPlan();
+}
+
+function _toggleMultiSelect(n) {
+    if (_multiSelected.has(n)) _multiSelected.delete(n);
+    else _multiSelected.add(n);
+    _updateMultiBar();
+    renderFloorPlan();
+}
+
+function clearMultiSelect() {
+    _multiSelected.clear();
+    _updateMultiBar();
+    renderFloorPlan();
+}
+
+function _updateMultiBar() {
+    const btnEdit = document.getElementById('btnBulkEdit');
+    const btnClear = document.getElementById('btnBulkClear');
+    const n = _multiSelected.size;
+    if (btnEdit) {
+        btnEdit.classList.toggle('hidden', !_multiSelectMode);
+        btnEdit.textContent = `✏️ Editar (${n})`;
+        btnEdit.disabled = n === 0;
+        btnEdit.style.opacity = n === 0 ? '0.5' : '1';
+    }
+    if (btnClear) btnClear.classList.toggle('hidden', !_multiSelectMode || n === 0);
+}
+
+function openBulkEditModal() {
+    if (_multiSelected.size === 0) return;
+    // Reset staging cada vez
+    _bulkShape = ''; _bulkType = ''; _bulkSofa = 'keep'; _bulkSofaSide = 'bottom';
+    _bulkApplySize = false; _bulkW = 10; _bulkH = 8;
+
+    const title = document.getElementById('tableDetailTitle');
+    const content = document.getElementById('tableDetailContent');
+    title.textContent = `✏️ Editar ${_multiSelected.size} mesas`;
+    content.innerHTML = `
+        <div style="background:#eff6ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#1e40af;margin-bottom:14px">
+            Se aplicará solo a lo que cambies. Deja "Sin cambios" en lo que no quieras tocar.
+        </div>
+        <div id="bulkControls"></div>
+        <div style="display:flex;gap:8px;margin-top:18px">
+            <button class="btn-primary" style="flex:1;padding:12px" onclick="applyBulkEdit()">💾 Aplicar a ${_multiSelected.size} mesas</button>
+            <button class="btn-secondary" style="flex:1" onclick="closeModal('modalTableDetail')">Cancelar</button>
+        </div>
+    `;
+    openModal('modalTableDetail');
+    _renderBulkControls();
+}
+
+function _renderBulkControls() {
+    const cont = document.getElementById('bulkControls');
+    if (!cont) return;
+    const lbl = 'font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:8px';
+    const shapes = [['', 'Sin cambios'], ['rect', 'Rectangular'], ['square', 'Cuadrada'], ['circle', 'Redonda']];
+    const types  = [['', 'Sin cambios'], ['normal', 'Normal'], ['alta', 'Alta']];
+    const sofas  = [['keep', 'Sin cambios'], ['', 'Sin sofá'], ['straight', 'Recto'], ['L', 'Esquinero L']];
+    const sides  = _bulkSofa === 'L'
+        ? [['tl', 'Sup-izq'], ['tr', 'Sup-dcha'], ['bl', 'Inf-izq'], ['br', 'Inf-dcha']]
+        : [['top', 'Arriba'], ['bottom', 'Abajo'], ['left', 'Izquierda'], ['right', 'Derecha']];
+    const mk = (arr, cur, fn) => arr.map(([v, l]) =>
+        `<div style="${_pill(cur === v)}" onclick="${fn}('${v}')">${l}</div>`).join('');
+    const sideRow = (_bulkSofa === 'straight' || _bulkSofa === 'L')
+        ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${mk(sides, _bulkSofaSide, '_setBulkSofaSide')}</div>` : '';
+
+    cont.innerHTML = `
+        <label style="${lbl}">Forma</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${mk(shapes, _bulkShape, '_setBulkShape')}</div>
+        <label style="${lbl}">Altura (tipo)</label>
+        <div style="display:flex;gap:6px;margin-bottom:14px">${mk(types, _bulkType, '_setBulkType')}</div>
+        <label style="${lbl}">Sofá</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${mk(sofas, _bulkSofa, '_setBulkSofa')}</div>
+        ${sideRow}
+        <div style="margin-top:16px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:600;cursor:pointer">
+                <input type="checkbox" ${_bulkApplySize ? 'checked' : ''} onchange="_toggleBulkSize(this.checked)"> Aplicar el mismo tamaño a todas
+            </label>
+            <div style="${_bulkApplySize ? '' : 'display:none'};margin-top:10px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <span style="font-size:12px;color:#6b7280;min-width:38px">Ancho</span>
+                    <input type="range" min="5" max="30" step="1" value="${_bulkW}" style="flex:1;accent-color:#1a8a7d"
+                        oninput="_bulkW=+this.value;document.getElementById('bulkWVal').textContent=this.value">
+                    <span id="bulkWVal" style="font-size:13px;font-weight:700;color:#1a8a7d;min-width:20px">${_bulkW}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:12px;color:#6b7280;min-width:38px">Alto</span>
+                    <input type="range" min="5" max="30" step="1" value="${_bulkH}" style="flex:1;accent-color:#1a8a7d"
+                        oninput="_bulkH=+this.value;document.getElementById('bulkHVal').textContent=this.value">
+                    <span id="bulkHVal" style="font-size:13px;font-weight:700;color:#1a8a7d;min-width:20px">${_bulkH}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _setBulkShape(v) { _bulkShape = v; _renderBulkControls(); }
+function _setBulkType(v)  { _bulkType = v; _renderBulkControls(); }
+function _setBulkSofa(v) {
+    _bulkSofa = v;
+    if (v === 'straight' && !['top', 'bottom', 'left', 'right'].includes(_bulkSofaSide)) _bulkSofaSide = 'bottom';
+    if (v === 'L' && !['tl', 'tr', 'bl', 'br'].includes(_bulkSofaSide)) _bulkSofaSide = 'bl';
+    _renderBulkControls();
+}
+function _setBulkSofaSide(v) { _bulkSofaSide = v; _renderBulkControls(); }
+function _toggleBulkSize(on) { _bulkApplySize = on; _renderBulkControls(); }
+
+async function applyBulkEdit() {
+    const nums = [..._multiSelected];
+    if (nums.length === 0) return;
+    closeModal('modalTableDetail');
+
+    const saves = [];
+    nums.forEach(n => {
+        const def = TABLE_DEFS.find(d => d.n === n);
+        if (!def) return;
+        const payload = {};
+        if (_bulkShape) { def.shape = _bulkShape; payload.shape = _bulkShape; }
+        if (_bulkType)  { def.type = _bulkType;  payload.table_type = _bulkType; }
+        if (_bulkSofa !== 'keep') {
+            def.sofa_type = _bulkSofa;
+            def.sofa_side = _bulkSofa ? _bulkSofaSide : '';
+            payload.sofa_type = def.sofa_type;
+            payload.sofa_side = def.sofa_side;
+        }
+        if (_bulkApplySize) {
+            def.w = _bulkW; def.h = _bulkH;
+            payload.svg_w = _bulkW; payload.svg_h = _bulkH;
+        }
+        if (tableDataMap[n]) {
+            tableDataMap[n] = {
+                ...tableDataMap[n],
+                shape: def.shape, sofa_type: def.sofa_type, sofa_side: def.sofa_side,
+                table_type: def.type, svg_w: def.w, svg_h: def.h,
+            };
+        }
+        const id = tableDataMap[n]?.id;
+        if (id && Object.keys(payload).length) {
+            saves.push(apiPut(`/api/tables/${id}`, payload).catch(() => {}));
+        }
+    });
+
+    _mergeLocalPatch(nums);   // que sobreviva a la recarga (copia local)
+    renderFloorPlan();
+    showToast(`${nums.length} mesas actualizadas ✓`, 'success');
+    await Promise.all(saves);
+}
+
+// Guarda en localStorage el estado actual de las mesas indicadas (fusiona con lo existente)
+function _mergeLocalPatch(nums) {
+    try {
+        const patches = JSON.parse(localStorage.getItem('season_table_defs') || '{}');
+        nums.forEach(n => {
+            const def = TABLE_DEFS.find(d => d.n === n);
+            if (!def) return;
+            patches[n] = {
+                x: def.x, y: def.y, w: def.w, h: def.h, cap: def.cap, type: def.type,
+                shape: def.shape || 'rect',
+                sofa_type: def.sofa_type || '', sofa_side: def.sofa_side || '',
+            };
+        });
+        localStorage.setItem('season_table_defs', JSON.stringify(patches));
+    } catch (e) {}
 }
 
 function editCapChange(delta) {
@@ -949,7 +1145,8 @@ function renderFloorPlan() {
             if (wasDrag) {
                 renderFloorPlan(); // redraw after reposition
             } else if (tableNum != null) {
-                openCapacityEditor(tableNum); // simple tap/click → edit capacity
+                if (_multiSelectMode) _toggleMultiSelect(tableNum); // tap → seleccionar
+                else openCapacityEditor(tableNum);                  // tap → editar una
             }
         };
         svg.onmousemove   = onMove;
@@ -1004,6 +1201,9 @@ function renderFloorPlan() {
             if (td.shape) def.shape = td.shape;
             if (td.sofa_type !== undefined) def.sofa_type = td.sofa_type;
             if (td.sofa_side !== undefined) def.sofa_side = td.sofa_side;
+            if (td.table_type) def.type = td.table_type;
+            if (td.svg_w) def.w = td.svg_w;
+            if (td.svg_h) def.h = td.svg_h;
         }
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.classList.add('table-group');
@@ -1017,6 +1217,9 @@ function renderFloorPlan() {
         }
         if (groupMode && groupSelectedTables.includes(def.n)) {
             g.classList.add('group-selected');
+        }
+        if (_multiSelectMode && _multiSelected.has(def.n)) {
+            g.classList.add('multi-selected');
         }
         g.dataset.tableNumber = def.n;
         g.dataset.tableId = td.id || '';

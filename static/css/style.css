@@ -482,6 +482,17 @@ body {
 /* ── Sofá / banqueta (esquineras sin sillas) ── */
 .table-sofa { fill: #a1887f; stroke: #6d4c41; stroke-width: 0.25; }
 
+/* ── Selección múltiple en modo edición ── */
+.table-group.multi-selected .table-rect,
+.table-group.multi-selected .table-rect-round,
+.table-group.multi-selected .table-circle,
+.table-group.multi-selected .table-alta {
+    stroke: #2563eb;
+    stroke-width: 1;
+}
+.table-group.multi-selected { filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.8)); }
+#btnMultiSelect.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
 /* ── Mesa alta (amarillo/dorado) ── */
 .table-alta {
     fill: #fef3c7;
