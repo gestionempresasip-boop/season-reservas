@@ -17,9 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocketIO();
     updateDateDisplay();
     refreshAll();
-    // Auto-refresh: desktop 3min, mobile 5min (backend now caches 15-30s so polling less is fine)
+    // Auto-refresh: desktop 3min, mobile 5min (backend now caches 15-30s so polling less is fine).
+    // Visibility-aware: no gastamos peticiones mientras la pestaña está oculta, y al
+    // volver a primer plano refrescamos al instante en vez de esperar al siguiente tick.
     const refreshInterval = isMobile ? 300000 : 180000;
-    setInterval(refreshAll, refreshInterval);
+    setInterval(() => { if (!document.hidden) refreshAll(); }, refreshInterval);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) debouncedRefresh(200);
+    });
 });
 
 // ── SocketIO Tiempo Real ────────────────────────
