@@ -1,14 +1,14 @@
-const CACHE_NAME = 'season-v16';
+const CACHE_NAME = 'season-v17';
 const STATIC_ASSETS = [
   '/static/css/style.css?v=43',
-  '/static/css/pro.css?v=49',
+  '/static/css/pro.css?v=50',
   '/static/js/auth.js?v=4',
-  '/static/js/app.js?v=34',
+  '/static/js/app.js?v=43',
   '/static/js/floorplan.js?v=56',
   '/static/js/reservations.js?v=31',
   '/static/js/clients.js?v=24',
   '/static/js/waitlist.js?v=24',
-  '/static/js/calendar.js?v=28',
+  '/static/js/calendar.js?v=29',
   '/static/js/reports.js?v=35',
   '/static/images/season-logo.png',
 ];
@@ -40,18 +40,20 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first for static assets (CSS, JS, images, fonts)
+  // Stale-while-revalidate for static assets (CSS, JS, images, fonts):
+  // serve cache instantly, but always refetch in the background so a changed
+  // file propagates on the next load even if its ?v= string wasn't bumped.
   if (url.pathname.startsWith('/static/') || url.hostname === 'fonts.gstatic.com') {
     event.respondWith(
       caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(response => {
+        const network = fetch(event.request).then(response => {
           if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }
           return response;
-        });
+        }).catch(() => cached);
+        return cached || network;
       })
     );
     return;
