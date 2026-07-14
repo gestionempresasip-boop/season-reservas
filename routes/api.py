@@ -4,6 +4,7 @@ REST API for Season restaurant reservation system.
 import csv
 import io
 import threading
+from functools import wraps
 from flask import Blueprint, request, jsonify, current_app, Response, session
 from datetime import date, timedelta, datetime
 from services import reservation as res_svc
@@ -51,6 +52,35 @@ def notify(date_str=None, shift=None):
     from app import broadcast_update, cache_invalidate
     cache_invalidate(date_str, shift)
     broadcast_update()
+
+
+def cached_report(max_age=60):
+    """Cache a GET report endpoint by its full path+querystring.
+
+    Report data changes only when reservations change, and notify()/
+    cache_invalidate() already purges every key starting with 'reports'.
+    So a short TTL is safe and cuts repeated aggregation queries against the
+    remote Postgres when the Informes view switches modes (hoy/semana/mes)
+    or several devices open reports at once.
+    """
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            from app import cache_get, cache_set
+            key = f'reports:{request.full_path}'
+            cached = cache_get(key, max_age=max_age)
+            if cached is not None:
+                return current_app.response_class(cached, mimetype='application/json')
+            resp = fn(*args, **kwargs)
+            try:
+                r = resp[0] if isinstance(resp, tuple) else resp
+                if getattr(r, 'status_code', 200) == 200:
+                    cache_set(key, r.get_data(as_text=True))
+            except Exception:
+                pass
+            return resp
+        return wrapper
+    return decorator
 
 
 # ── Reservations ──────────────────────────────────────────
@@ -664,6 +694,7 @@ def whatsapp_config():
 # ── Reports ───────────────────────────────────────────────
 
 @api.route('/reports/occupancy', methods=['GET'])
+@cached_report()
 def report_occupancy():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -671,6 +702,7 @@ def report_occupancy():
 
 
 @api.route('/reports/popular-tables', methods=['GET'])
+@cached_report()
 def report_popular_tables():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -678,6 +710,7 @@ def report_popular_tables():
 
 
 @api.route('/reports/sources', methods=['GET'])
+@cached_report()
 def report_sources():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -685,6 +718,7 @@ def report_sources():
 
 
 @api.route('/reports/no-shows', methods=['GET'])
+@cached_report()
 def report_no_shows():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -692,12 +726,14 @@ def report_no_shows():
 
 
 @api.route('/reports/summary', methods=['GET'])
+@cached_report(max_age=30)
 def report_summary():
     d = request.args.get('date', date.today().isoformat())
     return jsonify(rpt_svc.daily_summary(date.fromisoformat(d)))
 
 
 @api.route('/reports/weekly', methods=['GET'])
+@cached_report()
 def report_weekly():
     from_d = request.args.get('from', date.today().isoformat())
     return jsonify(rpt_svc.weekly_trend(date.fromisoformat(from_d)))
@@ -724,6 +760,7 @@ def report_range():
 
 
 @api.route('/reports/new-vs-returning', methods=['GET'])
+@cached_report()
 def report_new_vs_returning():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -731,6 +768,7 @@ def report_new_vs_returning():
 
 
 @api.route('/reports/week-comparison', methods=['GET'])
+@cached_report()
 def report_week_comparison():
     # Monday of the requested week (default: current week)
     from_d = request.args.get('from', date.today().isoformat())
@@ -741,6 +779,7 @@ def report_week_comparison():
 
 
 @api.route('/reports/clients', methods=['GET'])
+@cached_report()
 def report_clients():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -749,6 +788,7 @@ def report_clients():
 
 
 @api.route('/reports/zones', methods=['GET'])
+@cached_report()
 def report_zones():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -756,6 +796,7 @@ def report_zones():
 
 
 @api.route('/reports/hours', methods=['GET'])
+@cached_report()
 def report_hours():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -763,6 +804,7 @@ def report_hours():
 
 
 @api.route('/reports/kpi', methods=['GET'])
+@cached_report()
 def report_kpi():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -770,6 +812,7 @@ def report_kpi():
 
 
 @api.route('/reports/heatmap', methods=['GET'])
+@cached_report()
 def report_heatmap():
     from_d = request.args.get('from', (date.today() - timedelta(days=90)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())
@@ -777,6 +820,7 @@ def report_heatmap():
 
 
 @api.route('/reports/trend', methods=['GET'])
+@cached_report()
 def report_trend():
     from_d = request.args.get('from', (date.today() - timedelta(days=30)).isoformat())
     to_d = request.args.get('to', date.today().isoformat())

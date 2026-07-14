@@ -322,30 +322,33 @@ def weekly_occupancy(from_date, to_date):
 
 def new_vs_returning(from_date, to_date):
     """Count new clients (first reservation ever) vs returning in the period."""
+    active = ['confirmed', 'seated', 'completed']
+
     # Clients with reservations in this period
     period_clients = db.session.query(
         Reservation.client_id,
     ).filter(
         Reservation.date.between(from_date, to_date),
-        Reservation.status.in_(['confirmed', 'seated', 'completed']),
+        Reservation.status.in_(active),
         Reservation.client_id.isnot(None),
     ).distinct().all()
 
     period_ids = {r.client_id for r in period_clients}
-    new_count = 0
-    returning_count = 0
 
-    for cid in period_ids:
-        # Check if they had any reservation BEFORE this period
-        prior = Reservation.query.filter(
-            Reservation.client_id == cid,
+    # Which of those clients already had an active reservation BEFORE the period?
+    # Single set query instead of one query per client (was an N+1 over remote PG).
+    if period_ids:
+        prior_rows = db.session.query(Reservation.client_id).filter(
+            Reservation.client_id.in_(period_ids),
             Reservation.date < from_date,
-            Reservation.status.in_(['confirmed', 'seated', 'completed']),
-        ).first()
-        if prior:
-            returning_count += 1
-        else:
-            new_count += 1
+            Reservation.status.in_(active),
+        ).distinct().all()
+        prior_ids = {r.client_id for r in prior_rows}
+    else:
+        prior_ids = set()
+
+    returning_count = len(period_ids & prior_ids)
+    new_count = len(period_ids - prior_ids)
 
     # Walk-ins (no client_id) — always "new"
     walkins = db.session.query(func.count(Reservation.id)).filter(

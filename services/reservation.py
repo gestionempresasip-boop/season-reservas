@@ -363,22 +363,16 @@ def get_table_status(target_date, shift):
     tables = Table.query.filter_by(active=True).all()
     active = get_active_reservations_for_shift(target_date, shift)
 
-    # Build table_id -> reservation map (use first reservation for that table)
-    table_to_res = {}
+    # Single pass: map each table_id → all its reservations, and collect the
+    # ones with no table assigned. (Previously two loops + an unused map.)
+    table_to_all_res = {}
     unassigned = []
     for r in active:
-        if not r.table_id and not (r.extra_tables or []):
+        tids = r.all_table_ids()
+        if not tids:
             unassigned.append(r)
             continue
-        # Put reservation against ALL tables it occupies
-        for tid in r.all_table_ids():
-            if tid not in table_to_res:
-                table_to_res[tid] = r
-
-    # Build full list: table_id → all reservations
-    table_to_all_res = {}
-    for r in active:
-        for tid in r.all_table_ids():
+        for tid in tids:
             table_to_all_res.setdefault(tid, []).append(r)
 
     result = []
