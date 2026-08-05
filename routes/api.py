@@ -448,7 +448,13 @@ def quick_occupy(tid):
 @api.route('/tables/<int:tid>/quick-free', methods=['PUT'])
 @handle_errors
 def quick_free(tid):
-    """Free a table — marks the active seated reservation as completed."""
+    """Free a table — marks the active SEATED reservation as completed.
+
+    Prefers a seated sitting over a merely confirmed (future) one so that on a
+    table with two sittings we never complete the wrong reservation. The floor
+    plan frees walk-ins by reservation id (/reservations/<id>/complete); this
+    endpoint is kept as a defensive fallback.
+    """
     data = request.json or {}
     shift = data.get('shift', 'comida')
     today = date.today()
@@ -457,7 +463,12 @@ def quick_free(tid):
         table_id=tid,
         date=today,
         shift=shift,
-    ).filter(Reservation.status.in_(['confirmed', 'seated'])).first()
+    ).filter(
+        Reservation.status.in_(['confirmed', 'seated'])
+    ).order_by(
+        # 'seated' > 'confirmed' alphabetically → desc() puts seated first
+        Reservation.status.desc()
+    ).first()
 
     if r:
         r.status = 'completed'

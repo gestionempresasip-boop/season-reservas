@@ -1563,7 +1563,7 @@ function openTableDetail(tableNumber) {
                 html += `<button class="btn-danger btn-sm" onclick="cancelFromPlan(${r.id})">✕ Cancelar</button>`;
             } else if (r.status === 'seated') {
                 if (isQuickOccupy) {
-                    html += `<button class="btn-free-table btn-sm" onclick="quickFreeTable(${td.id}, ${tableNumber})">🔓 Liberar</button>`;
+                    html += `<button class="btn-free-table btn-sm" onclick="quickFreeTable(${r.id}, ${tableNumber})">🔓 Liberar</button>`;
                     html += `<button class="btn-secondary btn-sm" onclick="showMoveTablePicker(${r.id}, ${tableNumber})">🔀 Mesa</button>`;
                     html += `<button class="btn-danger btn-sm" onclick="cancelWalkIn(${r.id}, ${tableNumber})">✕</button>`;
                 } else {
@@ -1787,7 +1787,7 @@ async function moveReservationToTable(resId, newTableId, newTableNumber, oldTabl
 
 // ── Quick Free Table ────────────────────────────
 
-async function quickFreeTable(tableId, tableNumber) {
+async function quickFreeTable(resId, tableNumber) {
     closeModal('modalTableDetail');
 
     // Optimistic: mark free immediately
@@ -1797,7 +1797,9 @@ async function quickFreeTable(tableId, tableNumber) {
     renderFloorPlan();
 
     try {
-        await apiPut(`/api/tables/${tableId}/quick-free`, { shift: currentShift });
+        // Free by reservation ID (not by table/date/shift lookup): so we always
+        // complete THIS walk-in, never a different sitting on the same table.
+        await apiPut(`/api/reservations/${resId}/complete`);
         showToast(`Mesa ${tableNumber} liberada`, 'success');
         await refreshAll();
     } catch (e) {
