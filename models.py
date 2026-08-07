@@ -194,8 +194,9 @@ class Reservation(db.Model):
     __tablename__ = 'reservations'
 
     __table_args__ = (
-        # Constraint: guests must be between 1 and 14
-        db.CheckConstraint('guests >= 1 AND guests <= 14'),
+        # Sin tope superior de comensales: solo exigimos que sea >= 1.
+        # (El tope anterior de 14 se elimina en la migración de app.init_db.)
+        db.CheckConstraint('guests >= 1'),
         # Composite index for common queries
         db.Index('idx_reservation_date_shift', 'date', 'shift'),
         db.Index('idx_reservation_date_shift_status', 'date', 'shift', 'status'),

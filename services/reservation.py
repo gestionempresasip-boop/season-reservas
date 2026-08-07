@@ -187,12 +187,8 @@ def create_reservation(data):
             tables_str = ', '.join(str(c['conflicting_reservation'].get('table_number') or c['table_id']) for c in conflicts[:3])
             raise ValueError(f'Mesa(s) ya reservada(s) a esa hora: {tables_str}')
 
-        # Capacity check — allows up to 2 extra chairs per table
-        total_cap = sum(t.capacity for t in tables)
-        guests = int(data['guests'])
-        max_with_extra = total_cap + 2 * len(tables)
-        if max_with_extra < guests:
-            raise ValueError(f'Capacidad insuficiente: {total_cap}p (máx. {max_with_extra}p con sillas extra) para {guests} comensales')
+        # Sin límite de aforo por mesa: se permiten tantos comensales como se
+        # quieran en una mesa (antes se bloqueaba si superaba capacidad + 2 sillas).
 
     # Find or create client
     client = None
@@ -270,16 +266,8 @@ def update_reservation(reservation_id, data):
                 tables_str = ', '.join(str(c['conflicting_reservation'].get('table_number') or c['table_id']) for c in conflicts[:3])
                 raise ValueError(f'Mesa(s) ya reservada(s) a esa hora: {tables_str}')
 
-            # Capacity check — same rule as create: up to +2 extra chairs per table
-            tables = Table.query.filter(Table.id.in_(table_ids)).all()  # reused below
-            total_cap = sum(t.capacity for t in tables)
-            max_with_extra = total_cap + 2 * len(tables)
-            guests = int(data.get('guests', reservation.guests))
-            if max_with_extra < guests:
-                raise ValueError(
-                    f'Capacidad insuficiente: {total_cap}p (máx. {max_with_extra}p con sillas extra) '
-                    f'para {guests} comensales'
-                )
+            # Sin límite de aforo por mesa (antes se bloqueaba si superaba
+            # capacidad + 2 sillas). `tables` se carga más abajo si hace falta.
 
     if 'time' in data:
         reservation.time = data['time']

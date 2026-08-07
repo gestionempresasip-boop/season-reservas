@@ -231,6 +231,21 @@ def _initialize_app():
 
                 # ─── Column migrations ───
                 for sql in [
+                    # Eliminar el tope antiguo de comensales (guests <= 14). La constraint
+                    # se creó sin nombre explícito, así que la localizamos dinámicamente
+                    # por su definición y la soltamos (permite grupos de cualquier tamaño).
+                    """
+                    DO $$
+                    DECLARE r record;
+                    BEGIN
+                      FOR r IN SELECT conname FROM pg_constraint
+                               WHERE conrelid = 'reservations'::regclass AND contype = 'c'
+                                 AND pg_get_constraintdef(oid) ILIKE '%guests%14%'
+                      LOOP
+                        EXECUTE 'ALTER TABLE reservations DROP CONSTRAINT ' || quote_ident(r.conname);
+                      END LOOP;
+                    END $$;
+                    """,
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_w FLOAT',

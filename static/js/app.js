@@ -506,17 +506,27 @@ function zoneName(zone) {
     return map[zone] || zone || '—';
 }
 
-// Actualizar fecha automaticamente cada dia
+// Avanzar la fecha SOLO cuando cruza la medianoche real, y únicamente si el
+// usuario estaba viendo "hoy". Antes comparaba contra currentDate, así que si
+// navegabas a otro día te devolvía a hoy en menos de un minuto. Ahora se
+// respeta el día que hayas seleccionado: si navegas a otra fecha, se queda ahí.
+let _appToday = currentDate;
 setInterval(() => {
-    const newDate = (() => {
+    const realToday = (() => {
         const d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     })();
-    if (newDate !== currentDate) {
-        currentDate = newDate;
-        document.getElementById('datePicker').value = currentDate;
-        updateDateDisplay();
-        refreshAll();
+    if (realToday !== _appToday) {
+        const wasViewingToday = (currentDate === _appToday);
+        _appToday = realToday;
+        // Solo saltamos al nuevo día si el usuario seguía en el día de hoy.
+        if (wasViewingToday) {
+            currentDate = realToday;
+            const picker = document.getElementById('datePicker');
+            if (picker) picker.value = currentDate;
+            updateDateDisplay();
+            refreshAll();
+        }
     }
 }, 60000); // Verificar cada minuto
 

@@ -293,7 +293,7 @@ function openNewReservationModal(preselectedTableIds) {
     if (selectedTableIds.length > 0) {
         const totalCap = selectedTableIds.reduce((sum, tid) => sum + getTableCapacity(tid), 0);
         if (totalCap > 0) {
-            document.getElementById('resGuests').value = Math.min(totalCap, 14);
+            document.getElementById('resGuests').value = totalCap;
         }
     }
 
@@ -596,7 +596,7 @@ function changeGuests(delta) {
     const input = document.getElementById('resGuests');
     if (!input) return;
     const current = parseInt(input.value) || 2;
-    const next = Math.min(20, Math.max(1, current + delta));
+    const next = Math.max(1, current + delta);  // sin tope máximo de comensales
     input.value = next;
     loadAvailableTables(false);
 }

@@ -996,9 +996,8 @@ function renderQuickOccupyPopover(td) {
 }
 
 function qoChangeGuests(delta) {
-    const td = tableDataMap[_qoTableNumber];
-    const cap = td ? td.capacity : 14;
-    _qoGuests = Math.max(1, Math.min(cap, _qoGuests + delta));
+    // Sin tope de aforo: se pueden sentar tantos comensales como se quiera.
+    _qoGuests = Math.max(1, _qoGuests + delta);
     const el = document.getElementById('qoGuestsVal');
     if (el) el.textContent = _qoGuests;
 }
@@ -1542,7 +1541,7 @@ function openTableDetail(tableNumber) {
                             <span id="ieGuestsVal_${r.id}" data-v="${r.guests}"
                                 style="font-size:18px;font-weight:800;color:#1a8a7d;min-width:24px;text-align:center">${r.guests}</span>
                             <button class="qo-cnt-btn" style="width:32px;height:32px;font-size:16px"
-                                onclick="document.getElementById('ieGuestsVal_${r.id}').dataset.v=Math.min(${Math.min(tdCap+4,14)},+(document.getElementById('ieGuestsVal_${r.id}').dataset.v||${r.guests})+1);document.getElementById('ieGuestsVal_${r.id}').textContent=document.getElementById('ieGuestsVal_${r.id}').dataset.v">+</button>
+                                onclick="document.getElementById('ieGuestsVal_${r.id}').dataset.v=+(document.getElementById('ieGuestsVal_${r.id}').dataset.v||${r.guests})+1;document.getElementById('ieGuestsVal_${r.id}').textContent=document.getElementById('ieGuestsVal_${r.id}').dataset.v">+</button>
                             <span style="font-size:12px;color:#9ca3af">/ ${tdCap}p aforo</span>
                         </div>
                     </div>

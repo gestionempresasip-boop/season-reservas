@@ -18,7 +18,9 @@ WHATSAPP_NUMBER = os.getenv('WHATSAPP_NUMBER', '689135630')
 # ═══════════════════════════════════════════════════════════════════════════
 
 MAX_CAPACITY = get_total_capacity()  # 114 (computed from tables)
-MAX_GUESTS_PER_RESERVATION = 14
+# Sin límite práctico de comensales por reserva (se permite cualquier grupo).
+# Se mantiene un techo alto solo para descartar entradas absurdas/erróneas.
+MAX_GUESTS_PER_RESERVATION = 999
 MIN_GUESTS = 1
 
 # ═══════════════════════════════════════════════════════════════════════════
