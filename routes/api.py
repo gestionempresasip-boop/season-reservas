@@ -966,6 +966,76 @@ def export_reservations_csv():
     )
 
 
+@api.route('/export/backup.xlsx', methods=['GET'])
+def export_backup_xlsx():
+    """Copia de seguridad: TODAS las reservas de la base de datos en un Excel
+    de una sola hoja (histórico completo). Un clic, sin rango de fechas."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io as _io
+
+    status_map = {'confirmed': 'Confirmada', 'seated': 'Sentada', 'completed': 'Completada',
+                  'cancelled': 'Cancelada', 'no_show': 'No Show', 'pending': 'Pendiente'}
+    source_map = {'phone': 'Teléfono', 'whatsapp': 'WhatsApp', 'walk_in': 'Walk-in', 'web': 'Web'}
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Reservas'
+    ws.sheet_view.showGridLines = False
+
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill('solid', fgColor='1A8A7D')
+    center = Alignment(horizontal='center', vertical='center')
+    thin = Side(style='thin', color='D1D5DB')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    today_str = date.today().isoformat()
+    ws['A1'].value = f'COPIA DE SEGURIDAD — TODAS LAS RESERVAS · generado {today_str}'
+    ws['A1'].font = Font(bold=True, size=13, color='111827')
+    ws.merge_cells('A1:M1')
+    ws['A1'].alignment = center
+    ws.row_dimensions[1].height = 28
+
+    headers = ['ID', 'Fecha', 'Turno', 'Hora', 'Cliente', 'Teléfono',
+               'Comensales', 'Mesa(s)', 'Estado', 'Origen', 'Duración', 'Notas', 'Creada']
+    for i, h in enumerate(headers, 1):
+        c = ws.cell(row=2, column=i, value=h)
+        c.font = header_font; c.fill = header_fill; c.alignment = center; c.border = border
+    ws.row_dimensions[2].height = 20
+    ws.freeze_panes = 'A3'  # cabecera fija al hacer scroll
+
+    items = Reservation.query.order_by(Reservation.date, Reservation.time).all()
+    for idx, r in enumerate(items, 3):
+        nums = r.all_table_numbers()
+        row_data = [
+            r.id, r.date.isoformat(), (r.shift or '').capitalize(), r.time,
+            r.client_name, r.client_phone or '',
+            r.guests, ' + '.join(str(n) for n in nums) if nums else 'Sin mesa',
+            status_map.get(r.status, r.status), source_map.get(r.source, r.source or ''),
+            f"{r.duration_minutes or 120} min", r.notes or '',
+            r.created_at.strftime('%d/%m/%Y %H:%M') if r.created_at else ''
+        ]
+        for j, val in enumerate(row_data, 1):
+            cell = ws.cell(row=idx, column=j, value=val)
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+            if idx % 2 == 0:
+                cell.fill = PatternFill('solid', fgColor='F9FAFB')
+
+    for i, w in enumerate([6, 12, 10, 8, 22, 14, 11, 12, 12, 12, 10, 24, 16], 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=copia_reservas_season_{today_str}.xlsx'}
+    )
+
+
 @api.route('/export/report.xlsx', methods=['GET'])
 def export_report_xlsx():
     """Export a full analytics report as Excel (.xlsx) with multiple sheets."""

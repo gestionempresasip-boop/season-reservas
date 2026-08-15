@@ -289,7 +289,8 @@
                     </div>
                 </div>
                 <div class="day-view-actions">
-                    <button class="btn-secondary btn-sm" onclick="exportReservationsCSV()" title="Exportar a CSV/Excel">📥 Exportar</button>
+                    <button class="btn-secondary btn-sm" onclick="downloadBackupXlsx(this)" title="Descarga un Excel con TODAS las reservas (copia de seguridad)">🛟 Copia de seguridad</button>
+                    <button class="btn-secondary btn-sm" onclick="exportReservationsCSV()" title="Exportar un rango de fechas a CSV">📥 Exportar</button>
                     <button class="btn-secondary btn-sm" id="btnSelectMode" onclick="toggleSelectMode()">☑ Seleccionar</button>
                     <button class="btn-primary" onclick="guardedNewReservation()">+ Nueva Reserva</button>
                 </div>
@@ -904,9 +905,9 @@
     </script>
     <!-- defer: descarga en paralelo sin bloquear el parseo; ejecutan en orden tras el HTML -->
     <script defer src="/static/js/auth.js?v=4"></script>
-    <script defer src="/static/js/app.js?v=45"></script>
+    <script defer src="/static/js/app.js?v=46"></script>
     <script defer src="/static/js/floorplan.js?v=63"></script>
-    <script defer src="/static/js/reservations.js?v=32"></script>
+    <script defer src="/static/js/reservations.js?v=33"></script>
     <script defer src="/static/js/clients.js?v=24"></script>
     <script defer src="/static/js/waitlist.js?v=24"></script>
     <script defer src="/static/js/calendar.js?v=29"></script>

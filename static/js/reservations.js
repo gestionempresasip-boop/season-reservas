@@ -1170,3 +1170,30 @@ function exportReservationsCSV() {
     if (!to) return;
     window.location.href = `/api/export/reservations.csv?from=${from}&to=${to}`;
 }
+
+// Copia de seguridad: descarga un Excel con TODAS las reservas (histórico
+// completo). Descarga autenticada vía blob para poder avisar si falla.
+async function downloadBackupXlsx(btn) {
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando…'; }
+    try {
+        const resp = await fetch('/api/export/backup.xlsx', { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const today = new Date().toISOString().split('T')[0];
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `copia_reservas_season_${today}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        if (typeof showToast === 'function') showToast('Copia de seguridad descargada', 'success');
+    } catch (e) {
+        if (typeof showToast === 'function') showToast('No se pudo generar la copia', 'error');
+        else alert('No se pudo generar la copia de seguridad');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+}
