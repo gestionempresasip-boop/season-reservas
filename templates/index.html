@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=44">
+    <link rel="stylesheet" href="/static/css/style.css?v=45">
     <link rel="stylesheet" href="/static/css/pro.css?v=50">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -216,15 +216,15 @@
                     <div class="fp-res-panel-header">
                         <h3 class="fp-res-panel-title">Pendientes de sentar</h3>
                     </div>
-                    <div class="fp-res-shift-section" id="fpResComida">
-                        <div class="fp-res-shift-header fp-res-shift-comida">
+                    <div class="fp-res-shift-section collapsed" id="fpResComida">
+                        <div class="fp-res-shift-header fp-res-shift-comida" onclick="toggleShiftCollapse(this)">
                             <span>&#9728;&#65039; COMIDA</span>
                             <span class="fp-res-shift-count" id="fpResComidaCount">0</span>
                         </div>
                         <div class="fp-res-list" id="fpResComidaList"></div>
                     </div>
-                    <div class="fp-res-shift-section" id="fpResCena">
-                        <div class="fp-res-shift-header fp-res-shift-cena">
+                    <div class="fp-res-shift-section collapsed" id="fpResCena">
+                        <div class="fp-res-shift-header fp-res-shift-cena" onclick="toggleShiftCollapse(this)">
                             <span>&#127769; CENA</span>
                             <span class="fp-res-shift-count" id="fpResCenaCount">0</span>
                         </div>
@@ -241,15 +241,15 @@
                     <span class="fp-bs-badge" id="fpBsTotalCount">0</span>
                 </button>
                 <div class="fp-bs-body">
-                    <div class="fp-res-shift-section">
-                        <div class="fp-res-shift-header fp-res-shift-comida">
+                    <div class="fp-res-shift-section collapsed">
+                        <div class="fp-res-shift-header fp-res-shift-comida" onclick="toggleShiftCollapse(this)">
                             <span>&#9728;&#65039; COMIDA</span>
                             <span class="fp-res-shift-count" id="fpBsComidaCount">0</span>
                         </div>
                         <div class="fp-res-list" id="fpBsComidaList"></div>
                     </div>
-                    <div class="fp-res-shift-section">
-                        <div class="fp-res-shift-header fp-res-shift-cena">
+                    <div class="fp-res-shift-section collapsed">
+                        <div class="fp-res-shift-header fp-res-shift-cena" onclick="toggleShiftCollapse(this)">
                             <span>&#127769; CENA</span>
                             <span class="fp-res-shift-count" id="fpBsCenaCount">0</span>
                         </div>
@@ -905,7 +905,7 @@
     </script>
     <!-- defer: descarga en paralelo sin bloquear el parseo; ejecutan en orden tras el HTML -->
     <script defer src="/static/js/auth.js?v=4"></script>
-    <script defer src="/static/js/app.js?v=46"></script>
+    <script defer src="/static/js/app.js?v=47"></script>
     <script defer src="/static/js/floorplan.js?v=63"></script>
     <script defer src="/static/js/reservations.js?v=33"></script>
     <script defer src="/static/js/clients.js?v=24"></script>

@@ -366,6 +366,25 @@ body {
     font-size: 12px;
 }
 
+/* Cabeceras COMIDA/CENA plegables (desplegable de Pendientes de sentar) */
+.fp-res-shift-header {
+    cursor: pointer;
+    user-select: none;
+    gap: 6px;
+    justify-content: flex-start;
+}
+.fp-res-shift-header::before {
+    content: '▾';
+    font-size: 10px;
+    opacity: 0.7;
+    display: inline-block;
+    transition: transform 0.15s;
+}
+.fp-res-shift-count { margin-left: auto; }
+.fp-res-shift-section.collapsed .fp-res-list { display: none; }
+.fp-res-shift-section.collapsed { flex: 0 0 auto; }
+.fp-res-shift-section.collapsed .fp-res-shift-header::before { transform: rotate(-90deg); }
+
 /* Individual reservation row */
 .fp-res-row {
     display: flex;

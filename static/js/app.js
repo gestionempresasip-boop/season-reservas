@@ -573,6 +573,12 @@ function toggleFpBottomSheet() {
     document.getElementById('fpBottomSheet')?.classList.toggle('fp-bs-open');
 }
 
+// Plegar/desplegar la lista de un turno (COMIDA/CENA) en "Pendientes de sentar"
+function toggleShiftCollapse(headerEl) {
+    const section = headerEl.closest('.fp-res-shift-section');
+    if (section) section.classList.toggle('collapsed');
+}
+
 function _renderFpList(reservations, listId, countId) {
     const list    = document.getElementById(listId);
     const countEl = document.getElementById(countId);
