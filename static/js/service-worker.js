@@ -1,6 +1,6 @@
-const CACHE_NAME = 'season-v27';
+const CACHE_NAME = 'season-v28';
 const STATIC_ASSETS = [
-  '/static/css/style.css?v=45',
+  '/static/css/style.css?v=46',
   '/static/css/pro.css?v=50',
   '/static/js/auth.js?v=4',
   '/static/js/app.js?v=47',

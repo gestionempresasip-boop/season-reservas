@@ -1509,7 +1509,8 @@ body {
 /* ── Narrow tablet (≤ 768px) — hide elements & stack floor plan ── */
 @media (max-width: 768px) {
     .global-search-wrapper { display: none; }
-    .date-picker { display: none; }
+    /* El selector de fecha (calendario) se mantiene visible en tablet;
+       solo se oculta en móvil (≤640, más abajo). */
     .user-badge-name { display: none; }
     /* Fix: grid needs grid-template-columns, not flex-direction */
     .floorplan-split { grid-template-columns: 1fr; }
@@ -1582,6 +1583,10 @@ body {
     .stat-label { font-size: 8px; letter-spacing: 1px; }
     .stat-value { font-size: 20px; }
     .stat-sub { font-size: 9px; }
+
+    /* En móvil se oculta el calendario del cabecero (no cabe) y se usan las
+       flechas ◀ HOY ▶ del plano. En tablet el calendario sí se muestra. */
+    .date-picker { display: none; }
 
     /* ── Floor plan ── */
     #viewPlano .legend-mini { display: none; }
