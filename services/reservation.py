@@ -274,6 +274,9 @@ def update_reservation(reservation_id, data):
     if 'guests' in data:
         reservation.guests = int(data['guests'])
     if 'status' in data:
+        # Al pasar a 'seated' registramos el momento de sentado (si no lo tenía).
+        if data['status'] == 'seated' and (reservation.status != 'seated' or not reservation.seated_at):
+            reservation.seated_at = datetime.utcnow()
         reservation.status = data['status']
     if 'notes' in data:
         reservation.notes = data['notes']
@@ -313,6 +316,10 @@ def cancel_reservation(reservation_id):
 
 def seat_reservation(reservation_id, table_id=None):
     reservation = Reservation.query.get_or_404(reservation_id)
+    # Registrar el momento de sentado la primera vez (no lo pisamos si ya
+    # estaba sentada, para conservar el orden/cronómetro original).
+    if reservation.status != 'seated' or not reservation.seated_at:
+        reservation.seated_at = datetime.utcnow()
     reservation.status = 'seated'
     if table_id:
         reservation.table_id = table_id

@@ -247,6 +247,7 @@ def _initialize_app():
                     END $$;
                     """,
                     'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 120',
+                    'ALTER TABLE reservations ADD COLUMN IF NOT EXISTS seated_at TIMESTAMP',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_w FLOAT',
                     'ALTER TABLE tables ADD COLUMN IF NOT EXISTS svg_h FLOAT',

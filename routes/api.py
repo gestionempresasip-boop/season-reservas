@@ -421,6 +421,8 @@ def quick_occupy(tid):
 
     if existing:
         existing.guests = guests
+        if existing.status != 'seated' or not existing.seated_at:
+            existing.seated_at = datetime.utcnow()
         existing.status = 'seated'
         db.session.commit()
         notify()
@@ -438,6 +440,7 @@ def quick_occupy(tid):
         source='walk_in',
         notes='Ocupación directa desde plano',
         duration_minutes=120,
+        seated_at=datetime.utcnow(),
     )
     db.session.add(r)
     db.session.commit()

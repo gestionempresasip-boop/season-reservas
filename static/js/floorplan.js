@@ -1073,6 +1073,60 @@ function _svgCoords(e, svg) {
     };
 }
 
+// ── Orden de sentado + cronómetro de tiempo en mesa ──────────────
+// Calcula el nº de orden en que se sentó cada reserva del turno visible,
+// según su marca de tiempo real `seated_at` (no la hora de la reserva).
+function _computeSeatingOrder() {
+    const seen = new Map();  // reservaId -> seated_at ISO
+    TABLE_DEFS.forEach(def => {
+        const td = tableDataMap[def.n];
+        const r = td && td.reservation;
+        if (td && td.status === 'seated' && r && r.seated_at && !seen.has(r.id)) {
+            seen.set(r.id, r.seated_at);
+        }
+    });
+    const ordered = [...seen.entries()].sort((a, b) => new Date(a[1]) - new Date(b[1]));
+    const map = {};
+    ordered.forEach(([id], i) => { map[id] = i + 1; });
+    return map;
+}
+
+function _seatElapsedMin(seatedAtIso) {
+    const ms = Date.now() - new Date(seatedAtIso).getTime();
+    return Math.max(0, Math.floor(ms / 60000));
+}
+
+// Verde (reciente) → ámbar (acercándose a la duración) → rojo (pasado el tiempo)
+function _seatColor(min, durationMin) {
+    const dur = durationMin || 120;
+    if (min >= dur) return '#ef4444';
+    if (min >= dur * 0.75) return '#f59e0b';
+    return '#16a34a';
+}
+
+function _fmtElapsed(min) {
+    if (min < 60) return min + "'";
+    const h = Math.floor(min / 60), m = min % 60;
+    return h + 'h' + (m ? String(m).padStart(2, '0') : '');
+}
+
+let _seatTimerInterval = null;
+function _startSeatTimers() {
+    if (_seatTimerInterval) return;
+    _seatTimerInterval = setInterval(() => {
+        document.querySelectorAll('#floorplanSVG .seat-timer').forEach(el => {
+            const iso = el.dataset.seatedAt;
+            if (!iso) return;
+            const mins = _seatElapsedMin(iso);
+            const col = _seatColor(mins, +el.dataset.duration || 120);
+            el.textContent = _fmtElapsed(mins);
+            el.setAttribute('fill', col);
+            const disc = el.closest('.table-group')?.querySelector('.seat-order-disc');
+            if (disc) disc.setAttribute('fill', col);
+        });
+    }, 30000);
+}
+
 function renderFloorPlan() {
     const svg = document.getElementById('floorplanSVG');
     svg.querySelectorAll('.table-group, .group-link-line, .unassigned-reservations-box').forEach(g => g.remove());
@@ -1125,6 +1179,7 @@ function renderFloorPlan() {
     }
 
     const groupsMap = buildReservationGroupsMap();
+    const seatOrder = _computeSeatingOrder();
 
     // Draw lines connecting tables in same reservation group
     const drawnPairs = new Set();
@@ -1240,14 +1295,18 @@ function renderFloorPlan() {
         num.textContent = def.n;
         g.appendChild(num);
 
-        // ── Capacidad (dcha-arriba de la tarjeta) ───────────────────
-        const capLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        capLabel.setAttribute('x', def.x + def.w - 0.8);
-        capLabel.setAttribute('y', def.y + 2.6);
-        capLabel.classList.add('table-capacity');
-        capLabel.setAttribute('text-anchor', 'end');
-        capLabel.textContent = (isAlta ? 'alta · ' : '') + def.cap + 'p';
-        g.appendChild(capLabel);
+        // ── Capacidad (dcha-arriba) — se oculta en mesas sentadas para
+        //    dejar sitio al disco de orden de sentado ──────────────────
+        const _isSeated = td.status === 'seated' && td.reservation && td.reservation.seated_at;
+        if (!_isSeated) {
+            const capLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            capLabel.setAttribute('x', def.x + def.w - 0.8);
+            capLabel.setAttribute('y', def.y + 2.6);
+            capLabel.classList.add('table-capacity');
+            capLabel.setAttribute('text-anchor', 'end');
+            capLabel.textContent = (isAlta ? 'alta · ' : '') + def.cap + 'p';
+            g.appendChild(capLabel);
+        }
 
         // ── Bloqueada ────────────────────────────────────────────────
         if (td.blocked) {
@@ -1260,8 +1319,8 @@ function renderFloorPlan() {
             g.appendChild(lockText);
         }
 
-        // ── Reserva: nombre y hora ───────────────────────────────────
-        if (td.reservation) {
+        // ── Reserva NO sentada (reservada/confirmada): nombre y hora ──
+        if (td.reservation && !_isSeated) {
             const r = td.reservation;
             const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             nameText.setAttribute('x', def.x + def.w - 0.8);
@@ -1280,6 +1339,67 @@ function renderFloorPlan() {
             timeText.setAttribute('text-anchor', 'end');
             timeText.textContent = r.time + ' · ' + r.guests + 'p';
             g.appendChild(timeText);
+        }
+
+        // ── Mesa SENTADA: orden de sentado (disco esquina) + nombre +
+        //    cronómetro de tiempo en mesa, todo centrado y sin la hora ──
+        if (_isSeated && !_editMode) {
+            const r = td.reservation;
+            const order = seatOrder[r.id] || '·';
+            const mins = _seatElapsedMin(r.seated_at);
+            const col = _seatColor(mins, r.duration_minutes);
+            const cxT = def.x + def.w / 2;
+
+            // Disco de orden: insignia pequeña pegada a la esquina superior
+            // derecha, para NO tapar la insignia del número de mesa (arriba-izq).
+            const dr = Math.max(1.3, Math.min(def.w, def.h) * 0.19);
+            const dcx = def.x + def.w - dr - 0.25;
+            const dcy = def.y + dr + 0.25;
+            const disc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            disc.setAttribute('cx', dcx);
+            disc.setAttribute('cy', dcy);
+            disc.setAttribute('r', dr);
+            disc.setAttribute('fill', col);
+            disc.setAttribute('stroke', '#fff');
+            disc.setAttribute('stroke-width', '0.45');
+            disc.classList.add('seat-order-disc');
+            g.appendChild(disc);
+
+            const ordTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            ordTxt.setAttribute('x', dcx);
+            ordTxt.setAttribute('y', dcy + dr * 0.4);
+            ordTxt.setAttribute('text-anchor', 'middle');
+            ordTxt.setAttribute('font-size', dr * 1.3);
+            ordTxt.setAttribute('font-weight', '800');
+            ordTxt.setAttribute('fill', '#fff');
+            ordTxt.style.pointerEvents = 'none';
+            ordTxt.textContent = order;
+            g.appendChild(ordTxt);
+
+            // Nombre (centrado, abajo)
+            const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            nameText.setAttribute('x', cxT);
+            nameText.setAttribute('y', def.y + def.h - 2.6);
+            nameText.setAttribute('text-anchor', 'middle');
+            nameText.classList.add('table-client-name');
+            nameText.textContent = r.client_name.length > 9
+                ? r.client_name.substring(0, 8) + '…' : r.client_name;
+            g.appendChild(nameText);
+
+            // Cronómetro (centrado, debajo del nombre) — se actualiza en vivo
+            const timer = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            timer.setAttribute('x', cxT);
+            timer.setAttribute('y', def.y + def.h - 0.6);
+            timer.setAttribute('text-anchor', 'middle');
+            timer.setAttribute('font-size', '2.5');
+            timer.setAttribute('font-weight', '800');
+            timer.setAttribute('fill', col);
+            timer.classList.add('seat-timer');
+            timer.dataset.seatedAt = r.seated_at;
+            timer.dataset.duration = r.duration_minutes || 120;
+            timer.style.pointerEvents = 'none';
+            timer.textContent = _fmtElapsed(mins);
+            g.appendChild(timer);
         }
 
         if (_editMode) {
@@ -1352,6 +1472,8 @@ function renderFloorPlan() {
 
         svg.appendChild(g);
     });
+
+    _startSeatTimers();
 }
 
 function drawSofa(g, def) {

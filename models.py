@@ -223,6 +223,11 @@ class Reservation(db.Model):
     status = db.Column(db.String(20), default='confirmed', index=True)
     source = db.Column(db.String(20), default='phone')  # phone, whatsapp, walk_in, web
 
+    # Momento real en que se sentó la mesa (para el orden de sentado y el
+    # cronómetro de tiempo en mesa). NULL en reservas aún no sentadas y en las
+    # anteriores a esta función. Es UTC (datetime.utcnow).
+    seated_at = db.Column(db.DateTime, nullable=True)
+
     # Additional Info
     notes = db.Column(db.Text, default='')
 
@@ -304,6 +309,9 @@ class Reservation(db.Model):
             'source': self.source,
             'notes': self.notes,
             'duration_minutes': self.duration_minutes or 120,
+            # Marcado con 'Z' (UTC) para que el navegador calcule bien el
+            # tiempo transcurrido sea cual sea su zona horaria.
+            'seated_at': (self.seated_at.isoformat() + 'Z') if self.seated_at else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
