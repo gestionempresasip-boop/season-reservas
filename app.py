@@ -191,14 +191,44 @@ def _initialize_app():
         """Main dashboard page."""
         return render_template('index.html', whatsapp_number=WHATSAPP_NUMBER)
 
+    def _booking_open():
+        """True si la página pública de reservas está activa (por defecto pausada)."""
+        try:
+            from models import AppSetting
+            return str(AppSetting.get('public_booking_open', 'false')).lower() in ('true', '1', 'yes')
+        except Exception:
+            return False
+
+    _PAUSED_PAGE = """<!doctype html><html lang="es"><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Reservas en pausa · Season</title>
+        <style>body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
+        background:linear-gradient(135deg,#2f6f63,#1a8a7d);min-height:100vh;display:flex;
+        align-items:center;justify-content:center;padding:24px;color:#12332e}
+        .card{background:#fff;border-radius:20px;padding:40px 28px;max-width:420px;text-align:center;
+        box-shadow:0 20px 60px rgba(0,0,0,.2)}h1{font-size:22px;margin:12px 0 8px}
+        p{color:#4b5563;font-size:15px;line-height:1.5;margin:8px 0}
+        .icon{font-size:44px}.tel{display:inline-block;margin-top:16px;background:#1a8a7d;color:#fff;
+        text-decoration:none;padding:12px 22px;border-radius:12px;font-weight:700}</style></head>
+        <body><div class="card"><div class="icon">🕓</div>
+        <h1>Reservas web en pausa</h1>
+        <p>Ahora mismo no aceptamos reservas por la web.</p>
+        <p>Para reservar, contáctanos directamente:</p>
+        <a class="tel" href="tel:+34689135630">📞 +34 689 135 630</a>
+        </div></body></html>"""
+
     @_app_instance.route('/reservar')
     def public_booking():
         """Public booking page."""
+        if not _booking_open():
+            return _PAUSED_PAGE, 200
         return render_template('public_booking.html', whatsapp_number=WHATSAPP_NUMBER)
 
     @_app_instance.route('/reservas')
     def public_reservas():
         """New public booking page (v2)."""
+        if not _booking_open():
+            return _PAUSED_PAGE, 200
         return render_template('reservas.html', whatsapp_number=WHATSAPP_NUMBER)
 
     # ─── Register SocketIO handlers ──────────────────────────────────────
@@ -265,6 +295,9 @@ def _initialize_app():
                 # Seed default settings if not present
                 if not AppSetting.get('web_capacity_limit'):
                     AppSetting.set('web_capacity_limit', '30')
+                # Reservas web pausadas por defecto (se reactivan desde Ajustes)
+                if AppSetting.get('public_booking_open') is None:
+                    AppSetting.set('public_booking_open', 'false')
 
                 if Table.query.count() == 0:
                     for t in DEFAULT_TABLES:

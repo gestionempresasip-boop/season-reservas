@@ -495,6 +495,13 @@
                         <a href="/reservas" target="_blank" style="color:var(--teal);font-weight:600;">/reservas</a>
                     </div>
                     <div class="setting-row" style="gap:10px;flex-wrap:wrap">
+                        <label style="flex-shrink:0">Aceptar reservas por la web:</label>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <span id="publicBookingStatus" style="font-weight:700">—</span>
+                            <button class="btn-secondary btn-sm" id="publicBookingToggle" onclick="togglePublicBooking()">Cambiar</button>
+                        </div>
+                    </div>
+                    <div class="setting-row" style="gap:10px;flex-wrap:wrap">
                         <label style="flex-shrink:0">Límite de comensales por turno:</label>
                         <div style="display:flex;align-items:center;gap:8px">
                             <input type="number" id="webCapacityInput" min="1" max="500" value="30"
@@ -896,10 +903,46 @@
         }).catch(() => showAdminPopup('Error al guardar', '❌'));
     }
 
-    // Load capacity when switching to Ajustes
+    // ── Reservas web: activar/pausar ──────────────────────────────
+    let _publicBookingOpen = false;
+    function _renderPublicBookingStatus() {
+        const st = document.getElementById('publicBookingStatus');
+        const btn = document.getElementById('publicBookingToggle');
+        if (st) {
+            st.textContent = _publicBookingOpen ? '🟢 Activas' : '⏸️ En pausa';
+            st.style.color = _publicBookingOpen ? '#059669' : '#b45309';
+        }
+        if (btn) btn.textContent = _publicBookingOpen ? 'Pausar' : 'Activar';
+    }
+    function loadPublicBookingStatus() {
+        fetch('/api/settings/public_booking_open')
+            .then(r => r.json())
+            .then(d => {
+                _publicBookingOpen = String(d.value).toLowerCase() === 'true';
+                _renderPublicBookingStatus();
+            }).catch(() => {});
+    }
+    function togglePublicBooking() {
+        const next = !_publicBookingOpen;
+        const msg = next
+            ? '¿Activar las reservas por la web? Volverán a entrar reservas desde el enlace público.'
+            : '¿Pausar las reservas por la web? El enlace público dejará de aceptar reservas.';
+        showConfirmPopup(msg, () => {
+            fetch('/api/settings/public_booking_open', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: next ? 'true' : 'false' })
+            }).then(r => r.json()).then(d => {
+                _publicBookingOpen = String(d.value).toLowerCase() === 'true';
+                _renderPublicBookingStatus();
+            }).catch(() => showAdminPopup('Error al guardar', '❌'));
+        }, next ? '🟢' : '⏸️');
+    }
+
+    // Load capacity + booking status when switching to Ajustes
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.nav-btn[data-view="viewAjustes"]').forEach(btn => {
-            btn.addEventListener('click', loadWebCapacity);
+            btn.addEventListener('click', () => { loadWebCapacity(); loadPublicBookingStatus(); });
         });
     });
     </script>

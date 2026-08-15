@@ -164,7 +164,10 @@ def create_reservation(data: ReservationCreate):
         reservation_data['force_past'] = True
     r = res_svc.create_reservation(reservation_data)
     notify(reservation_data.get('date'), reservation_data.get('shift'))
-    _send_email_async(current_app._get_current_object(), reservation_data)
+    # Email de confirmación SOLO para reservas web. Las hechas desde la app
+    # (teléfono, whatsapp, walk-in) no envían correo.
+    if reservation_data.get('source') == 'web':
+        _send_email_async(current_app._get_current_object(), reservation_data)
     return jsonify(r.to_dict()), 201
 
 
@@ -1268,12 +1271,20 @@ def unassign_tables(rid):
 # APP SETTINGS
 # ═══════════════════════════════════════════════════════════════════════════
 
+ALLOWED_SETTINGS = {'web_capacity_limit', 'public_booking_open'}
+
+
+def _public_booking_open():
+    """True si la página pública de reservas está activa (por defecto pausada)."""
+    from models import AppSetting
+    return str(AppSetting.get('public_booking_open', 'false')).lower() in ('true', '1', 'yes')
+
+
 @api.route('/settings/<key>', methods=['GET'])
 @handle_errors
 def get_setting(key):
     from models import AppSetting
-    ALLOWED = {'web_capacity_limit'}
-    if key not in ALLOWED:
+    if key not in ALLOWED_SETTINGS:
         return error_response('Setting no permitido', 403)
     value = AppSetting.get(key, None)
     return jsonify({'key': key, 'value': value})
@@ -1282,8 +1293,7 @@ def get_setting(key):
 @handle_errors
 def put_setting(key):
     from models import AppSetting
-    ALLOWED = {'web_capacity_limit'}
-    if key not in ALLOWED:
+    if key not in ALLOWED_SETTINGS:
         return error_response('Setting no permitido', 403)
     data = request.json or {}
     value = data.get('value')
@@ -1296,6 +1306,9 @@ def put_setting(key):
                 raise ValueError
         except (ValueError, TypeError):
             return error_response('El límite debe ser un número entre 1 y 500', 400)
+    elif key == 'public_booking_open':
+        # Normalizar a 'true'/'false'
+        value = 'true' if str(value).lower() in ('true', '1', 'yes', 'on') else 'false'
     AppSetting.set(key, value)
     return jsonify({'key': key, 'value': str(value)})
 
@@ -1307,6 +1320,12 @@ def put_setting(key):
 @handle_errors
 def public_reserve():
     """Create a reservation from the public booking page. No auth required."""
+    # Reservas web pausadas: no se aceptan nuevas reservas por la web.
+    if not _public_booking_open():
+        return error_response(
+            'Las reservas por la web están pausadas temporalmente. '
+            'Por favor, contáctanos por teléfono o WhatsApp al +34 689 135 630.', 403)
+
     data = request.json or {}
 
     required = ['client_name', 'client_phone', 'date', 'shift', 'time', 'guests']
