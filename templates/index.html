@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Season · Sistema de Reservas</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=43">
+    <link rel="stylesheet" href="/static/css/style.css?v=44">
     <link rel="stylesheet" href="/static/css/pro.css?v=50">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -143,6 +143,7 @@
                 <button class="btn-secondary btn-sm" id="btnGroupMode" onclick="toggleGroupMode()" title="Selecciona varias mesas para hacer una reserva combinada">🔗 Agrupar mesas</button>
                 <button class="btn-secondary btn-sm" onclick="guardedNewReservation()">+ Nueva reserva</button>
                 <button class="btn-walkin btn-sm" onclick="guardedWalkIn()">🚶 Walk-in</button>
+                <button class="btn-secondary btn-sm" id="btnFreeMode" onclick="toggleFreeMode()" title="Selecciona mesas sentadas para liberarlas, o libéralas todas al cerrar el servicio">🏁 Liberar mesas</button>
                 <button class="btn-secondary btn-sm" id="btnEditPlan" onclick="toggleEditMode()" title="Mueve las mesas y ajusta sus capacidades">✏️ Editar plano</button>
                 <div class="legend-mini">
                     <span class="lm-item"><span class="lm-color free"></span>Libre</span>
@@ -158,6 +159,7 @@
                 </div>
             </div>
             <div class="group-action-bar hidden" id="groupActionBar"></div>
+            <div class="group-action-bar hidden" id="freeActionBar"></div>
             <div class="edit-plan-bar hidden" id="editPlanBar">
                 <span>✏️ Arrastra mesas · toca para editar · ✕ rojo para eliminar</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -903,7 +905,7 @@
     <!-- defer: descarga en paralelo sin bloquear el parseo; ejecutan en orden tras el HTML -->
     <script defer src="/static/js/auth.js?v=4"></script>
     <script defer src="/static/js/app.js?v=45"></script>
-    <script defer src="/static/js/floorplan.js?v=61"></script>
+    <script defer src="/static/js/floorplan.js?v=63"></script>
     <script defer src="/static/js/reservations.js?v=32"></script>
     <script defer src="/static/js/clients.js?v=24"></script>
     <script defer src="/static/js/waitlist.js?v=24"></script>

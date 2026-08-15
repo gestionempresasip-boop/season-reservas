@@ -180,6 +180,11 @@ let _editSofaSide = '';        // recto: top|bottom|left|right ; L: tl|tr|bl|br
 // ── Selección múltiple en modo edición (editar varias mesas a la vez) ──
 let _multiSelectMode = false;
 let _multiSelected = new Set();  // números de mesa seleccionados
+
+// ── Modo "Liberar mesas" (cerrar servicio): seleccionar mesas sentadas y
+//    completarlas en bloque, o liberar todas las sentadas de golpe ──
+let _freeMode = false;
+let _freeSelected = new Set();   // números de mesa sentadas seleccionadas
 // Staging de la edición en lote ('' o 'keep' = sin cambios)
 let _bulkShape = '';
 let _bulkType = '';
@@ -932,6 +937,19 @@ function reserveGroup() {
 }
 
 function handleTableClick(tableNumber) {
+    if (_freeMode) {
+        const td = tableDataMap[tableNumber];
+        // Solo seleccionables las mesas SENTADAS (ocupadas)
+        if (!td || td.status !== 'seated') {
+            showToast('Solo puedes seleccionar mesas sentadas', 'error');
+            return;
+        }
+        if (_freeSelected.has(tableNumber)) _freeSelected.delete(tableNumber);
+        else _freeSelected.add(tableNumber);
+        renderFloorPlan();
+        _updateFreeBar();
+        return;
+    }
     if (groupMode) {
         const idx = groupSelectedTables.indexOf(tableNumber);
         if (idx >= 0) {
@@ -944,6 +962,96 @@ function handleTableClick(tableNumber) {
     } else {
         openTableDetail(tableNumber);
     }
+}
+
+// ── Modo "Liberar mesas" ─────────────────────────────────────────
+function _seatedTableNumbers() {
+    return TABLE_DEFS
+        .map(d => d.n)
+        .filter(n => tableDataMap[n] && tableDataMap[n].status === 'seated');
+}
+
+function toggleFreeMode() {
+    _freeMode = !_freeMode;
+    _freeSelected.clear();
+    // Salir de otros modos para no mezclar comportamientos
+    if (_freeMode) {
+        if (groupMode) toggleGroupMode();
+        if (_editMode) { /* no forzar; el botón editar es aparte */ }
+    }
+    const btn = document.getElementById('btnFreeMode');
+    if (btn) {
+        btn.classList.toggle('active', _freeMode);
+        btn.textContent = _freeMode ? '✓ Liberando…' : '🏁 Liberar mesas';
+    }
+    renderFloorPlan();
+    _updateFreeBar();
+}
+
+function _updateFreeBar() {
+    const bar = document.getElementById('freeActionBar');
+    if (!bar) return;
+    if (!_freeMode) { bar.classList.add('hidden'); bar.innerHTML = ''; return; }
+
+    const seated = _seatedTableNumbers().length;
+    const sel = _freeSelected.size;
+    bar.classList.remove('hidden');
+    const selBtn = sel
+        ? `<button class="btn-primary btn-sm" onclick="freeSelectedTables()">✅ Liberar seleccionadas (${sel})</button>`
+        : '';
+    const hint = seated && !sel ? ' — toca las mesas a liberar, o usa "Liberar TODAS"' : '';
+    bar.innerHTML = `
+        <span style="font-weight:600">🏁 Cierre de servicio · ${seated} mesa${seated !== 1 ? 's' : ''} sentada${seated !== 1 ? 's' : ''}${sel ? ` · ${sel} seleccionada${sel !== 1 ? 's' : ''}` : ''}<span style="font-weight:400;color:#6b7280">${hint}</span></span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${selBtn}
+            <button class="btn-primary btn-sm" style="background:#dc2626;border-color:#dc2626" ${seated ? '' : 'disabled'} onclick="freeAllSeated()">🏁 Liberar TODAS (${seated})</button>
+            <button class="btn-secondary btn-sm" onclick="toggleFreeMode()">✕ Salir</button>
+        </div>`;
+}
+
+function _resIdsForTables(tableNumbers) {
+    const ids = new Set();
+    tableNumbers.forEach(n => {
+        const td = tableDataMap[n];
+        if (!td || td.status !== 'seated') return;
+        const list = td.reservations && td.reservations.length
+            ? td.reservations
+            : (td.reservation ? [td.reservation] : []);
+        list.forEach(r => { if (r && r.status === 'seated' && r.id) ids.add(r.id); });
+    });
+    return [...ids];
+}
+
+async function freeSelectedTables() {
+    const ids = _resIdsForTables([..._freeSelected]);
+    if (ids.length === 0) { showToast('No hay mesas sentadas seleccionadas', 'error'); return; }
+    showConfirmPopup(`¿Liberar ${_freeSelected.size} mesa(s) seleccionada(s)?`, async () => {
+        try {
+            const res = await apiPost('/api/reservations/bulk-complete', { ids });
+            showToast(`${res.completed} mesa(s) liberada(s)`, 'success');
+        } catch (e) {
+            showToast('Error al liberar mesas', 'error');
+        }
+        _freeSelected.clear();
+        if (_freeMode) toggleFreeMode();
+        await refreshAll();
+    }, '🏁');
+}
+
+async function freeAllSeated() {
+    const seated = _seatedTableNumbers().length;
+    if (seated === 0) { showToast('No hay mesas sentadas', 'error'); return; }
+    showConfirmPopup(`¿Liberar TODAS las ${seated} mesas sentadas del turno? (cierre de servicio)`, async () => {
+        try {
+            const res = await apiPost('/api/reservations/bulk-complete', { date: currentDate, shift: currentShift });
+            showToast(`${res.completed} mesa(s) liberada(s)`, 'success');
+        } catch (e) {
+            showToast('Error al liberar mesas', 'error');
+        }
+        _freeSelected.clear();
+        if (_freeMode) toggleFreeMode();
+        await refreshAll();
+    }, '🏁');
 }
 
 // ── Quick Occupy Popover ────────────────────────
@@ -1236,6 +1344,10 @@ function renderFloorPlan() {
         }
         if (_multiSelectMode && _multiSelected.has(def.n)) {
             g.classList.add('multi-selected');
+        }
+        if (_freeMode) {
+            g.classList.add('free-mode-table');
+            if (_freeSelected.has(def.n)) g.classList.add('free-selected');
         }
         g.dataset.tableNumber = def.n;
         g.dataset.tableId = td.id || '';

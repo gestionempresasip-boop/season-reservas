@@ -493,6 +493,18 @@ body {
 .table-group.multi-selected { filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.8)); }
 #btnMultiSelect.active { background: #2563eb; color: #fff; border-color: #2563eb; }
 
+/* ── Modo "Liberar mesas" (cierre de servicio) ── */
+.table-group.free-mode-table { cursor: pointer; }
+.table-group.free-selected .table-rect,
+.table-group.free-selected .table-rect-round,
+.table-group.free-selected .table-circle,
+.table-group.free-selected .table-alta {
+    stroke: #dc2626;
+    stroke-width: 1.2;
+}
+.table-group.free-selected { filter: drop-shadow(0 0 2.5px rgba(220, 38, 38, 0.9)); }
+#btnFreeMode.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+
 /* ── Mesa alta (amarillo/dorado) ── */
 .table-alta {
     fill: #fef3c7;

@@ -273,6 +273,46 @@ def mark_no_show(rid):
     return jsonify(r.to_dict())
 
 
+@api.route('/reservations/bulk-complete', methods=['POST'])
+@handle_errors
+def bulk_complete_reservations():
+    """Complete (free) several SEATED reservations at once.
+
+    Body:
+      - {ids: [1,2,3]}                 → complete exactly those (only if seated)
+      - {date, shift}  (no ids)        → complete ALL seated of that date+shift
+    Only touches status == 'seated' (mesas ocupadas), never confirmadas/futuras.
+    Returns {completed: N}.
+    """
+    data = request.json or {}
+    ids = data.get('ids')
+
+    q = Reservation.query.filter(Reservation.status == 'seated')
+    if ids:
+        try:
+            id_list = [int(x) for x in ids if x]
+        except (TypeError, ValueError):
+            return error_response('ids inválidos', 400)
+        if not id_list:
+            return jsonify({'completed': 0})
+        q = q.filter(Reservation.id.in_(id_list))
+    else:
+        d = data.get('date')
+        shift = data.get('shift')
+        if d:
+            q = q.filter(Reservation.date == date.fromisoformat(d))
+        if shift:
+            q = q.filter(Reservation.shift == shift)
+
+    rows = q.all()
+    for r in rows:
+        r.status = 'completed'
+    if rows:
+        db.session.commit()
+        notify()
+    return jsonify({'completed': len(rows)})
+
+
 # ── Tables ────────────────────────────────────────────────
 
 @api.route('/tables', methods=['GET'])
