@@ -1078,6 +1078,40 @@ body {
     gap: 12px;
 }
 
+/* ── CLIENTS TABLE ───────────────────────────── */
+.clients-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+.clients-table thead tr {
+    background: var(--gray-100);
+    border-bottom: 2px solid var(--gray-200);
+}
+.clients-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-600);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    user-select: none;
+}
+.clients-table th:hover { color: var(--teal); }
+.clients-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+.client-row:hover td { background: var(--gray-50); }
+.client-row-name { font-weight: 500; color: var(--gray-800); }
+
 .client-card {
     background: var(--white);
     border: 1.5px solid var(--gray-200);

@@ -340,13 +340,37 @@
         <!-- CLIENTS VIEW -->
         <section class="view" id="viewClientes">
             <div class="view-header">
-                <h2>Base de Datos de Clientes</h2>
-                <button class="btn-primary" onclick="openNewClientModal()">+ Nuevo Cliente</button>
+                <h2>Base de Datos de Clientes <span id="clientsCount" style="font-size:0.85rem;font-weight:400;color:#6b7280;margin-left:8px;"></span></h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-secondary" onclick="exportClientsExcel()">&#8595; Exportar Excel</button>
+                    <button class="btn-primary" onclick="openNewClientModal()">+ Nuevo Cliente</button>
+                </div>
             </div>
-            <div class="filters-bar">
-                <input type="text" id="searchClients" placeholder="Buscar por nombre, tel&eacute;fono o email..." class="search-input">
+            <div class="filters-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="searchClients" placeholder="Buscar por nombre, tel&eacute;fono o email..." class="search-input" style="flex:1;min-width:200px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.875rem;cursor:pointer;">
+                    <input type="checkbox" id="filterVip" onchange="loadClientsList()"> Solo VIP
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.875rem;cursor:pointer;">
+                    <input type="checkbox" id="filterBlacklisted" onchange="loadClientsList()"> Bloqueados
+                </label>
             </div>
-            <div class="clients-list" id="clientsList"></div>
+            <div style="overflow-x:auto;margin-top:8px;">
+                <table class="clients-table" id="clientsList">
+                    <thead>
+                        <tr>
+                            <th onclick="sortClients('name')" style="cursor:pointer;">Nombre <span id="sort-name"></span></th>
+                            <th onclick="sortClients('phone')" style="cursor:pointer;">Tel&eacute;fono <span id="sort-phone"></span></th>
+                            <th onclick="sortClients('email')" style="cursor:pointer;">Email <span id="sort-email"></span></th>
+                            <th onclick="sortClients('visits_count')" style="cursor:pointer;">Visitas <span id="sort-visits_count"></span></th>
+                            <th onclick="sortClients('no_show_count')" style="cursor:pointer;">No Shows <span id="sort-no_show_count"></span></th>
+                            <th onclick="sortClients('last_visit')" style="cursor:pointer;">&Uacute;ltima visita <span id="sort-last_visit"></span></th>
+                            <th>VIP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsTableBody"></tbody>
+                </table>
+            </div>
             <!-- Client Detail Panel -->
             <div class="client-detail-panel hidden" id="clientDetailPanel">
                 <div class="panel-header">

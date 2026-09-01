@@ -2,47 +2,115 @@
    SEASON - Client Database Management
    ═══════════════════════════════════════════════ */
 
+let _allClients = [];
+let _sortCol = 'name';
+let _sortAsc = true;
+
 async function loadClientsList() {
     const q = document.getElementById('searchClients')?.value || '';
-    const url = q
-        ? `/api/clients?search=${encodeURIComponent(q)}`
-        : `/api/clients?all=1`;
-    const clients = await apiGet(url);
-    renderClientsList(clients);
+    const url = q ? `/api/clients?search=${encodeURIComponent(q)}` : `/api/clients?all=1`;
+    _allClients = await apiGet(url);
+    renderClientsList(_allClients);
 }
 
 function renderClientsList(clients) {
-    const container = document.getElementById('clientsList');
+    const onlyVip = document.getElementById('filterVip')?.checked;
+    const onlyBlacklisted = document.getElementById('filterBlacklisted')?.checked;
 
-    if (!clients.length) {
-        container.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-state-icon">&#128101;</div>
-                <div class="empty-state-text">No hay clientes registrados</div>
-            </div>`;
+    let list = clients;
+    if (onlyVip) list = list.filter(c => c.vip);
+    if (onlyBlacklisted) list = list.filter(c => c.blacklisted);
+
+    // Sort
+    list = [...list].sort((a, b) => {
+        let va = a[_sortCol] ?? '';
+        let vb = b[_sortCol] ?? '';
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        if (va < vb) return _sortAsc ? -1 : 1;
+        if (va > vb) return _sortAsc ? 1 : -1;
+        return 0;
+    });
+
+    // Update count
+    const countEl = document.getElementById('clientsCount');
+    if (countEl) countEl.textContent = `(${list.length} clientes)`;
+
+    // Update sort indicators
+    ['name','phone','email','visits_count','no_show_count','last_visit'].forEach(col => {
+        const el = document.getElementById(`sort-${col}`);
+        if (el) el.textContent = col === _sortCol ? (_sortAsc ? '▲' : '▼') : '';
+    });
+
+    const tbody = document.getElementById('clientsTableBody');
+    if (!tbody) return;
+
+    if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#6b7280;">No hay clientes</td></tr>`;
         return;
     }
 
-    container.innerHTML = clients.map(c => `
-        <div class="client-card" onclick="openClientDetail(${c.id})">
-            <div class="client-card-header">
-                <div>
-                    <div class="client-card-name">
-                        ${c.name}
-                        ${c.vip ? '<span class="badge badge-vip">VIP</span>' : ''}
-                        ${c.blacklisted ? '<span class="badge badge-red">Bloqueado</span>' : ''}
-                    </div>
-                    <div class="client-card-phone">${c.phone}${c.email ? ' · ' + c.email : ''}</div>
-                </div>
-            </div>
-            ${c.allergies ? `<div style="font-size:12px; color:#ef4444; margin-top:4px;">⚠ ${c.allergies}</div>` : ''}
-            <div class="client-card-stats">
-                <span><strong>${c.visits_count || 0}</strong> visitas</span>
-                <span><strong>${c.no_show_count || 0}</strong> no shows</span>
-                ${c.last_visit ? `<span>Última: ${formatDate(c.last_visit)}</span>` : ''}
-            </div>
-        </div>
+    tbody.innerHTML = list.map(c => `
+        <tr class="client-row" onclick="openClientDetail(${c.id})" style="cursor:pointer;">
+            <td>
+                <span class="client-row-name">${c.name}</span>
+                ${c.vip ? ' <span class="badge badge-vip" style="font-size:10px;">VIP</span>' : ''}
+                ${c.blacklisted ? ' <span class="badge badge-red" style="font-size:10px;">Bloq.</span>' : ''}
+                ${c.allergies ? ' <span title="' + c.allergies + '" style="color:#ef4444;font-size:12px;">⚠</span>' : ''}
+            </td>
+            <td>${c.phone || '-'}</td>
+            <td style="color:#6b7280;font-size:0.85rem;">${c.email || '-'}</td>
+            <td style="text-align:center;">${c.visits_count || 0}</td>
+            <td style="text-align:center;color:${(c.no_show_count||0)>0?'#ef4444':'inherit'};">${c.no_show_count || 0}</td>
+            <td style="color:#6b7280;font-size:0.85rem;">${c.last_visit ? formatDate(c.last_visit) : '-'}</td>
+            <td style="text-align:center;">${c.vip ? '⭐' : ''}</td>
+        </tr>
     `).join('');
+}
+
+function sortClients(col) {
+    if (_sortCol === col) {
+        _sortAsc = !_sortAsc;
+    } else {
+        _sortCol = col;
+        _sortAsc = true;
+    }
+    renderClientsList(_allClients);
+}
+
+function exportClientsExcel() {
+    const onlyVip = document.getElementById('filterVip')?.checked;
+    const onlyBlacklisted = document.getElementById('filterBlacklisted')?.checked;
+    let list = _allClients;
+    if (onlyVip) list = list.filter(c => c.vip);
+    if (onlyBlacklisted) list = list.filter(c => c.blacklisted);
+
+    const headers = ['Nombre','Teléfono','Email','Visitas','No Shows','Última Visita','VIP','Alergias','Preferencias','Notas'];
+    const rows = list.map(c => [
+        c.name,
+        c.phone || '',
+        c.email || '',
+        c.visits_count || 0,
+        c.no_show_count || 0,
+        c.last_visit || '',
+        c.vip ? 'Sí' : 'No',
+        c.allergies || '',
+        c.preferences || '',
+        c.notes || '',
+    ]);
+
+    const csv = [headers, ...rows].map(r =>
+        r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')
+    ).join('\n');
+
+    const bom = '﻿';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clientes_season.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 let clientSearchTimeout;
