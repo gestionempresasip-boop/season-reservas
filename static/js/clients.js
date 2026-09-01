@@ -4,7 +4,10 @@
 
 async function loadClientsList() {
     const q = document.getElementById('searchClients')?.value || '';
-    const clients = await apiGet(`/api/clients?search=${encodeURIComponent(q)}`);
+    const url = q
+        ? `/api/clients?search=${encodeURIComponent(q)}`
+        : `/api/clients?all=1`;
+    const clients = await apiGet(url);
     renderClientsList(clients);
 }
 

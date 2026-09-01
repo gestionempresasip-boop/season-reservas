@@ -6,26 +6,21 @@ from sqlalchemy import func
 from config.constants import CLIENT_SEARCH_LIMIT, TOP_CLIENTS_LIMIT
 
 
-def search_clients(query):
-    """Search clients by name, phone, or email.
-
-    Args:
-        query: Search query string
-
-    Returns:
-        List of Client objects (up to CLIENT_SEARCH_LIMIT results)
-    """
+def search_clients(query, no_limit=False):
+    """Search clients by name, phone, or email."""
     if not query or not query.strip():
-        return Client.query.order_by(Client.name).limit(CLIENT_SEARCH_LIMIT).all()
+        q = Client.query.order_by(Client.name)
+        return q.all() if no_limit else q.limit(CLIENT_SEARCH_LIMIT).all()
 
     pattern = f'%{query.strip()}%'
-    return Client.query.filter(
+    q = Client.query.filter(
         db.or_(
             Client.name.ilike(pattern),
             Client.phone.ilike(pattern),
             Client.email.ilike(pattern),
         )
-    ).order_by(Client.name).limit(CLIENT_SEARCH_LIMIT).all()
+    ).order_by(Client.name)
+    return q.all() if no_limit else q.limit(CLIENT_SEARCH_LIMIT).all()
 
 
 def get_client(client_id):

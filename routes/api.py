@@ -622,7 +622,8 @@ def dashboard():
 def list_clients():
     """Search clients by name, phone, or email."""
     q = request.args.get('search', '')
-    clients = cli_svc.search_clients(q)
+    all_clients = request.args.get('all') == '1'
+    clients = cli_svc.search_clients(q, no_limit=all_clients)
     return jsonify([c.to_dict() for c in clients])
 
 
