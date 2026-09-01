@@ -626,6 +626,29 @@ def list_clients():
     return jsonify([c.to_dict() for c in clients])
 
 
+@api.route('/clients/by-phone', methods=['GET'])
+@handle_errors
+def get_client_by_phone():
+    """Lookup a client by exact phone number (spaces/dashes ignored)."""
+    phone = request.args.get('phone', '').strip()
+    if not phone:
+        return jsonify(None)
+    # Try exact match first
+    client = cli_svc.get_client_by_phone(phone)
+    if not client:
+        # Try normalizing digits only (strips spaces, dashes, parentheses)
+        digits = ''.join(c for c in phone if c.isdigit())
+        from models import Client
+        all_matches = Client.query.filter(Client.phone.ilike(f'%{digits[-9:]}%')).all()
+        for c in all_matches:
+            if ''.join(ch for ch in c.phone if ch.isdigit()).endswith(digits[-9:]):
+                client = c
+                break
+    if not client:
+        return jsonify(None)
+    return jsonify(client.to_dict())
+
+
 @api.route('/clients/<int:cid>', methods=['GET'])
 @handle_errors
 def get_client(cid):

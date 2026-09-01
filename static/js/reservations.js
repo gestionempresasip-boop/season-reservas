@@ -912,6 +912,34 @@ document.getElementById('resName')?.addEventListener('input', (e) => {
     }, 300);
 });
 
+// ── Phone → Name autofill ────────────────────────
+let phoneSearchTimeout;
+document.getElementById('resPhone')?.addEventListener('input', (e) => {
+    clearTimeout(phoneSearchTimeout);
+    const phone = e.target.value.trim();
+    const hint = document.getElementById('phoneHint');
+    if (hint) hint.textContent = '';
+    if (phone.length < 7) return;
+    phoneSearchTimeout = setTimeout(async () => {
+        const nameField = document.getElementById('resName');
+        if (nameField.value.trim()) return;
+        try {
+            console.log('[autofill] buscando cliente con teléfono:', phone);
+            const client = await apiGet(`/api/clients/by-phone?phone=${encodeURIComponent(phone)}`);
+            console.log('[autofill] respuesta:', client);
+            if (client && client.name) {
+                nameField.value = client.name;
+                nameField.dispatchEvent(new Event('change'));
+                if (hint) hint.textContent = '✓ Cliente encontrado';
+            } else {
+                if (hint) hint.textContent = 'Teléfono no registrado';
+            }
+        } catch (err) {
+            console.error('[autofill] error:', err);
+        }
+    }, 400);
+});
+
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.form-group')) {
         document.getElementById('clientSuggestions')?.classList.add('hidden');
